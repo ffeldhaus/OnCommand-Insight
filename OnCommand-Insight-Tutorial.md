@@ -1,3 +1,5 @@
+<!-- language: lang-powershell -->
+
 # OnCommand Insight (OCI) PowerShell Cmdlet Tutorial
 
 This tutorial will give an introduction to the OnCommand Insight PowerShell Cmdlets
