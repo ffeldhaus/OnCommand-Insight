@@ -1,5 +1,3 @@
-<!-- language: lang-powershell -->
-
 # OnCommand Insight (OCI) PowerShell Cmdlet Tutorial
 
 This tutorial will give an introduction to the OnCommand Insight PowerShell Cmdlets
@@ -8,7 +6,9 @@ This tutorial will give an introduction to the OnCommand Insight PowerShell Cmdl
 
 Load the OCI Module
 
-    Import-Module OnCommand-Insight
+```powershell
+Import-Module OnCommand-Insight
+```
 
 Show all available Cmdlets from the OCI Module
 
