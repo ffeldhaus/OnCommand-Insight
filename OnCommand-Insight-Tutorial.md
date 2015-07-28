@@ -57,8 +57,10 @@ To force connections via HTTP use the `-HTTP` switch
 ```powershell
 Connect-OciServer -Name $ServerName -Credential $Credential -HTTP
 ```
-    
-As the Timezone of the OCI Server is not available via the REST API, it needs to be manually set. By default the Timezone will be set to the local timezone of the PowerShell environment.
+
+## Timezone setting for connections to OCI Servers
+
+As the timezone of the OCI Server is not available via the REST API, it needs to be manually set so that all timestamps are displayed with the correct timezone. By default the timezone will be set to the local timezone of the PowerShell environment.
 
 The currently configured timezone of the OCI Server can be checked with
 
@@ -77,4 +79,20 @@ To set a different timezone (e.g. CEST or PST), the following command can be use
 ```powershell
 $CurrentOciServer.Timezone = [System.TimeZoneInfo]::FindSystemTimeZoneById("Central Europe Standard Time")
 $CurrentOciServer.Timezone = [System.TimeZoneInfo]::FindSystemTimeZoneById("Pacific Standard Time")
+```
+
+## Simple workflow for retrieving data from OCI Servers
+
+In this simple workflow the available storage systems will be retrieved, a NetApp FAS system will be choosen and then all internal volumes for this system will be retrieved.
+
+```powershell
+$Storages = Get-OciStorages
+$NetAppStorage = $Storages | ? { $_.vendor -eq "NetApp" -and $_.family -eq "FAS" } | Select-Object -First 1
+Get-OciInternalVolumesByStorage -id $Storage.id
+```
+
+As the OCI Cmdlets support pipelining, the above statements can be combined into one statement:
+
+```powershell
+Get-OciStorages | ? { $_.vendor -eq "NetApp" -and $_.family -eq "FAS" } | Select-Object -First 1 | Get-OciInternalVolumesByStorage
 ```
