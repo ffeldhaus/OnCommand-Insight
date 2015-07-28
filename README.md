@@ -34,7 +34,7 @@ Connect to OnCommand Insight Server using the `-Insecure` Switch to skip checkin
     
 List all Storage Arrays
 
-    Get-OciStorageArrays
+    Get-OciStorages
 
 Trusting the Publisher of the OnCommand Insight Cmdlets
 -------------------------------------------------------
@@ -55,25 +55,3 @@ This PowerShell Module is signed with a code signing certificate issued by the *
   11. A *Security Warning* will be displayed. Click *Yes* to install the certificate. The *Thumbprint (sha1)* should be **9FFB6F1A 06BC0245 27368705 2E7309D3 6FF2CFD0**
   12. Click twice on *OK* to close the dialogs.
 2. When importing the PowerShell module via `Import-Module OnCommand-Insigh` a dialog is displayed asking if the publisher *CN=florianf-Florian-Feldhaus, OU=Users, OU=EMEA, OU=Sites, DC=hq, DC=netapp, DC=com* should be trusted. Select *[A] Always run* to permanently trust this publisher.
-
-	
-Changelog
----------
-
-### Version 0.3
-
-* Module is now signed
-* added instructions to trust the publisher of the Module
-* added ability for most cmdlets to accept pipeline input
-* streamlined usage of the parameter ID. All cmdlets accepting ID parameters now have named parameters like VolumeID or HostID and ID is an alias to these parameters (e.g. ID always works).
-* added formatting of OCI types
-
-### Version 0.2
-
-* improved Help and added Parameter Help
-* solved Namespace issues when changing server and introduced OCI namespace
-* improved build process
-
-### Version 0.1
-
-* First internal release with all Cmdlets implemented
