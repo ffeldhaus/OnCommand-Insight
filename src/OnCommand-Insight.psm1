@@ -36,7 +36,7 @@ function ParseJsonObject($jsonObj) {
         $item = $jsonObj[$key]
         if ($item) {
             if ($key -eq "history") {
-                $parsedItem = $item | % { ParseJsonObject($_[1]) | Add-Member -MemberType NoteProperty -Name time -Value ($_[0] | ConvertFrom-UnixDate) -PassThru }
+                $parsedItem = $item | % { ParseJsonObject(($_[1]+@{time=($_[0] | ConvertFrom-UnixDate)})) }
             } else {
                 $parsedItem = ParseItem $item
             }
@@ -65,7 +65,8 @@ function ParseJsonString($json) {
         return ParseJsonObject($config)
     }
 }
- 
+
+# helper function to convert datetime to unix timestamp
 function ConvertTo-UnixTimestamp {
        $epoch = Get-Date -Year 1970 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0  
       $input | % { 
@@ -79,7 +80,7 @@ function ConvertTo-UnixTimestamp {
        }     
 }
  
- 
+# helper function to convert unix timestamp to datetime
 function ConvertFrom-UnixDate {
     $input | % {
         $date = $CurrentOciServer.Timezone.ToLocalTime(([datetime]'1/1/1970').AddMilliseconds($_))
@@ -87,37 +88,82 @@ function ConvertFrom-UnixDate {
     }
 }
 
-function global:Get-OciExample {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$False,
-                   Position=0,
-                   HelpMessage="The name of the OnCommand Insight Cmdlet for which the example should be retrieved.")][String]$Cmdlet
-    )
+# OCI Examples
+$OciExamples=@{}
 
-    $OciExamples=@{}
+$OciExamples['Add-OciPatches'] = @"
+"@
 
-    $OciExamples['Add-OciPatches'] = @"
+$OciExamples['Add-OciUsers'] = @"
 "@
-    $OciExamples['Add-OciUsers'] = @"
-"@
-    $OciExamples['Approve-OciPatch'] = @"
+
+$OciExamples['Approve-OciPatch'] = @"
     .EXAMPLE
     Approve-OciPatch -Id 1
-    .EXAMPLE
-    $`Patch = Get-OciPatches | Select-Object -First 1
 "@
 
-    if ($Cmdlet) {
-        Write-Output $OciExamples[$Cmdlet]
-    }
-    else {
-        ForEach ($Cmdlet in $OciExamples.Keys) {
-            Write-Output $OciExamples[$Cmdlet]
-        }
-    }
-}
+$OciExamples['Delete-OciUser'] = @"
+    .EXAMPLE
+    Delete-OciUser -id 1
+"@
+
+$OciExamples['Get-OciAcquisitionUnit'] = @"
+    .EXAMPLE
+    Get-OciAcquisitionUnit -id 1
+
+    id               : 1
+    self             : /rest/v1/admin/acquisitionUnits/1
+    name             : local
+    ip               : 192.168.222.138
+    status           : CONNECTED
+    isActive         : True
+    leaseContract    : 120000
+    nextLeaseRenewal : 2015-08-17T21:19:46+0200
+    lastReported     : 2015-08-17T21:17:41+0200
+"@
+
+$OciExamples['Get-OciAcquisitionUnits'] = @"
+    .EXAMPLE
+    Get-OciAcquisitionUnits
+
+    id               : 1
+    self             : /rest/v1/admin/acquisitionUnits/1
+    name             : local
+    ip               : 192.168.222.138
+    status           : CONNECTED
+    isActive         : True
+    leaseContract    : 120000
+    nextLeaseRenewal : 2015-08-17T21:18:46+0200
+    lastReported     : 2015-08-17T21:16:52+0200
+"@
+
+$OciExamples['Get-OciActivePatchByDatasource'] = @"
+    .EXAMPLE
+    Get-OciActivePatchByDatasource -id 1
+    .EXAMPLE
+    Get-OciDatasources | Get-OciActivePatchByDatasource
+"@
+
+$OciExamples['Get-OciActivePatchByDatasource'] = @"
+    .EXAMPLE
+    Get-OciActivePatchByDatasource -id 1
+    .EXAMPLE
+    Get-OciDatasources | Get-OciActivePatchByDatasource
+"@
+
+$OciExamples['Get-OciAnnotation'] = @"
+    .EXAMPLE
+    Get-OciAnnotation -id 4977
+
+    id                   : 4977
+    self                 : /rest/v1/assets/annotations/4977
+    name                 : Rack
+    type                 : TEXT
+    label                : Rack
+    isUserDefined        : False
+    enumValues           : {}
+    supportedObjectTypes : {Host, Switch, Storage}
+"@
 
 <#
 .EXAMPLE
@@ -749,6 +795,7 @@ function Get-OciCmdlets {
     $($Operation.Summary)
     .DESCRIPTION
     $($Operation.Notes)
+    $($OciExamples[$Name])
 $CmdletParametersDescription
 #>
 function Global:$Name {
@@ -765,7 +812,7 @@ $CmdletParameters
     Process {
         $`id = @(`$id)
         foreach (`$id in `$id) {
-            `$Uri = "$($BaseUri + $API.Path -replace "{id}","`$id")"
+            `$Uri = `$(`$CurrentOciServer.BaseUri) + "$($API.Path)" -replace "{id}","`$id"
  
            
             $`switchparameters=$switchparameters
@@ -816,9 +863,18 @@ $CmdletParameters
                 `$Result = ParseJsonString(`$Result.Trim())
             }
            
-            if (`$Result.history) {
-                if (`$Result.history[0].count -eq 2) {
-                    `$Result.history = `$Result.history | % { `$_[1] | Add-Member -MemberType NoteProperty -Name time -Value (`$_[0] | ConvertFrom-UnixDate) -PassThru }
+            if (`$Result.performance) {
+                if (`$Result.performance.history) {
+                    if (`$Result.performance.history[0].count -eq 2) {
+                        foreach (`$entry in `$Result.performance.history) {
+                            if ($`entry[1]) {
+                                `$entry = New-Object -TypeName PSCustomObject -Property (`$entry[1] | Add-Member -MemberType NoteProperty -Name Timestamp -Value (`$entry[0] | ConvertFrom-UnixDate) )
+                            }
+                            else {
+                                `$entry = `$null
+                            }
+                        }
+                    }
                 }
             }
        
@@ -834,7 +890,7 @@ $CmdletParameters
                     Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8
                 }
                 else {
-                    Invoke-Command [ScriptBlock]::Create($CmdletFunction)
+                    Invoke-Command -ScriptBlock ([ScriptBlock]::Create($CmdletFunction))
                 }
             }
         }
@@ -868,7 +924,7 @@ function Global:Search-Oci {
     
     Process {
         foreach (`$query in `$query) {
-            `$Uri = `$BaseUri + "/rest/v1/search?query=`$query"
+            `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/search?query=`$query"
  
             try {
                 `$Result = Invoke-RestMethod -Method Get -Uri `$Uri -Headers `$CurrentOciServer.Headers
@@ -895,6 +951,6 @@ function Global:Search-Oci {
         Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8
     }
     else {
-        Invoke-Command [ScriptBlock]::Create($CmdletFunction)
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($CmdletFunction))
     }
 }
