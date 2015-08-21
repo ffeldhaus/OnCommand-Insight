@@ -61,7 +61,12 @@ Copy-Item -Path "$src\*" `
           -Destination $dst `
           -Recurse
 
-Get-OciCmdlets -BaseURI "https://cbc-oci-01.muccbc.hq.netapp.com" -FilePath "$dst\OnCommand-Insight.psm1"
+
+# Import new OCI Cmdlets
+Import-Module "$src\OnCommand-Insight.psm1"
+$Credential = Get-Credential
+Connect-OciServer -Name "cbc-oci-01.muccbc.hq.netapp.com" -Credential $Credential -Insecure
+Get-OciCmdlets -FilePath "$dst\OnCommand-Insight.psm1"
 
 Copy-Item -Path "$scriptPath\..\README.md" `
           -Destination "$dst\README.txt"
@@ -77,7 +82,7 @@ Write-Host "Creating the release archive..."
 # Requires .NET 4.5
 [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.FileSystem") | Out-Null
 
-$zipFileName = Join-Path ([System.IO.Path]::GetDirectoryName($dst)) "$([System.IO.Path]::GetFileNameWithoutExtension($manifestFileName))-$ModuleVersion.zip"
+$zipFileName = Join-Path ([System.IO.Path]::GetDirectoryName($dst)) "$([System.IO.Path]::GetFileNameWithoutExtension($manifestFileName)).zip"
 
 # Overwrite the ZIP if it already already exists.
 if (Test-Path $zipFileName) {
@@ -100,6 +105,7 @@ if ($Release) {
     }
     try {
         git push 2> $null
+        git push --all 2> $null
         git push --tags 2> $null
     }
     catch {

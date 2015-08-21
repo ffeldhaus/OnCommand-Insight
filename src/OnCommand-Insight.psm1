@@ -302,14 +302,11 @@ function Get-OciCmdlets {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$True,
-                   Position=0,
-                   HelpMessage="Base URI of the OCI Server.")][String]$BaseURI,
         [parameter(Mandatory=$False,
-                   Position=1,
+                   Position=0,
                    HelpMessage="Path for filename to store Cmdlets in.")][String]$FilePath)
 
-    $DocumentationURI = $BaseURI + "/rest/v1/documentation/sections"
+    $DocumentationURI = $CurrentOciServer.BaseURI + "/rest/v1/documentation/sections"
     Write-Verbose "Retrieving REST API Documentation from $DocumentationURI"
     $Sections = Invoke-RestMethod -Uri $DocumentationURI -Headers $CurrentOciServer.Headers
  
