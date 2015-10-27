@@ -720,7 +720,7 @@ function Get-OciCmdlets {
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="objectType";Required=$True;Description="Object type of objects where annotations should be added (e.g. StoragePool or InternalVolume)";DataType="String";AllowMultiple=$False}
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="rawValue";Required=$True;Description="Value of Annotation";DataType="String";AllowMultiple=$False}
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="targets";Required=$True;Description="IDs of object where annotation should be added";DataType="String";AllowMultiple=$True}
-                        $body = '[ { `"objectType`": `"$objectType`",`"values`": [ { `"rawValue`": `"$rawValue`", `"targets`": [ $($targets -join ",") ] } ] } ]'
+                        $body = '[ { `"objectType`": `"$objectType`",`"values`": [ { `"rawValue`": `"$rawValue`", `"targets`": [ `"$($targets -join ",")`" ] } ] } ]'
                     }
                 }
                
