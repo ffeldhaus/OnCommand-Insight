@@ -35,11 +35,7 @@ function ParseJsonObject($jsonObj) {
     foreach ($key in $jsonObj.Keys) {
         $item = $jsonObj[$key]
         if ($item) {
-            if ($key -eq "history") {
-                $parsedItem = $item | % { ParseJsonObject(($_[1]+@{time=($_[0] | ConvertFrom-UnixDate)})) }
-            } else {
-                $parsedItem = ParseItem $item
-            }
+            $parsedItem = ParseItem $item
         } else {
             $parsedItem = $null
         }
@@ -207,8 +203,19 @@ function global:Connect-OciServer {
     $EncodedPassword = [System.Convert]::ToBase64String($EncodedAuthorization)
     $Headers = @{"Authorization"="Basic $($EncodedPassword)"}
  
+    # check if untrusted SSL certificates should be ignored
     if ($Insecure) {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    }
+
+    # check if proxy is used
+    $ProxyRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    $ProxySettings = Get-ItemProperty -Path $ProxyRegistry
+    if ($ProxySettings.ProxyEnable) {
+        Write-Warning "Proxy Server $($ProxySettings.ProxyServer) configured in Internet Explorer may be used to connect to the OCI server!"
+    }
+    if ($ProxySettings.AutoConfigURL) {
+        Write-Warning "Proxy Server defined in automatic proxy configuration script $($ProxySettings.AutoConfigURL) configured in Internet Explorer may be used to connect to the OCI server!"
     }
  
     if ($HTTPS) {
@@ -709,6 +716,12 @@ function Get-OciCmdlets {
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="Licenses";Required=$True;Description="String with License keys separated by ,";DataType="String";AllowMultiple=$False}
                         $body = '$licenses'
                     }
+                    'PUT /rest/v1/assets/annotations/{id}/values' {
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="objectType";Required=$True;Description="Object type of objects where annotations should be added (e.g. StoragePool or InternalVolume)";DataType="String";AllowMultiple=$False}
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="rawValue";Required=$True;Description="Value of Annotation";DataType="String";AllowMultiple=$False}
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="targets";Required=$True;Description="IDs of object where annotation should be added";DataType="String";AllowMultiple=$True}
+                        $body = '[ { `"objectType`": `"$objectType`",`"values`": [ { `"rawValue`": `"$rawValue`", `"targets`": [ $($targets -join ",") ] } ] } ]'
+                    }
                 }
                
                 foreach ($Parameter in $($operation.parameters)) {
@@ -842,6 +855,7 @@ $CmdletParameters
  
             try {
                 if ('$($Operation.httpMethod)' -match 'PUT|POST') {
+                    Write-Verbose "Body: $Body"
                     `$Result = Invoke-RestMethod -Method $($Operation.httpMethod) -Uri `$Uri -Headers `$CurrentOciServer.Headers -Body "$Body" -ContentType 'application/json'
                 }
                 else {
@@ -850,25 +864,78 @@ $CmdletParameters
             }
             catch {
                 `$Response = `$_.Exception.Response
-                `$Result = `$Response.GetResponseStream()
-                `$Reader = New-Object System.IO.StreamReader(`$Result)
-                `$responseBody = `$reader.ReadToEnd()
-                Write-Error "$($Operation.httpMethod) to `$Uri failed with response:``n`$responseBody"
+                if (`$Response) {
+                    `$Result = `$Response.GetResponseStream()
+                    `$Reader = New-Object System.IO.StreamReader(`$Result)
+                    `$responseBody = " with response:``n" + `$reader.ReadToEnd()
+                } 
+                Write-Error "$($Operation.httpMethod) to `$Uri failed`$responseBody"
             }
  
             if (`$Result.toString().Trim().startsWith('{') -or `$Result.toString().Trim().startsWith('[')) {
                 `$Result = ParseJsonString(`$Result.Trim())
             }
            
+            # check performance data
             if (`$Result.performance) {
+                # convert timestamps from unix to data format
+                if (`$Result.performance.accessed) {
+                    `$Result.performance.accessed.start = `$Result.performance.accessed.start | ConvertFrom-UnixDate
+                    `$Result.performance.accessed.end = `$Result.performance.accessed.end | ConvertFrom-UnixDate
+                }
+                if (`$Result.performance.iops) {
+                    `$Result.performance.iops.read.start = `$Result.performance.iops.read.start | ConvertFrom-UnixDate
+                    `$Result.performance.iops.read.end = `$Result.performance.iops.read.end | ConvertFrom-UnixDate
+                    `$Result.performance.iops.write.start = `$Result.performance.iops.write.start | ConvertFrom-UnixDate
+                    `$Result.performance.iops.write.end = `$Result.performance.iops.write.end | ConvertFrom-UnixDate
+                    `$Result.performance.iops.totalMax.start = `$Result.performance.iops.totalMax.start | ConvertFrom-UnixDate
+                    `$Result.performance.iops.totalMax.end = `$Result.performance.iops.totalMax.end | ConvertFrom-UnixDate
+                    `$Result.performance.iops.total.start = `$Result.performance.iops.total.start | ConvertFrom-UnixDate
+                    `$Result.performance.iops.total.end = `$Result.performance.iops.total.end | ConvertFrom-UnixDate
+                }
+                if (`$Result.performance.cacheHitRatio) {
+                    `$Result.performance.cacheHitRatio.read.start = `$Result.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
+                    `$Result.performance.cacheHitRatio.read.end = `$Result.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
+                    `$Result.performance.cacheHitRatio.write.start = `$Result.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
+                    `$Result.performance.cacheHitRatio.write.end = `$Result.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
+                    `$Result.performance.cacheHitRatio.total.start = `$Result.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
+                    `$Result.performance.cacheHitRatio.total.end = `$Result.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
+                }
+                if (`$Result.performance.latency) {
+                    `$Result.performance.latency.read.start = `$Result.performance.latency.read.start | ConvertFrom-UnixDate
+                    `$Result.performance.latency.read.end = `$Result.performance.latency.read.end | ConvertFrom-UnixDate
+                    `$Result.performance.latency.write.start = `$Result.performance.latency.write.start | ConvertFrom-UnixDate
+                    `$Result.performance.latency.write.end = `$Result.performance.latency.write.end | ConvertFrom-UnixDate
+                    `$Result.performance.latency.total.start = `$Result.performance.latency.total.start | ConvertFrom-UnixDate
+                    `$Result.performance.latency.total.end = `$Result.performance.latency.total.end | ConvertFrom-UnixDate
+                    `$Result.performance.latency.totalMax.start = `$Result.performance.latency.totalMax.start | ConvertFrom-UnixDate
+                    `$Result.performance.latency.totalMax.end = `$Result.performance.latency.totalMax.end | ConvertFrom-UnixDate
+                }
+                if (`$Result.performance.partialBlocksRatio.total) {
+                    `$Result.performance.partialBlocksRatio.total.start = `$Result.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
+                    `$Result.performance.partialBlocksRatio.total.end = `$Result.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
+                }
+                if (`$Result.performance.writePending.total) {
+                    `$Result.performance.writePending.total.start = `$Result.performance.writePending.total.start | ConvertFrom-UnixDate
+                    `$Result.performance.writePending.total.end = `$Result.performance.writePending.total.end | ConvertFrom-UnixDate
+                }
+                if (`$Result.performance.throughput) {
+                    `$Result.performance.throughput.read.start = `$Result.performance.throughput.read.start | ConvertFrom-UnixDate
+                    `$Result.performance.throughput.read.end = `$Result.performance.throughput.read.end | ConvertFrom-UnixDate
+                    `$Result.performance.throughput.write.start = `$Result.performance.throughput.write.start | ConvertFrom-UnixDate
+                    `$Result.performance.throughput.write.end = `$Result.performance.throughput.write.end | ConvertFrom-UnixDate
+                    `$Result.performance.throughput.totalMax.start = `$Result.performance.throughput.totalMax.start | ConvertFrom-UnixDate
+                    `$Result.performance.throughput.totalMax.end = `$Result.performance.throughput.totalMax.end | ConvertFrom-UnixDate
+                    `$Result.performance.throughput.total.start = `$Result.performance.throughput.total.start | ConvertFrom-UnixDate
+                    `$Result.performance.throughput.total.end = `$Result.performance.throughput.total.end | ConvertFrom-UnixDate
+                }
+
+                # check and convert historical performance data
                 if (`$Result.performance.history) {
                     if (`$Result.performance.history[0].count -eq 2) {
-                        foreach (`$entry in `$Result.performance.history) {
+                        `$Result.performance.history = foreach (`$entry in `$Result.performance.history) {
                             if ($`entry[1]) {
-                                `$entry = New-Object -TypeName PSCustomObject -Property (`$entry[1] | Add-Member -MemberType NoteProperty -Name Timestamp -Value (`$entry[0] | ConvertFrom-UnixDate) )
-                            }
-                            else {
-                                `$entry = `$null
+                                `$entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value (`$entry[0] | ConvertFrom-UnixDate) -PassThru
                             }
                         }
                     }
@@ -931,10 +998,12 @@ function Global:Search-Oci {
             }
             catch {
                 `$Response = `$_.Exception.Response
-                `$Result = `$Response.GetResponseStream()
-                `$Reader = New-Object System.IO.StreamReader(`$Result)
-                `$responseBody = `$reader.ReadToEnd()
-                Write-Error "GET to `$Uri failed with response:`n`$responseBody"
+                if (`$Response) {
+                    `$Result = `$Response.GetResponseStream()
+                    `$Reader = New-Object System.IO.StreamReader(`$Result)
+                    `$responseBody = " with response:``n" + `$reader.ReadToEnd()
+                } 
+                Write-Error "$($Operation.httpMethod) to `$Uri failed`$responseBody"
             }
        
             Write-Output `$Result.resultsByCategory
