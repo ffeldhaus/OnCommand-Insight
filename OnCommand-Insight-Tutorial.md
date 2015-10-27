@@ -117,3 +117,19 @@ Get-OciDatasources | % { Get-OciDatasourceDevices $_.id | Add-Member -MemberType
 
 Get-OciStorages | Get-OciVolumesByStorage | Get-OciVolume -Performance | % { New-Object -TypeName PSObject -Property @{Name=$_.Name;"Min total IOPS"=$_.performance.iops.total.min;"Max total IOPS"=$_.performance.iops.total.max; "Avg total IOPS"=$_.performance.iops.total.avg} } | ft -Wrap
 
+### Update annotation
+
+Retrieve a volume
+```powershell
+$Volume = Get-OciStorages | Get-OciVolumesByStorage | select -first 1
+```
+
+Show all annotations of the volume
+```powershell
+$Volume | Get-OciAnnotationsByVolume
+```
+
+Get the _note_ annotation and update the annotation value associated with the volume
+```powershell
+Get-OciAnnotations | ? { $_.name -eq "note" } | Update-OciAnnotationValues -objectType "Volume" -rawValue "Test" -targets $Volume.id
+```
