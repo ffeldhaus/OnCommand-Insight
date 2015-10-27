@@ -96,3 +96,24 @@ As the OCI Cmdlets support pipelining, the above statements can be combined into
 ```powershell
 Get-OciStorages | ? { $_.vendor -eq "NetApp" -and $_.family -eq "FAS" } | Select-Object -First 1 | Get-OciInternalVolumesByStorage
 ```
+
+## Examples
+
+### Retrieve all devices of all datasources
+
+To retrieve all devices of all datasources, first get a list of all datasources and then get the devices of all datasources
+```powershell
+$Datasources = Get-OciDatasources
+$Datasources | Get-OciDatasourceDevices
+```
+
+The following command combines getting the datasources and then getting their devices and also adds the datasource name to each device
+
+```powershell
+Get-OciDatasources | % { Get-OciDatasourceDevices $_.id | Add-Member -MemberType NoteProperty -Name Datasource -Value $_.Name -PassThru }
+```
+
+### Retrieve Performance data
+
+Get-OciStorages | Get-OciVolumesByStorage | Get-OciVolume -Performance | % { New-Object -TypeName PSObject -Property @{Name=$_.Name;"Min total IOPS"=$_.performance.iops.total.min;"Max total IOPS"=$_.performance.iops.total.max; "Avg total IOPS"=$_.performance.iops.total.avg} } | ft -Wrap
+
