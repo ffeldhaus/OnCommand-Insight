@@ -1012,6 +1012,51 @@ function Global:Search-Oci {
 }
 "@
 
+    # add Health Cmdlet
+    $CmdletFunction = @"
+<#
+    .SYNOPSIS
+    Retrieve OCI Server health status
+    .DESCRIPTION
+    Retrieve OCI Server health status
+#>
+function Global:Get-OciHealth {
+    [CmdletBinding()]
+
+    PARAM ()
+ 
+    Begin {
+        `$Result = `$null
+    }
+   
+    Process {
+        `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/admin/health"
+ 
+        try {
+            `$Result = Invoke-RestMethod -Method Get -Uri `$Uri -Headers `$CurrentOciServer.Headers
+            if (`$Result.toString().startsWith('{')) {
+                `$Result = ParseJsonString(`$Result)
+            }
+        }
+        catch {
+            `$Response = `$_.Exception.Response
+            if (`$Response) {
+                `$Result = `$Response.GetResponseStream()
+                `$Reader = New-Object System.IO.StreamReader(`$Result)
+                `$responseBody = " with response:``n" + `$reader.ReadToEnd()
+            } 
+            Write-Error "$($Operation.httpMethod) to `$Uri failed`$responseBody"
+        }
+
+        foreach (`$Item in `$Result) {
+            `$Item.time = `$Item.time | ConvertFrom-UnixDate
+        }
+       
+        Write-Output `$Result
+    }
+}
+"@
+
     Write-Debug "$CmdletFunction"
     if ($FilePath) {
         Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8

@@ -133,3 +133,9 @@ Get the _note_ annotation and update the annotation value associated with the vo
 ```powershell
 Get-OciAnnotations | ? { $_.name -eq "note" } | Update-OciAnnotationValues -objectType "Volume" -rawValue "Test" -targets $Volume.id
 ```
+
+### Retrieve OCI Server health status
+
+```powershell
+Get-OciHealth
+```
