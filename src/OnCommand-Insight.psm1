@@ -1,4 +1,6 @@
-﻿# Workaround to allow Powershell to accept untrusted certificates
+﻿Import-Module epplus.dll
+
+# Workaround to allow Powershell to accept untrusted certificates
 add-type @"
     using System.Net;
     using System.Security.Cryptography.X509Certificates;
@@ -81,6 +83,97 @@ function ConvertFrom-UnixDate {
     $input | % {
         $date = $CurrentOciServer.Timezone.ToLocalTime(([datetime]'1/1/1970').AddMilliseconds($_))
         Write-Output $date
+    }
+}
+
+<#
+.EXAMPLE
+Export-Excel
+#>
+function global:Export-Excel {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                   Position=0,
+                   HelpMessage="Input Object.",
+                   ValueFromPipeline=$True)][PSObject[]]$InputObject,
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   HelpMessage="Filename of the Excel file to be created or updated.")][String]$FileName,
+        [parameter(Mandatory=$True,
+                   Position=2,
+                   HelpMessage="The Worksheet name to be created or replaced")][String]$WorksheetName,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="Password to protect file with AES-256 encryption.")][String]$Password
+    )
+
+    Begin {
+        if ($FileName -notmatch '.xlsx') {
+            $FileName += '.xlsx'
+        } 
+
+        try {
+            if ($Password) {
+                $ExcelPackage = New-Object OfficeOpenXml.ExcelPackage -ArgumentList $FileName,$Password
+            }
+            else {
+                $ExcelPackage = New-Object OfficeOpenXml.ExcelPackage -ArgumentList $FileName
+            }
+        }
+        catch {
+            throw $_
+        }
+
+        # if worksheet already exists, delete it
+        if ($ExcelPackage.Workbook.Worksheets[$WorksheetName]) {
+            $ExcelPackage.Workbook.Worksheets.Delete($WorksheetName)
+        }
+
+        $Worksheet = $ExcelPackage.Workbook.Worksheets.Add($WorksheetName)
+
+        $Format = New-object -TypeName OfficeOpenXml.ExcelTextFormat -Property @{TextQualifier = '"'}
+        $Format.Delimiter = ";"
+        # use Text Qualifier if your CSV entries are quoted, e.g. "Cell1","Cell2"
+        $Format.TextQualifier = '"'
+        $Format.Encoding = [System.Text.Encoding]::UTF8
+        $Format.SkipLinesEnd = 1
+
+        $TableStyle = [OfficeOpenXml.Table.TableStyles]::Light9
+
+        $SetHeader = $True
+    }
+
+    Process {
+        if ($InputObject) {
+            # only add the header for the first object
+            if ($SetHeader) {
+                $CsvString += $InputObject | ConvertTo-Csv -Delimiter ';' -NoTypeInformation | Out-String
+                $SetHeader = $False
+            }
+            else {
+                $CsvString += $InputObject | ConvertTo-Csv -Delimiter ';' -NoTypeInformation | select -skip 1 | Out-String
+            }
+        }
+    }
+
+    End {
+        if ($CsvString) {
+            $null=$Worksheet.Cells.LoadFromText($CsvString,$Format,$TableStyle,$true)
+            $Worksheet.Cells[$Worksheet.Dimension.Address].AutoFitColumns()
+        }
+
+        if ($Password) {
+            $ExcelPackage.Encryption.Algorithm = [OfficeOpenXml.EncryptionAlgorithm]::AES256
+            $ExcelPackage.Encryption.IsEncrypted = $true
+            $ExcelPackage.SaveAs($FileName,$Password)
+        } else {
+            $ExcelPackage.Encryption.IsEncrypted = $false
+            $ExcelPackage.SaveAs($FileName)
+        }
+        $ExcelPackage.Dispose()
+        $ExcelPackage = $null
     }
 }
 
@@ -513,7 +606,7 @@ function Get-OciCmdlets {
                         $Name = "Get-OciInternalVolumePerformance"
                     }
                     'GET /rest/v1/assets/ports/{id}' {
-                        $Name = "Get-OciPorts"
+                        $Name = "Get-OciPort"
                     }
                     'DELETE /rest/v1/assets/ports/{id}/annotations' {
                         $Name = "Remove-OciAnnotationsByPort"
