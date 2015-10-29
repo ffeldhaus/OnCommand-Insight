@@ -7,12 +7,12 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $false)][String]$Author,
-    [Parameter(Mandatory = $false)][String]$Company,
+    [Parameter(Mandatory = $false)][String]$Author='Florian Feldhaus',
+    [Parameter(Mandatory = $false)][String]$Company='NetApp Deutschland GmbH',
     [Parameter(Mandatory = $false)][switch]$Major,
     [Parameter(Mandatory = $false)][switch]$Minor,
     [Parameter(Mandatory = $false)][switch]$Release,
-    [Parameter(Mandatory = $false)][string]$OciServer
+    [Parameter(Mandatory = $false)][string]$OciServer='localhost'
 
 )
 
@@ -52,7 +52,7 @@ New-ModuleManifest `
     -Description 'OnCommand-Insight Powershell Cmdlet.' `
     -PowerShellVersion '2.0' `
     -DotNetFrameworkVersion '3.5' `
-    -NestedModules (Get-ChildItem $src\*.psm1 | % { $_.Name }) `
+    -NestedModules (Get-ChildItem $src\*.psm1,$src\*.dll | % { $_.Name }) `
     -FormatsToProcess (Get-ChildItem $src\*.format.ps1xml | % { $_.Name })
 
 Write-Host "Copying file to release folder..."
@@ -101,6 +101,7 @@ Move-Item $zipFileName $dst -Force
 Write-Host "Release file $zipFileName successfully created!" -ForegroundColor Green
 
 if ($Release) { 
+    git pull
     git tag $ModuleVersion 
     if ($Major -or $Minor) { 
         git branch $ModuleVersion
