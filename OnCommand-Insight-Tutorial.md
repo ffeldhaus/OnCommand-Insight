@@ -139,3 +139,59 @@ Get-OciAnnotations | ? { $_.name -eq "note" } | Update-OciAnnotationValues -obje
 ```powershell
 Get-OciHealth
 ```
+
+### Export to CSV
+
+Retrieve OCI data (e.g. Storage Arrays)
+```powershell
+$Storages = Get-OciStorages
+```
+
+Specify filename, encording and delimiter for CSV file, then export to CSV
+```powershell
+$FileName = 'C:\tmp\test.csv'
+$Encoding = 'UTF8'
+$Delimiter = ';'
+$Storages | Export-Csv -NoTypeInformation -Path $FileName -Encoding $Encoding -Delimiter $Delimiter
+```
+
+### Export to Excel
+
+Retrieve OCI data (e.g. Storage Arrays)
+```powershell
+$Storages = Get-OciStorages
+```
+
+Specify filename, worksheet name and optionally a password to encrypt the Excel file. Then export to Excel
+```powershell
+$FileName = 'C:\tmp\test.xlsx'
+$WorksheetName = 'Storage Arrays'
+$Password = 'password'
+$Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
+```
+
+You can easily add another worksheet to an existing Excel file with
+```powershell
+$FileName = 'C:\tmp\test.xlsx'
+$WorksheetName = 'Additional worksheet'
+$Password = 'password'
+$Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
+```
+
+To create a single Excel file with all OCI objects, run the following commands
+```powershell
+$FileName = 'C:\tmp\test.xlsx'
+Get-OciAcquisitionUnits | Export-Excel -FileName $FileName -WorksheetName 'Acquisition Units'
+Get-OciAnnotations | Export-Excel -FileName $FileName -WorksheetName 'Annotations'
+Get-OciApplications | Export-Excel -FileName $FileName -WorksheetName 'Applications'
+Get-OciDatasources | Export-Excel -FileName $FileName -WorksheetName 'Datasources'
+Get-OciDatastores | Export-Excel -FileName $FileName -WorksheetName 'Datastores'
+Get-OciFabrics | Export-Excel -FileName $FileName -WorksheetName 'Fabrics'
+Get-OciHealth | Export-Excel -FileName $FileName -WorksheetName 'Health'
+Get-OciHosts | Export-Excel -FileName $FileName -WorksheetName 'Hosts'
+Get-OciPatches | Export-Excel -FileName $FileName -WorksheetName 'Patches'
+Get-OciStatus | Export-Excel -FileName $FileName -WorksheetName 'Status'
+Get-OciStorages | Export-Excel -FileName $FileName -WorksheetName 'Storages'
+Get-OciUsers | Export-Excel -FileName $FileName -WorksheetName 'Users'
+Get-OciVirtualMachines | Export-Excel -FileName $FileName -WorksheetName 'Virtual Machines'
+```
