@@ -55,3 +55,8 @@ This PowerShell Module is signed with a code signing certificate issued by the *
   11. A *Security Warning* will be displayed. Click *Yes* to install the certificate. The *Thumbprint (sha1)* should be **9FFB6F1A 06BC0245 27368705 2E7309D3 6FF2CFD0**
   12. Click twice on *OK* to close the dialogs.
 2. When importing the PowerShell module via `Import-Module OnCommand-Insigh` a dialog is displayed asking if the publisher *CN=florianf-Florian-Feldhaus, OU=Users, OU=EMEA, OU=Sites, DC=hq, DC=netapp, DC=com* should be trusted. Select *[A] Always run* to permanently trust this publisher.
+
+Attribution
+-----------
+
+The distribution of the OnCommand Insight PowerShell cmdlets include a version of the [EPPlus library[(http://epplus.codeplex.com/) to provide Excel Import/Export functionality. The library is [licensed under LGPL](http://epplus.codeplex.com/license). To provide your own version of the library, replace the epplus.dll file in the OnCommand Insight folder.
