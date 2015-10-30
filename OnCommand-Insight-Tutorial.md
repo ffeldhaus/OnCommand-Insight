@@ -164,7 +164,7 @@ $Storages = Get-OciStorages
 
 Specify filename, worksheet name and optionally a password to encrypt the Excel file. Then export to Excel
 ```powershell
-$FileName = '$HOME\Documents\test.xlsx'
+$FileName = "$HOME\Documents\OCItest.xlsx"
 $WorksheetName = 'Storage Arrays'
 $Password = 'password'
 $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
@@ -172,7 +172,7 @@ $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Pass
 
 You can easily add another worksheet to an existing Excel file with
 ```powershell
-$FileName = '$HOME\Documents\test.xlsx'
+$FileName = "$HOME\Documents\OCItest.xlsx"
 $WorksheetName = 'Additional worksheet'
 $Password = 'password'
 $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
@@ -180,7 +180,7 @@ $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Pass
 
 To create a single Excel file with many OCI objects, run the following commands
 ```powershell
-$FileName = '$HOME\Documents\Overview.xlsx'
+$FileName = "$HOME\Documents\OCIOverview.xlsx"
 Get-OciAcquisitionUnits | Export-Excel -FileName $FileName -WorksheetName 'Acquisition Units'
 Get-OciAnnotations | Export-Excel -FileName $FileName -WorksheetName 'Annotations'
 Get-OciApplications | Export-Excel -FileName $FileName -WorksheetName 'Applications'
@@ -208,7 +208,7 @@ The output created above is helpful, but the capacity values are not properly di
 
 To format the Storage Arrays, 
 ```powershell
-$FileName = '$HOME\Documents\Details.xlsx'
+$FileName = "$HOME\Documents\OCIDetails.xlsx"
 $Storages = foreach ($Storage in Get-OciStorages) {
 	$Ports = $Storage | Get-OciPortsByStorage
 	[PSCustomObject]@{Name=$Storage.name;IP=$Storage.ip;"Capacity (GB)"=[Math]::Round($Storage.capacity.total.value/1024);Vendor=$Storage.vendor;Family=$Storage.family;Model=$Storage.model;"Serial Number"=$Storage.serialNumber;"Microcode Version"=$Storage.microcodeVersion;"FC Port Count"=$Ports.count}
