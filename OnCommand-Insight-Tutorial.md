@@ -164,7 +164,7 @@ $Storages = Get-OciStorages
 
 Specify filename, worksheet name and optionally a password to encrypt the Excel file. Then export to Excel
 ```powershell
-$FileName = 'C:\tmp\test.xlsx'
+$FileName = '$HOME\Documents\test.xlsx'
 $WorksheetName = 'Storage Arrays'
 $Password = 'password'
 $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
@@ -172,26 +172,46 @@ $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Pass
 
 You can easily add another worksheet to an existing Excel file with
 ```powershell
-$FileName = 'C:\tmp\test.xlsx'
+$FileName = '$HOME\Documents\test.xlsx'
 $WorksheetName = 'Additional worksheet'
 $Password = 'password'
 $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
 ```
 
-To create a single Excel file with all OCI objects, run the following commands
+To create a single Excel file with many OCI objects, run the following commands
 ```powershell
-$FileName = 'C:\tmp\test.xlsx'
+$FileName = '$HOME\Documents\Overview.xlsx'
 Get-OciAcquisitionUnits | Export-Excel -FileName $FileName -WorksheetName 'Acquisition Units'
 Get-OciAnnotations | Export-Excel -FileName $FileName -WorksheetName 'Annotations'
 Get-OciApplications | Export-Excel -FileName $FileName -WorksheetName 'Applications'
 Get-OciDatasources | Export-Excel -FileName $FileName -WorksheetName 'Datasources'
 Get-OciDatastores | Export-Excel -FileName $FileName -WorksheetName 'Datastores'
+Get-OciStorages | Get-OciDisksByStorage | Export-Excel -FileName $FileName -WorksheetName 'Disks'
 Get-OciFabrics | Export-Excel -FileName $FileName -WorksheetName 'Fabrics'
+Get-OciHosts | Get-OciFileSystemsByHost | Export-Excel -FileName $FileName -WorksheetName 'Filesystems'
 Get-OciHealth | Export-Excel -FileName $FileName -WorksheetName 'Health'
 Get-OciHosts | Export-Excel -FileName $FileName -WorksheetName 'Hosts'
+Get-OciStorages | Get-OciInternalVolumesByStorage | Export-Excel -FileName $FileName -WorksheetName 'Internal Volumes'
+Get-OciLicenses | Export-Excel -FileName $FileName -WorksheetName 'Licenses'
 Get-OciPatches | Export-Excel -FileName $FileName -WorksheetName 'Patches'
-Get-OciStatus | Export-Excel -FileName $FileName -WorksheetName 'Status'
+Get-OciStorages | Get-OciStorageNodesByStorage | Export-Excel -FileName $FileName -WorksheetName 'Storage Nodes'
+Get-OciStorages | Get-OciStoragePoolsByStorage | Export-Excel -FileName $FileName -WorksheetName 'Storage Pools'
 Get-OciStorages | Export-Excel -FileName $FileName -WorksheetName 'Storages'
+Get-OciSwitches | Export-Excel -FileName $FileName -WorksheetName 'Switches'
 Get-OciUsers | Export-Excel -FileName $FileName -WorksheetName 'Users'
 Get-OciVirtualMachines | Export-Excel -FileName $FileName -WorksheetName 'Virtual Machines'
+Get-OciVirtualMachines | Get-OciVmdksByVirtualMachine | Export-Excel -FileName $FileName -WorksheetName 'VMDKs'
+Get-OciStorages | Get-OciVolumesByStorage | Export-Excel -FileName $FileName -WorksheetName 'Volumes'
+```
+
+The output created above is helpful, but the capacity values are not properly displayed in Excel and relations between objects are not shown. The following section will show how to create Excel views similar to the views available in the OnCommand Insight Java GUI.
+
+To format the Storage Arrays, 
+```powershell
+$FileName = '$HOME\Documents\Details.xlsx'
+$Storages = foreach ($Storage in Get-OciStorages) {
+	$Ports = $Storage | Get-OciPortsByStorage
+	[PSCustomObject]@{Name=$Storage.name;IP=$Storage.ip;"Capacity (GB)"=[Math]::Round($Storage.capacity.total.value/1024);Vendor=$Storage.vendor;Family=$Storage.family;Model=$Storage.model;"Serial Number"=$Storage.serialNumber;"Microcode Version"=$Storage.microcodeVersion;"FC Port Count"=$Ports.count}
+} 
+$Storages | Export-Excel -FileName $FileName -WorksheetName 'Storages'
 ```
