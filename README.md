@@ -59,4 +59,4 @@ This PowerShell Module is signed with a code signing certificate issued by the *
 Attribution
 -----------
 
-The distribution of the OnCommand Insight PowerShell cmdlets include a version of the [EPPlus library[(http://epplus.codeplex.com/) to provide Excel Import/Export functionality. The library is [licensed under LGPL](http://epplus.codeplex.com/license). To provide your own version of the library, replace the epplus.dll file in the OnCommand Insight folder.
+The distribution of the OnCommand Insight PowerShell cmdlets include a version of the [EPPlus library](http://epplus.codeplex.com/) to provide Excel Import/Export functionality. The library is [licensed under LGPL](http://epplus.codeplex.com/license). To provide your own version of the library, replace the epplus.dll file in the OnCommand Insight folder.
