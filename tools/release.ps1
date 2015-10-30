@@ -49,7 +49,7 @@ New-ModuleManifest `
     -Guid 3f827027-aba0-4ed9-af5d-05c88f0470cd `
     -Author $Author `
     -CompanyName $Company `
-    -Copyright "(c) $((Get-Date).Year) Your Company. All rights reserved."
+    -Copyright "(c) $((Get-Date).Year) Your Company. All rights reserved." `
     -Description 'OnCommand-Insight Powershell Cmdlet.' `
     -PowerShellVersion '3.0' `
     -DotNetFrameworkVersion '3.5' `
