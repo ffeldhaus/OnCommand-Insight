@@ -48,9 +48,9 @@ New-ModuleManifest `
     -Guid 3f827027-aba0-4ed9-af5d-05c88f0470cd `
     -Author $Author `
     -CompanyName $Company `
-    -Copyright '(c) $((Get-Date).Year) Your Company. All rights reserved.' `
+    -Copyright "(c) $((Get-Date).Year) Your Company. All rights reserved."
     -Description 'OnCommand-Insight Powershell Cmdlet.' `
-    -PowerShellVersion '2.0' `
+    -PowerShellVersion '3.0' `
     -DotNetFrameworkVersion '3.5' `
     -NestedModules (Get-ChildItem $src\*.psm1,$src\*.dll | % { $_.Name }) `
     -FormatsToProcess (Get-ChildItem $src\*.format.ps1xml | % { $_.Name })
