@@ -11,6 +11,7 @@ param(
     [Parameter(Mandatory = $false)][String]$Company='NetApp Deutschland GmbH',
     [Parameter(Mandatory = $false)][switch]$Major,
     [Parameter(Mandatory = $false)][switch]$Minor,
+    [Parameter(Mandatory = $false)][switch]$Build,
     [Parameter(Mandatory = $false)][switch]$Release,
     [Parameter(Mandatory = $false)][string]$OciServer='localhost'
 
