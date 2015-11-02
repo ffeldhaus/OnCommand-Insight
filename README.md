@@ -62,3 +62,38 @@ Attribution
 The distribution of the OnCommand Insight PowerShell cmdlets include a version of the [EPPlus library](http://epplus.codeplex.com/) to provide Excel Import/Export functionality. The library is [licensed under LGPL](http://epplus.codeplex.com/license). To provide your own version of the library, replace the epplus.dll file in the OnCommand Insight folder.
 
 Windows Credential Manager functionality based on [PowerShell Credentials Manager](https://gallery.technet.microsoft.com/scriptcenter/PowerShell-Credentials-d44c3cde).
+
+Changelog
+---------
+
+## Version 1.0.0
+
+- First release
+- Proper authentication handling
+- Included example for storage array performance history export to Excel.
+- Created proper PowerShell Module. Fixed pipeline support. Added Search-Oci Cmdlet.
+
+## Version 1.1.0
+
+- Fixed naming of Cmdlets and fixed several issues. Most Cmdlets are tested and should work.
+- Lots of minor bug fixes. Improved Module generation. Added lots of examples.
+
+## Version 1.2.0
+
+- Release 1.2.0 Lots of bug fixes. Improved Performance retrieval and annotation setting / updating.
+
+## Version 1.3.0
+
+Added OCI Server health status retrieval.
+
+## Version 1.4.0
+
+Added Excel export functionality and examples in tutorial.
+
+## Version 1.4.1
+
+Fixed some issues with Excel functionality
+
+## Version 1.5.0
+
+Added adding and retrieving credentials from the Windows Credential Manager
