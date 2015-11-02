@@ -248,22 +248,47 @@ To format the Internal Volumes, the following commands can be used
 ```powershell
 $FileName = "$HOME\Documents\OCIDetails.xlsx"
 $InternalVolumes = foreach ($Storage in Get-OciStorages) {
-	foreach ($InternalVolume in ($Storage | Get-OciInternalVolumesByStorage -Storage -StoragePool -StorageNodes -Datastores')) {
+	foreach ($InternalVolume in ($Storage | Get-OciInternalVolumesByStorage -storage -performance -storagePool -volumes -storageNodes -Datastores')) {
 		[PSCustomObject]@{	Name=$InternalVolume.name;
 							Storage=$InternalVolume.storage.name;
-							"SVM/vFiler"=$InternalVolume.virtualStorage;
+							'SVM/vFiler'=$InternalVolume.virtualStorage;
 							Nodes=$InternalVolume.storageNodes.name -join ',';
-							"HA Partner"='';
-							"Capacity (GB)"=$InternalVolume.capacity.total.value;
-							"RAW Capacity (GB)"=$InternalVolume.capacity.rawToUsableRatio*$InternalVolume.capacity.total.value;
-							"Used Capacity (GB)"=$InternalVolume.capacity.used.value;
-							"Used Capacity (%)"=[Math]::Round($InternalVolume.capacity.used.value/$InternalVolume.capacity.total.value*100);
-							"Consumed Capacity (GB)"=$(if ($InternalVolume.capacity.isThinProvisioned) { $InternalVolume.capacity.total.value } else { $InternalVolume.capacity.used.value});
-							"Storage Pool"=$InternalVolume.storagePool.name;
+							'HA Partner'='not available via API';
+							'Capacity (GB)'=$InternalVolume.capacity.total.value;
+							'RAW Capacity (GB)'=$InternalVolume.capacity.rawToUsableRatio*$InternalVolume.capacity.total.value;
+							'Used Capacity (GB)'=$InternalVolume.capacity.used.value;
+							'Used Capacity (%)'=[Math]::Round($InternalVolume.capacity.used.value/$InternalVolume.capacity.total.value*100);
+							'Consumed Capacity (GB)'=$(if ($InternalVolume.capacity.isThinProvisioned) { $InternalVolume.capacity.total.value } else { $InternalVolume.capacity.used.value});
+							'Storage Pool'=$InternalVolume.storagePool.name;
 							Type=$InternalVolume.type;
-							FlashPool=
-							"Thin Provisioned"=$InternalVolume.capacity.isThinProvisioned;
-							Datastore=$InternalVolume.dataStores.name -join ','}
+							'Flash Pool'=$InternalVolume.storagePool.usesFlashPool;
+							'Thin Provisioned'=$InternalVolume.capacity.isThinProvisioned;
+							'Volume Count'=$InternalVolume.volumes.count;
+							'Share Count'='not available via API';
+							Datastore=$InternalVolume.dataStores.name -join ',';
+							'Storage Guarantee'=$InternalVolume.spaceGuarantee;
+							'Deduplication Savings'=$InternalVolume.dedupeSavings.value;
+							'Clone Source'='not available via API';
+							'Clone Shared Capacity (GB)'='not available via API';
+							'Replication Technology'='not available via API';
+							'Replication Mode'='not available via API';
+							'Replica Source Storage'='not available via API';
+							'Replica Source Internal Volume'=$InternalVolume.name;
+							'Status'=$InternalVolume.status;
+							'Snapshot Reserve (GB)'='not available via API';
+							'Snapshot Used (%)'='not available via API';
+							'Snapshot Overflow (GB)='not available via API';
+							'Snapstots Count'='not available via API';
+							'Last Snapshot'='not available via API';
+							'Disk Type'='not available via API';
+							'Disk Size'='not available via API';
+							'Disk Speed (RPM)'='not available via API';
+							'Application'=$InternalVolume.applications.name -join ',';
+							'Application Priority'=$InternalVolume.applications.priority -join ',';
+							'Tenant'=$InternalVolume.applications.businessEntity.tenant -join ',';
+							'Line of Business'=$InternalVolume.applications.businessEntity.lob -join ',';
+							'Business Unit'=$InternalVolume.applications.businessEntity.businessUnit -join ',';
+							'Project'=$InternalVolume.applications.businessEntity.project -join ',';}
 	}
 } 
 $Storages | Export-Excel -FileName $FileName -WorksheetName 'Internal Volumes'
