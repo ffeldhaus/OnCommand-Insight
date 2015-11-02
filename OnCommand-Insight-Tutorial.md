@@ -97,6 +97,21 @@ As the OCI Cmdlets support pipelining, the above statements can be combined into
 Get-OciStorages | ? { $_.vendor -eq "NetApp" -and $_.family -eq "FAS" } | Select-Object -First 1 | Get-OciInternalVolumesByStorage
 ```
 
+## Managing OCI Credentials
+
+The OCI PowerShell Cmdlets allow to securely store credentials in and retrieve credentials from the Windows Credential Manager. 
+
+To add a credential for an OCI server use the following command
+```powershell
+$ServerName = 'localhost'
+Add-OciCredential -Name $ServerName -Credential (Get-Credential)
+```
+
+After a credential has been added, it is not necessary to supply the credential when connecting to the server
+```powershell
+Connect-OciServer -Name $ServerName
+```
+
 ## Examples
 
 ### Retrieve all devices of all datasources
