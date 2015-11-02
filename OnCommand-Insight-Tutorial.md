@@ -117,6 +117,18 @@ Get-OciDatasources | % { Get-OciDatasourceDevices $_.id | Add-Member -MemberType
 
 Get-OciStorages | Get-OciVolumesByStorage | Get-OciVolume -Performance | % { New-Object -TypeName PSObject -Property @{Name=$_.Name;"Min total IOPS"=$_.performance.iops.total.min;"Max total IOPS"=$_.performance.iops.total.max; "Avg total IOPS"=$_.performance.iops.total.avg} } | ft -Wrap
 
+### Get related objects
+
+The OCI API allows to get related objects. E.g. for the internal volume it is possible to get related storage, performance, dataStores, computeResources, storagePool, volumes, storageNodes, applications, annotations, replicaSources, performancehistory. The related objects can be retrieved by specifying paramter switches. These can be shown with get-help:
+```powershell
+get-help Get-OciInternalVolume -Detailed
+```
+
+To retrieve all related objects for e.g. internal volumes use
+```powershell
+Get-Storages | Get-OciInternalVolumesByStorage | Select -first 1 | Get-OciInternalVolume -storage -performance -dataStores -computeResources -storagePool -volumes -storageNodes -applications -annotations -replicaSources -performancehistory
+```
+
 ### Update annotation
 
 Retrieve a volume
@@ -138,6 +150,15 @@ Get-OciAnnotations | ? { $_.name -eq "note" } | Update-OciAnnotationValues -obje
 
 ```powershell
 Get-OciHealth
+```
+
+### Show Information with Grid-View
+
+An easy way to show tabular data and to filter columns is included in PowerShell with the Grid-View.
+
+To show output in the Grid-View use
+```powershell
+Get-Storages | Out-Gridview -Title 'Storages'
 ```
 
 ### Export to CSV
@@ -206,12 +227,44 @@ Get-OciStorages | Get-OciVolumesByStorage | Export-Excel -FileName $FileName -Wo
 
 The output created above is helpful, but the capacity values are not properly displayed in Excel and relations between objects are not shown. The following section will show how to create Excel views similar to the views available in the OnCommand Insight Java GUI.
 
-To format the Storage Arrays, 
+To format the Storage Arrays the following commands can be used
 ```powershell
 $FileName = "$HOME\Documents\OCIDetails.xlsx"
 $Storages = foreach ($Storage in Get-OciStorages) {
 	$Ports = $Storage | Get-OciPortsByStorage
-	[PSCustomObject]@{Name=$Storage.name;IP=$Storage.ip;"Capacity (GB)"=[Math]::Round($Storage.capacity.total.value/1024);Vendor=$Storage.vendor;Family=$Storage.family;Model=$Storage.model;"Serial Number"=$Storage.serialNumber;"Microcode Version"=$Storage.microcodeVersion;"FC Port Count"=$Ports.count}
+	[PSCustomObject]@{	Name=$Storage.name;
+						IP=$Storage.ip;
+						"Capacity (GB)"=[Math]::Round($Storage.capacity.total.value/1024);
+						Vendor=$Storage.vendor;
+						Family=$Storage.family;Model=$Storage.model;
+						"Serial Number"=$Storage.serialNumber;
+						"Microcode Version"=$Storage.microcodeVersion;
+						"FC Port Count"=$Ports.count}
 } 
 $Storages | Export-Excel -FileName $FileName -WorksheetName 'Storages'
+```
+
+To format the Internal Volumes, the following commands can be used
+```powershell
+$FileName = "$HOME\Documents\OCIDetails.xlsx"
+$InternalVolumes = foreach ($Storage in Get-OciStorages) {
+	foreach ($InternalVolume in ($Storage | Get-OciInternalVolumesByStorage -Storage -StoragePool -StorageNodes -Datastores')) {
+		[PSCustomObject]@{	Name=$InternalVolume.name;
+							Storage=$InternalVolume.storage.name;
+							"SVM/vFiler"=$InternalVolume.virtualStorage;
+							Nodes=$InternalVolume.storageNodes.name -join ',';
+							"HA Partner"='';
+							"Capacity (GB)"=$InternalVolume.capacity.total.value;
+							"RAW Capacity (GB)"=$InternalVolume.capacity.rawToUsableRatio*$InternalVolume.capacity.total.value;
+							"Used Capacity (GB)"=$InternalVolume.capacity.used.value;
+							"Used Capacity (%)"=[Math]::Round($InternalVolume.capacity.used.value/$InternalVolume.capacity.total.value*100);
+							"Consumed Capacity (GB)"=$(if ($InternalVolume.capacity.isThinProvisioned) { $InternalVolume.capacity.total.value } else { $InternalVolume.capacity.used.value});
+							"Storage Pool"=$InternalVolume.storagePool.name;
+							Type=$InternalVolume.type;
+							FlashPool=
+							"Thin Provisioned"=$InternalVolume.capacity.isThinProvisioned;
+							Datastore=$InternalVolume.dataStores.name -join ','}
+	}
+} 
+$Storages | Export-Excel -FileName $FileName -WorksheetName 'Internal Volumes'
 ```

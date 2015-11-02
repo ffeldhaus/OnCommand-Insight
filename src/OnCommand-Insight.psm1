@@ -854,41 +854,50 @@ function Get-OciCmdlets {
                     $Position += 1
                 }
  
-                $properties = ($Section.models.$($Operation.responseClass)).properties.psobject.Properties.value
-                if ($properties | ? { $_.description -eq "performance" }) {
-                    $properties += New-Object -TypeName PSCustomObject -Property @{type="List";description="Performance History";expands="true";items=@{type="PerformanceHistory"}}
-                }
+                $properties = ($Section.models.$($Operation.responseClass)).properties.psobject.Properties
  
+                # Add expand property for performance history as it is not included in the properties list
+                if ($properties.name -match 'performance') {
+                    $properties += New-Object -TypeName PSCustomObject -Property @{Name='performancehistory';value=@{description='Performance History';expands='true'}}
+                }
+
                 foreach ($model in $properties) {
-                    if ($model.expands -eq 'true') {
-                        if ($model.type -eq 'List' -and -not $model.items.type -eq "PerformanceHistory") {
-                            $Model | Add-Member -MemberType NoteProperty -Name Name -Value (($model.items.type -replace ' ','') + 's') -Force
-                        }
-                        else {
-                            if ($model.description -eq 'host') {
-                                $model.description = 'hostswitch'
-                            }
-                            $Model | Add-Member -MemberType NoteProperty -Name Name -Value ($model.description -replace ' ','') -Force
-                        }
+                    if ($model.value.expands -eq 'true') {
                         if ($Position -gt 0) {
                             $CmdletParameters += ",`n"
                             $CmdletParametersDescription += "`n"
                         }
+
+                        # In PowerShell the host parameter is a reserverd parameter, so we have to replace it with hostswitch
+                        if ($mode.name -eq 'host') {
+                            $ModelName = 'hostswitch'
+                        }
+                        else {
+                            $ModelName = $model.Name
+                        }
+
+                        if ($model.value.type -eq 'List') {
+                            $HelpMessage = "Return list of related $($model.value.description)"
+                        }
+                        else {
+                            $HelpMessage = "Return related $($model.value.description)"
+                        }
+
                         $CmdletParameters += @"
         [parameter(Mandatory=`$False,
                     Position=$Position,
-                    HelpMessage="$($model.description)")][Switch]`$$($Model.Name)
+                    HelpMessage="$HelpMessage")][Switch]`$$($ModelName)
 "@
                     $CmdletParametersDescription += @"
-        .PARAMETER $($Model.Name)
-        $($model.Description)
+        .PARAMETER $($ModelName)
+        $HelpMessage
 "@
                
                         $Position += 1
                     }
                 }
  
-                $switchparameters=$properties | ? { $_.Name } | % { $_.Name }
+                $switchparameters=$properties | ? { $_.Value.expands -eq 'true' } | % { $_.Name }
                 $switchparameters="@(`"" + ($switchparameters -join "`",`"") + "`")"
  
                 Write-Verbose "Generating Cmdlet $Name for $($API.Path)"
@@ -922,10 +931,10 @@ $CmdletParameters
             foreach (`$parameter in `$switchparameters) {
                 if ((Get-Variable `$parameter).Value) {
                     if (`$expand) {
-                        `$expand += ",`$(`$parameter.toLower() -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                        `$expand += ",`$(`$parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
                     }
                     else {
-                        `$expand = `$(`$parameter.toLower() -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                        `$expand = `$(`$parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
                     }
                 }
             }
