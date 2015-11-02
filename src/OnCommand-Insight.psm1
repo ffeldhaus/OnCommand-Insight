@@ -1,4 +1,5 @@
-﻿Import-Module epplus.dll
+﻿Import-Module $PSScriptRoot\epplus
+. $PSScriptRoot\CredentialManager.ps1
 
 # Workaround to allow Powershell to accept untrusted certificates
 add-type @"
@@ -18,6 +19,65 @@ Add-Type -AssemblyName System.Web.Extensions
 $global:javaScriptSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
 $global:javaScriptSerializer.MaxJsonLength = [System.Int32]::MaxValue
 $global:javaScriptSerializer.RecursionLimit = 99
+
+# functions to add and get credentials from the Windows Credential Manager
+function Add-OciCredential {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                   Position=0,
+                   HelpMessage="The name of the OCI Server. This value may also be a string representation of an IP address. If not an address, the name must be resolvable to an address.")][String]$Name,
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   HelpMessage="A System.Management.Automation.PSCredential object containing the credentials needed to log into the OCI server.")][System.Management.Automation.PSCredential]$Credential
+    )
+
+    $null = Add-WindowsCredential -Target $Name -UserName $Credential.UserName -Password ($Credential.Password | ConvertFrom-SecureString) -Comment 'OnCommand-Insight'
+}
+
+function Get-OciCredential {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                   Position=0,
+                   HelpMessage="The name of the OCI Server. This value may also be a string representation of an IP address. If not an address, the name must be resolvable to an address.")][String]$Name
+    )
+
+    $WindowsCredential = Get-WindowsCredential -Target $Name
+    if ($WindowsCredential) {
+        $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList @($WindowsCredential.UserName,($WindowsCredential.CredentialBlob | ConvertTo-SecureString))
+        [PSCustomObject]@{Name=($WindowsCredential.TargetName -replace '.*target=','');Credential=$Credential}
+    }
+}
+
+function Get-OciCredentials {
+    [CmdletBinding()]
+
+    PARAM ()
+ 
+    $WindowsCredentials = Get-WindowsCredentials | ? { $_.Comment -eq 'OnCommand-Insight' }
+
+    foreach ($WindowsCredential in $WindowsCredentials) {
+        if ($WindowsCredential) {
+            $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList @($WindowsCredential.UserName,($WindowsCredential.CredentialBlob | ConvertTo-SecureString))
+            [PSCustomObject]@{Name=($WindowsCredential.TargetName -replace '.*target=','');Credential=$Credential}
+        }
+    }
+}
+
+function Remove-OciCredential {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                   Position=0,
+                   HelpMessage="The name of the OCI Server. This value may also be a string representation of an IP address. If not an address, the name must be resolvable to an address.")][String]$Name
+    )
+
+    $null = Remove-WindowsCredential -Target $Name
+}
  
 # Functions necessary to parse JSON output from .NET serializer to PowerShell Objects
 function ParseItem($jsonItem) {
@@ -272,7 +332,7 @@ function global:Connect-OciServer {
         [parameter(Mandatory=$True,
                    Position=0,
                    HelpMessage="The name of the OCI Server. This value may also be a string representation of an IP address. If not an address, the name must be resolvable to an address.")][String]$Name,
-        [parameter(Mandatory=$True,
+        [parameter(Mandatory=$False,
                    Position=1,
                    HelpMessage="A System.Management.Automation.PSCredential object containing the credentials needed to log into the OCI server.")][System.Management.Automation.PSCredential]$Credential,
         [parameter(Mandatory=$False,
@@ -288,6 +348,13 @@ function global:Connect-OciServer {
                    Mandatory=$False,
                    HelpMessage="Specify -Transient to not set the global variable `$CurrentOciServer.")][Switch]$Transient
     )
+
+    if (!$Credential) {
+        $Credential = Get-OciCredential -Name $Name | select -ExpandProperty Credential
+        if (!$Credential) {
+            throw "No Credentials supplied and $Name not in list of known OCI Servers"
+        }
+    }
  
     # Issue with jBoss see http://alihamdar.com/2010/06/19/expect-100-continue/
     [System.Net.ServicePointManager]::Expect100Continue = $false
