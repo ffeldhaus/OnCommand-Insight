@@ -68,7 +68,6 @@ Copy-Item -Path "$src\*" `
 Import-Module "$src\OnCommand-Insight.psm1"
 if (!$OciServer) { $OciServer = "cbc-oci-01.muccbc.hq.netapp.com" }
 Write-Host "Connecting to $OciServer"
-$Credential = Get-Credential
 Connect-OciServer -Name $OciServer -Credential $Credential -Insecure
 Get-OciCmdlets -FilePath "$dst\OnCommand-Insight.psm1"
 
