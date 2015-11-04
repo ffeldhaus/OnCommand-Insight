@@ -663,7 +663,7 @@ function Get-OciCmdlets {
                     'DELETE /rest/v1/assets/internalVolumes/{id}/annotations' {
                         $Name = "Remove-OciAnnotationsByInternalVolume"
                     }
-                   'GET /rest/v1/assets/internalVolumes/{id}/annotations' {
+                    'GET /rest/v1/assets/internalVolumes/{id}/annotations' {
                         $Name = "Get-OciAnnotationsByInternalVolume"
                     }
                     'PUT /rest/v1/assets/internalVolumes/{id}/annotations' {
@@ -921,7 +921,8 @@ function Get-OciCmdlets {
                     $Position += 1
                 }
  
-                $properties = ($Section.models.$($Operation.responseClass)).properties.psobject.Properties
+                $responseClass = $Operation.responseClass -replace 'List\[(.*)\]','$1'
+                $properties = ($Section.models.$responseClass).properties.psobject.Properties
  
                 # Add expand property for performance history as it is not included in the properties list
                 if ($properties.name -match 'performance') {
@@ -1046,65 +1047,67 @@ $CmdletParameters
             }
            
             # check performance data
-            if (`$Result.performance) {
-                # convert timestamps from unix to data format
-                if (`$Result.performance.accessed) {
-                    `$Result.performance.accessed.start = `$Result.performance.accessed.start | ConvertFrom-UnixDate
-                    `$Result.performance.accessed.end = `$Result.performance.accessed.end | ConvertFrom-UnixDate
-                }
-                if (`$Result.performance.iops) {
-                    `$Result.performance.iops.read.start = `$Result.performance.iops.read.start | ConvertFrom-UnixDate
-                    `$Result.performance.iops.read.end = `$Result.performance.iops.read.end | ConvertFrom-UnixDate
-                    `$Result.performance.iops.write.start = `$Result.performance.iops.write.start | ConvertFrom-UnixDate
-                    `$Result.performance.iops.write.end = `$Result.performance.iops.write.end | ConvertFrom-UnixDate
-                    `$Result.performance.iops.totalMax.start = `$Result.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                    `$Result.performance.iops.totalMax.end = `$Result.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                    `$Result.performance.iops.total.start = `$Result.performance.iops.total.start | ConvertFrom-UnixDate
-                    `$Result.performance.iops.total.end = `$Result.performance.iops.total.end | ConvertFrom-UnixDate
-                }
-                if (`$Result.performance.cacheHitRatio) {
-                    `$Result.performance.cacheHitRatio.read.start = `$Result.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                    `$Result.performance.cacheHitRatio.read.end = `$Result.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                    `$Result.performance.cacheHitRatio.write.start = `$Result.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                    `$Result.performance.cacheHitRatio.write.end = `$Result.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                    `$Result.performance.cacheHitRatio.total.start = `$Result.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                    `$Result.performance.cacheHitRatio.total.end = `$Result.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                }
-                if (`$Result.performance.latency) {
-                    `$Result.performance.latency.read.start = `$Result.performance.latency.read.start | ConvertFrom-UnixDate
-                    `$Result.performance.latency.read.end = `$Result.performance.latency.read.end | ConvertFrom-UnixDate
-                    `$Result.performance.latency.write.start = `$Result.performance.latency.write.start | ConvertFrom-UnixDate
-                    `$Result.performance.latency.write.end = `$Result.performance.latency.write.end | ConvertFrom-UnixDate
-                    `$Result.performance.latency.total.start = `$Result.performance.latency.total.start | ConvertFrom-UnixDate
-                    `$Result.performance.latency.total.end = `$Result.performance.latency.total.end | ConvertFrom-UnixDate
-                    `$Result.performance.latency.totalMax.start = `$Result.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                    `$Result.performance.latency.totalMax.end = `$Result.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                }
-                if (`$Result.performance.partialBlocksRatio.total) {
-                    `$Result.performance.partialBlocksRatio.total.start = `$Result.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                    `$Result.performance.partialBlocksRatio.total.end = `$Result.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                }
-                if (`$Result.performance.writePending.total) {
-                    `$Result.performance.writePending.total.start = `$Result.performance.writePending.total.start | ConvertFrom-UnixDate
-                    `$Result.performance.writePending.total.end = `$Result.performance.writePending.total.end | ConvertFrom-UnixDate
-                }
-                if (`$Result.performance.throughput) {
-                    `$Result.performance.throughput.read.start = `$Result.performance.throughput.read.start | ConvertFrom-UnixDate
-                    `$Result.performance.throughput.read.end = `$Result.performance.throughput.read.end | ConvertFrom-UnixDate
-                    `$Result.performance.throughput.write.start = `$Result.performance.throughput.write.start | ConvertFrom-UnixDate
-                    `$Result.performance.throughput.write.end = `$Result.performance.throughput.write.end | ConvertFrom-UnixDate
-                    `$Result.performance.throughput.totalMax.start = `$Result.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                    `$Result.performance.throughput.totalMax.end = `$Result.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                    `$Result.performance.throughput.total.start = `$Result.performance.throughput.total.start | ConvertFrom-UnixDate
-                    `$Result.performance.throughput.total.end = `$Result.performance.throughput.total.end | ConvertFrom-UnixDate
-                }
+            foreach (`$Object in `$Result) {
+                if (`$Object.performance) {
+                    # convert timestamps from unix to data format
+                    if (`$Object.performance.accessed) {
+                        `$Object.performance.accessed.start = `$Object.performance.accessed.start | ConvertFrom-UnixDate
+                        `$Object.performance.accessed.end = `$Object.performance.accessed.end | ConvertFrom-UnixDate
+                    }
+                    if (`$Object.performance.iops) {
+                        `$Object.performance.iops.read.start = `$Object.performance.iops.read.start | ConvertFrom-UnixDate
+                        `$Object.performance.iops.read.end = `$Object.performance.iops.read.end | ConvertFrom-UnixDate
+                        `$Object.performance.iops.write.start = `$Object.performance.iops.write.start | ConvertFrom-UnixDate
+                        `$Object.performance.iops.write.end = `$Object.performance.iops.write.end | ConvertFrom-UnixDate
+                        `$Object.performance.iops.totalMax.start = `$Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
+                        `$Object.performance.iops.totalMax.end = `$Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
+                        `$Object.performance.iops.total.start = `$Object.performance.iops.total.start | ConvertFrom-UnixDate
+                        `$Object.performance.iops.total.end = `$Object.performance.iops.total.end | ConvertFrom-UnixDate
+                    }
+                    if (`$Object.performance.cacheHitRatio) {
+                        `$Object.performance.cacheHitRatio.read.start = `$Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
+                        `$Object.performance.cacheHitRatio.read.end = `$Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
+                        `$Object.performance.cacheHitRatio.write.start = `$Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
+                        `$Object.performance.cacheHitRatio.write.end = `$Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
+                        `$Object.performance.cacheHitRatio.total.start = `$Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
+                        `$Object.performance.cacheHitRatio.total.end = `$Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
+                    }
+                    if (`$Object.performance.latency) {
+                        `$Object.performance.latency.read.start = `$Object.performance.latency.read.start | ConvertFrom-UnixDate
+                        `$Object.performance.latency.read.end = `$Object.performance.latency.read.end | ConvertFrom-UnixDate
+                        `$Object.performance.latency.write.start = `$Object.performance.latency.write.start | ConvertFrom-UnixDate
+                        `$Object.performance.latency.write.end = `$Object.performance.latency.write.end | ConvertFrom-UnixDate
+                        `$Object.performance.latency.total.start = `$Object.performance.latency.total.start | ConvertFrom-UnixDate
+                        `$Object.performance.latency.total.end = `$Object.performance.latency.total.end | ConvertFrom-UnixDate
+                        `$Object.performance.latency.totalMax.start = `$Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
+                        `$Object.performance.latency.totalMax.end = `$Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
+                    }
+                    if (`$Object.performance.partialBlocksRatio.total) {
+                        `$Object.performance.partialBlocksRatio.total.start = `$Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
+                        `$Object.performance.partialBlocksRatio.total.end = `$Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
+                    }
+                    if (`$Object.performance.writePending.total) {
+                        `$Object.performance.writePending.total.start = `$Object.performance.writePending.total.start | ConvertFrom-UnixDate
+                        `$Object.performance.writePending.total.end = `$Object.performance.writePending.total.end | ConvertFrom-UnixDate
+                    }
+                    if (`$Object.performance.throughput) {
+                        `$Object.performance.throughput.read.start = `$Object.performance.throughput.read.start | ConvertFrom-UnixDate
+                        `$Object.performance.throughput.read.end = `$Object.performance.throughput.read.end | ConvertFrom-UnixDate
+                        `$Object.performance.throughput.write.start = `$Object.performance.throughput.write.start | ConvertFrom-UnixDate
+                        `$Object.performance.throughput.write.end = `$Object.performance.throughput.write.end | ConvertFrom-UnixDate
+                        `$Object.performance.throughput.totalMax.start = `$Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
+                        `$Object.performance.throughput.totalMax.end = `$Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
+                        `$Object.performance.throughput.total.start = `$Object.performance.throughput.total.start | ConvertFrom-UnixDate
+                        `$Object.performance.throughput.total.end = `$Object.performance.throughput.total.end | ConvertFrom-UnixDate
+                    }
 
-                # check and convert historical performance data
-                if (`$Result.performance.history) {
-                    if (`$Result.performance.history[0].count -eq 2) {
-                        `$Result.performance.history = foreach (`$entry in `$Result.performance.history) {
-                            if ($`entry[1]) {
-                                `$entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value (`$entry[0] | ConvertFrom-UnixDate) -PassThru
+                    # check and convert historical performance data
+                    if (`$Object.performance.history) {
+                        if (`$Object.performance.history[0].count -eq 2) {
+                            `$Object.performance.history = foreach (`$entry in `$Object.performance.history) {
+                                if ($`entry[1]) {
+                                    `$entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value (`$entry[0] | ConvertFrom-UnixDate) -PassThru
+                                }
                             }
                         }
                     }
