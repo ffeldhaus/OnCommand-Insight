@@ -8,6 +8,8 @@ Installation
 
 Extract OnCommand-Insight.zip either to your preferred PowerShell Module location (e.g. `$HOME\WindowsPowershell\Documents\WindowsPowerShell\Modules` or `C:\Windows\System32\WindowsPowerShell\v1.0\Modules`).
 
+The OnComamnd Insight PowerShell Cmdlets require at least PowerShell 3.0. Microsoft has documented the required procedures to install PowerShell 3.0 or 4.0 in the technet article [Installing Windows PowerShell](https://technet.microsoft.com/de-de/library/hh847837.aspx?f=255&MSPPError=-2147217396).
+
 Usage
 -----
 
@@ -66,34 +68,34 @@ Windows Credential Manager functionality based on [PowerShell Credentials Manage
 Changelog
 ---------
 
-## Version 1.0.0
+### Version 1.0.0
 
 - First release
 - Proper authentication handling
 - Included example for storage array performance history export to Excel.
 - Created proper PowerShell Module. Fixed pipeline support. Added Search-Oci Cmdlet.
 
-## Version 1.1.0
+### Version 1.1.0
 
 - Fixed naming of Cmdlets and fixed several issues. Most Cmdlets are tested and should work.
 - Lots of minor bug fixes. Improved Module generation. Added lots of examples.
 
-## Version 1.2.0
+### Version 1.2.0
 
 - Release 1.2.0 Lots of bug fixes. Improved Performance retrieval and annotation setting / updating.
 
-## Version 1.3.0
+### Version 1.3.0
 
 Added OCI Server health status retrieval.
 
-## Version 1.4.0
+### Version 1.4.0
 
 Added Excel export functionality and examples in tutorial.
 
-## Version 1.4.1
+### Version 1.4.1
 
 Fixed some issues with Excel functionality
 
-## Version 1.5.0
+### Version 1.5.0
 
 Added adding and retrieving credentials from the Windows Credential Manager
