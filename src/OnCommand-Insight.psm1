@@ -516,6 +516,15 @@ function Get-OciCmdlets {
                     'POST /rest/v1/admin/datasources/{id}/test' {
                         $Name = "Test-OciDatasource"
                     }
+                    'GET /rest/v1/admin/license' {
+                        $Name = "Get-OciLicenses"
+                    }
+                    'POST /rest/v1/admin/license' {
+                        $Name = "Replace-OciLicenses"
+                    }
+                    'PUT /rest/v1/admin/license' {
+                        $Name = "Update-OciLicenses"
+                    }
                     'GET /rest/v1/admin/licenses' {
                         $Name = "Get-OciLicenses"
                     }
@@ -524,9 +533,6 @@ function Get-OciCmdlets {
                     }
                     'PUT /rest/v1/admin/licenses' {
                         $Name = "Update-OciLicenses"
-                    }
-                    'POST /rest/v1/admin/licenses' {
-                        $Name = "Replace-OciLicenses"
                     }
                     'GET /rest/v1/admin/patches' {
                         $Name = "Get-OciPatches"
