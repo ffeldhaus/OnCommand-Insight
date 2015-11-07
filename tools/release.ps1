@@ -19,7 +19,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$CurrentVersion = git branch | ? { $_ -notmatch "\*" } | Select -last 1
+$CurrentVersion = git tag | ? { $_ -notmatch "\*" } | Select -last 1
 
 if (!$CurrentVersion) { $CurrentVersion = "0.1.0" }
 
