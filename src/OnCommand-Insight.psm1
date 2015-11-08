@@ -517,13 +517,13 @@ function Get-OciCmdlets {
                         $Name = "Test-OciDatasource"
                     }
                     'GET /rest/v1/admin/license' {
-                        $Name = "Get-OciLicenses"
+                        $Name = "Get-OciLicense"
                     }
                     'POST /rest/v1/admin/license' {
-                        $Name = "Replace-OciLicenses"
+                        $Name = "Replace-OciLicense"
                     }
                     'PUT /rest/v1/admin/license' {
-                        $Name = "Update-OciLicenses"
+                        $Name = "Update-OciLicense"
                     }
                     'GET /rest/v1/admin/licenses' {
                         $Name = "Get-OciLicenses"
