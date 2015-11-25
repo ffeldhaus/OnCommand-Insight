@@ -64,12 +64,22 @@ Copy-Item -Path "$src\*" `
           -Recurse
 
 
-# Import new OCI Cmdlets
+Write-Host "Import new OCI Cmdlets"
 Import-Module "$src\OnCommand-Insight.psm1"
 if (!$OciServer) { $OciServer = "cbc-oci-01.muccbc.hq.netapp.com" }
 Write-Host "Connecting to $OciServer"
 Connect-OciServer -Name $OciServer -Credential $Credential -Insecure
 Get-OciCmdlets -FilePath "$dst\OnCommand-Insight.psm1"
+
+Write-Host "Running Pester tests"
+
+$Version = '7.1.1'
+$Record = $True
+$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
+
+Invoke-Pester -Script @{Path='./';Parameters=@{Server=$OciServer;Credential=$Credential;Version=$Version;Record=$Record}}
+
+Write-Host "Copying files to release folder"
 
 Copy-Item -Path "$scriptPath\..\README.md" `
           -Destination "$dst\README.txt"
