@@ -459,7 +459,7 @@ function global:Connect-OciServer {
     }
  
     if (!$APIVersion -eq "1.2") {
-        Generate-OciCmdlets -BaseURI $BaseURI
+        Get-OciCmdlets -Server [PSCustomObject]@{BaseURI=$BaseURI}
     }
  
     return $Server
@@ -471,16 +471,23 @@ function Get-OciCmdlets {
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
-                   HelpMessage="Path for filename to store Cmdlets in.")][String]$FilePath)
+                   HelpMessage="Path for filename to store Cmdlets in.")][String]$FilePath,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server to get cmdlets from.")][PSObject]$Server)
 
-    $DocumentationURI = $CurrentOciServer.BaseURI + "/rest/v1/documentation/sections"
+    if (!$Server) {
+        $Server = $CurrentOciServer
+    }
+
+    $DocumentationURI = $Server.BaseURI + "/rest/v1/documentation/sections"
     Write-Verbose "Retrieving REST API Documentation from $DocumentationURI"
-    $Sections = Invoke-RestMethod -Uri $DocumentationURI -Headers $CurrentOciServer.Headers
+    $Sections = Invoke-RestMethod -Uri $DocumentationURI -Headers $Server.Headers
  
     Write-Verbose "Generating OCI Cmdlets for each section of the API documentation"
     foreach ($Section in $($Sections.APIs  | ? { $_.path -notmatch '/login|/search' })) {
         Write-Verbose "Retrieving details for section $($Section.description)"
-        $Section = Invoke-RestMethod -Uri ($($Sections.BasePath) + $Section.path) -Headers $CurrentOciServer.Headers
+        $Section = Invoke-RestMethod -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers
         foreach ($API in $($Section.APIs)) {
             foreach ($Operation in $($API.Operations)) {
                 $Name = $Operation.Nickname -replace ".*_",""
@@ -675,6 +682,12 @@ function Get-OciCmdlets {
                     'PUT /rest/v1/assets/internalVolumes/{id}/annotations' {
                         $Name = "Update-OciAnnotationsByInternalVolume"
                     }
+                    'GET /rest/v1/assets/internalVolumes/{id}/applications' {
+                        $Name = "Get-OciApplicationsByInternalVolume"
+                    }
+                    'POST /rest/v1/assets/internalVolumes/{id}/applications' {
+                        $Name = "Update-OciApplicationsByInternalVolume"
+                    }
                     'GET /rest/v1/assets/internalVolumes/{id}/performance' {
                         $Name = "Get-OciInternalVolumePerformance"
                     }
@@ -828,6 +841,9 @@ function Get-OciCmdlets {
                     'GET /rest/v1/assets/volumes/{id}/applications' {
                         $Name = "Get-OciApplicationsByVolume"
                     }
+                    'POST /rest/v1/assets/volumes/{id}/applications' {
+                        $Name = "Update-OciApplicationsByVolume"
+                    }
                     'GET /rest/v1/assets/volumes/{id}/autoTierPolicy' {
                         $Name = "Get-OciAutoTierPolicyByVolume"
                     }
@@ -887,6 +903,14 @@ function Get-OciCmdlets {
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="rawValue";Required=$True;Description="Value of Annotation";DataType="String";AllowMultiple=$False}
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="targets";Required=$True;Description="IDs of object where annotation should be added";DataType="String";AllowMultiple=$True}
                         $body = '[ { `"objectType`": `"$objectType`",`"values`": [ { `"rawValue`": `"$rawValue`", `"targets`": [ `"$($targets -join ",")`" ] } ] } ]'
+                    }
+                    'POST /rest/v1/assets/volumes/{id}/applications' {
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="applicationId";Required=$True;Description="Valid application id which should be associated";DataType="String";AllowMultiple=$False}
+                        $body = '{ `"id`": `"$applicationId`" }'
+                    }
+                    'POST /rest/v1/assets/internalVolumes/{id}/applications' {
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="applicationId";Required=$True;Description="Valid application id which should be associated";DataType="String";AllowMultiple=$False}
+                        $body = '{ `"id`": `"$applicationId`" }'
                     }
                 }
                
