@@ -925,7 +925,7 @@ function Get-OciCmdlets {
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="name";Required=$True;Description="Name of the application";DataType="String";AllowMultiple=$False}
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="priority";Required=$False;Description="Name of the application";DataType="String";AllowMultiple=$False}
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="businessEntity";Required=$True;Description="Business entity of the application";DataType="String";AllowMultiple=$False}
-                        $body = '{ `"name`": `"$applicationId`", `"priority`": `"$priority`", `"priority`": `"$priority`", `"businessEntity`": { `"id`": `"$businessEntity`" } }'
+                        $body = '{ `"name`": `"$name`", `"priority`": `"$priority`", `"businessEntity`": { `"id`": `"$businessEntity`" } }'
                     }
                 }
                
