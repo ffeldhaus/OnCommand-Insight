@@ -589,8 +589,17 @@ function Get-OciCmdlets {
                     'GET /rest/v1/assets/applications' {
                         $Name = "Get-OciApplications"
                     }
+                    'POST /rest/v1/assets/applications' {
+                        $Name = "Add-OciApplication"
+                    }
                     'GET /rest/v1/assets/applications/{id}' {
                         $Name = "Get-OciApplication"
+                    }
+                    'GET /rest/v1/assets/businessEntities' {
+                        $Name = "Get-OciBusinessEntities"
+                    }
+                    'GET /rest/v1/assets/businessEntities/{id}' {
+                        $Name = "Get-OciBusinessEntity"
                     }
                     'GET /rest/v1/assets/dataStores' {
                         $Name = "Get-OciDatastores"
@@ -911,6 +920,12 @@ function Get-OciCmdlets {
                     'POST /rest/v1/assets/internalVolumes/{id}/applications' {
                         $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="applicationId";Required=$True;Description="Valid application id which should be associated";DataType="String";AllowMultiple=$False}
                         $body = '{ `"id`": `"$applicationId`" }'
+                    }
+                    'POST /rest/v1/assets/applications' {
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="name";Required=$True;Description="Name of the application";DataType="String";AllowMultiple=$False}
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="priority";Required=$False;Description="Name of the application";DataType="String";AllowMultiple=$False}
+                        $operation.parameters += New-Object -TypeName PSCustomObject -Property @{Name="businessEntity";Required=$True;Description="Business entity of the application";DataType="String";AllowMultiple=$False}
+                        $body = '{ `"name`": `"$applicationId`", `"priority`": `"$priority`", `"priority`": `"$priority`", `"businessEntity`": { `"id`": `"$businessEntity`" } }'
                     }
                 }
                
