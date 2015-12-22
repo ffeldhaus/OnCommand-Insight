@@ -1,5 +1,5 @@
 ﻿. $PSScriptRoot\CredentialManager.ps1
-. $PSScriptRoot\OciExamples.ps1
+. $PSScriptRoot\OnCommand-Insight-Examples.ps1
 
 # Workaround to allow Powershell to accept untrusted certificates
 add-type @"
