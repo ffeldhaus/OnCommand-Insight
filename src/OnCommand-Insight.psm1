@@ -1,5 +1,5 @@
-﻿Import-Module $PSScriptRoot\epplus
-. $PSScriptRoot\CredentialManager.ps1
+﻿. $PSScriptRoot\CredentialManager.ps1
+. $PSScriptRoot\OciExamples.ps1
 
 # Workaround to allow Powershell to accept untrusted certificates
 add-type @"
@@ -148,174 +148,6 @@ function ConvertFrom-UnixDate {
 
 <#
 .EXAMPLE
-Export-Excel
-#>
-function global:Export-Excel {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$True,
-                   Position=0,
-                   HelpMessage="Input Object.",
-                   ValueFromPipeline=$True)][PSObject[]]$InputObject,
-        [parameter(Mandatory=$True,
-                   Position=1,
-                   HelpMessage="Filename of the Excel file to be created or updated.")][String]$FileName,
-        [parameter(Mandatory=$True,
-                   Position=2,
-                   HelpMessage="The Worksheet name to be created or replaced")][String]$WorksheetName,
-        [parameter(Mandatory=$False,
-                   Position=3,
-                   HelpMessage="Password to protect file with AES-256 encryption.")][String]$Password
-    )
-
-    Begin {
-        if ($FileName -notmatch '.xlsx') {
-            $FileName += '.xlsx'
-        } 
-
-        try {
-            if ($Password) {
-                $ExcelPackage = New-Object OfficeOpenXml.ExcelPackage -ArgumentList $FileName,$Password
-            }
-            else {
-                $ExcelPackage = New-Object OfficeOpenXml.ExcelPackage -ArgumentList $FileName
-            }
-        }
-        catch {
-            throw $_
-        }
-
-        # if worksheet already exists, delete it
-        if ($ExcelPackage.Workbook.Worksheets[$WorksheetName]) {
-            $ExcelPackage.Workbook.Worksheets.Delete($WorksheetName)
-        }
-
-        $Worksheet = $ExcelPackage.Workbook.Worksheets.Add($WorksheetName)
-
-        $Format = New-object -TypeName OfficeOpenXml.ExcelTextFormat -Property @{TextQualifier = '"'}
-        $Format.Delimiter = ";"
-        # use Text Qualifier if your CSV entries are quoted, e.g. "Cell1","Cell2"
-        $Format.TextQualifier = '"'
-        $Format.Encoding = [System.Text.Encoding]::UTF8
-        $Format.SkipLinesEnd = 1
-
-        $TableStyle = [OfficeOpenXml.Table.TableStyles]::Light9
-
-        $SetHeader = $True
-    }
-
-    Process {
-        if ($InputObject) {
-            # only add the header for the first object
-            if ($SetHeader) {
-                $CsvString += $InputObject | ConvertTo-Csv -Delimiter ';' -NoTypeInformation | Out-String
-                $SetHeader = $False
-            }
-            else {
-                $CsvString += $InputObject | ConvertTo-Csv -Delimiter ';' -NoTypeInformation | select -skip 1 | Out-String
-            }
-        }
-    }
-
-    End {
-        if ($CsvString) {
-            $null=$Worksheet.Cells.LoadFromText($CsvString,$Format,$TableStyle,$true)
-            $Worksheet.Cells[$Worksheet.Dimension.Address].AutoFitColumns()
-        }
-
-        if ($Password) {
-            $ExcelPackage.Encryption.Algorithm = [OfficeOpenXml.EncryptionAlgorithm]::AES256
-            $ExcelPackage.Encryption.IsEncrypted = $true
-            $ExcelPackage.SaveAs($FileName,$Password)
-        } else {
-            $ExcelPackage.Encryption.IsEncrypted = $false
-            $ExcelPackage.SaveAs($FileName)
-        }
-        $ExcelPackage.Dispose()
-        $ExcelPackage = $null
-    }
-}
-
-# OCI Examples
-$OciExamples=@{}
-
-$OciExamples['Add-OciPatches'] = @"
-"@
-
-$OciExamples['Add-OciUsers'] = @"
-"@
-
-$OciExamples['Approve-OciPatch'] = @"
-    .EXAMPLE
-    Approve-OciPatch -Id 1
-"@
-
-$OciExamples['Delete-OciUser'] = @"
-    .EXAMPLE
-    Delete-OciUser -id 1
-"@
-
-$OciExamples['Get-OciAcquisitionUnit'] = @"
-    .EXAMPLE
-    Get-OciAcquisitionUnit -id 1
-
-    id               : 1
-    self             : /rest/v1/admin/acquisitionUnits/1
-    name             : local
-    ip               : 192.168.222.138
-    status           : CONNECTED
-    isActive         : True
-    leaseContract    : 120000
-    nextLeaseRenewal : 2015-08-17T21:19:46+0200
-    lastReported     : 2015-08-17T21:17:41+0200
-"@
-
-$OciExamples['Get-OciAcquisitionUnits'] = @"
-    .EXAMPLE
-    Get-OciAcquisitionUnits
-
-    id               : 1
-    self             : /rest/v1/admin/acquisitionUnits/1
-    name             : local
-    ip               : 192.168.222.138
-    status           : CONNECTED
-    isActive         : True
-    leaseContract    : 120000
-    nextLeaseRenewal : 2015-08-17T21:18:46+0200
-    lastReported     : 2015-08-17T21:16:52+0200
-"@
-
-$OciExamples['Get-OciActivePatchByDatasource'] = @"
-    .EXAMPLE
-    Get-OciActivePatchByDatasource -id 1
-    .EXAMPLE
-    Get-OciDatasources | Get-OciActivePatchByDatasource
-"@
-
-$OciExamples['Get-OciActivePatchByDatasource'] = @"
-    .EXAMPLE
-    Get-OciActivePatchByDatasource -id 1
-    .EXAMPLE
-    Get-OciDatasources | Get-OciActivePatchByDatasource
-"@
-
-$OciExamples['Get-OciAnnotation'] = @"
-    .EXAMPLE
-    Get-OciAnnotation -id 4977
-
-    id                   : 4977
-    self                 : /rest/v1/assets/annotations/4977
-    name                 : Rack
-    type                 : TEXT
-    label                : Rack
-    isUserDefined        : False
-    enumValues           : {}
-    supportedObjectTypes : {Host, Switch, Storage}
-"@
-
-<#
-.EXAMPLE
 Connect-OciServer -Name ociserver.example.com -Credential (Get-Credential)
 
 Name       : ociserver.example.com
@@ -350,7 +182,7 @@ function global:Connect-OciServer {
     )
 
     if (!$Credential) {
-        $Credential = Get-OciCredential -Name $Name | select -ExpandProperty Credential
+        $Credential = Get-OciCredential -Name $Name | Select-Object -ExpandProperty Credential
         if (!$Credential) {
             throw "No Credentials supplied and $Name not in list of known OCI Servers"
         }
@@ -474,7 +306,14 @@ function Get-OciCmdlets {
                    HelpMessage="Path for filename to store Cmdlets in.")][String]$FilePath,
         [parameter(Mandatory=$False,
                    Position=1,
-                   HelpMessage="OnCommand Insight Server to get cmdlets from.")][PSObject]$Server)
+                   HelpMessage="OnCommand Insight Server to get cmdlets from.")][PSObject]$Server,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="Path to store JSON output from a server in.")][String]$JsonOutFilePath,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="Path to get JSON from instead of retrieving it from a server.")][String]$JsonInFilePath
+           )
 
     if (!$Server) {
         $Server = $CurrentOciServer
@@ -482,12 +321,35 @@ function Get-OciCmdlets {
 
     $DocumentationURI = $Server.BaseURI + "/rest/v1/documentation/sections"
     Write-Verbose "Retrieving REST API Documentation from $DocumentationURI"
-    $Sections = Invoke-RestMethod -Uri $DocumentationURI -Headers $Server.Headers
+    if ($Server -and $JsonOutFilePath) {
+        Invoke-RestMethod -Uri $DocumentationURI -Headers $Server.Headers -OutFile "$JsonOutFilePath\sections.json"
+        $Sections = Get-Content -Raw -Path "$JsonOutFilePath\sections.json" | ConvertFrom-Json
+    }
+    elseif ($Server) {
+        $Sections = Invoke-RestMethod -Uri $DocumentationURI -Headers $Server.Headers
+    }
+    elseif ($JsonInFilePath) {
+        $Sections = Get-Content -Raw -Path "$JsonInFilePath\sections.json" | ConvertFrom-Json
+    }
+    else {
+        Write-Error "No OCI Server and no JSON file specified"
+    }
  
     Write-Verbose "Generating OCI Cmdlets for each section of the API documentation"
     foreach ($Section in $($Sections.APIs  | ? { $_.path -notmatch '/login|/search' })) {
         Write-Verbose "Retrieving details for section $($Section.description)"
-        $Section = Invoke-RestMethod -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers
+        if ($JsonOutFilePath) {
+            $SectionName = $Section.description -split '\.' | select -last 1
+            Invoke-RestMethod -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers -OutFile "$JsonOutFilePath\$SectionName.json"
+            $Section = Get-Content -Raw -Path "$JsonOutFilePath\$SectionName.json" | ConvertFrom-Json
+        }
+        elseif ($JsonInFilePath) {
+            $SectionName = $Section.description -split '\.' | select -last 1
+            $Section = Get-Content -Raw -Path "$JsonInFilePath\$SectionName.json" | ConvertFrom-Json
+        }
+        else {
+            $Section = Invoke-RestMethod -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers
+        }
         foreach ($API in $($Section.APIs)) {
             foreach ($Operation in $($API.Operations)) {
                 $Name = $Operation.Nickname -replace ".*_",""
