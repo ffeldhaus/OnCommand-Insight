@@ -19,7 +19,7 @@ Get-Command -Module OnCommand-Insight
 Show the syntax of all Cmdlets from the OCI Module
 
 ```powershell
-Get-Command -Module OnCommand-Insight
+Get-Command -Module OnCommand-Insight -Syntax
 ```
 
 To get detailed help including examples for a specific Cmdlet (e.g. for Connect-OciServer) run
@@ -87,8 +87,8 @@ In this simple workflow the available storage systems will be retrieved, a NetAp
 
 ```powershell
 $Storages = Get-OciStorages
-$NetAppStorage = $Storages | ? { $_.vendor -eq "NetApp" -and $_.family -eq "FAS" } | Select-Object -First 1
-Get-OciInternalVolumesByStorage -id $Storage.id
+$NetAppStorages = $Storages | ? { $_.vendor -eq "NetApp" -and $_.family -match "FAS" } | Select-Object -First 1
+$NetAppStorages | Get-OciInternalVolumesByStorage
 ```
 
 As the OCI Cmdlets support pipelining, the above statements can be combined into one statement:
@@ -329,3 +329,12 @@ $InternalVolumes = foreach ($Storage in Get-OciStorages) {
 } 
 $InternalVolumes | Sort-Object -Property @{Expression={$_.psobject.properties | Measure-Object | Select-Object -ExpandProperty Count};Descending=$true} |  Export-Excel -FileName $FileName -WorksheetName 'Internal Volumes'
 ```
+
+### List devices discovered via multiple datasources
+
+$Datasources = Get-OciDatasources -devices
+$DuplicateDevices = $Datasources.devices.Name | Group-Object | ? { $_.Count -gt 1 } | Select -ExpandProperty Name
+
+foreach ($Device in $DuplicateDevices) {
+    "$Device," + (($Datasources | ? { $_.Devices.name -match $Device } | select -ExpandProperty Name) -join ',')
+}
