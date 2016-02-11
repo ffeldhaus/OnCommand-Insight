@@ -1,5 +1,4 @@
 ﻿# OCI Examples
-$OciExamples=@{}
 
 $OciExamples['Add-OciPatches'] = @"
 "@

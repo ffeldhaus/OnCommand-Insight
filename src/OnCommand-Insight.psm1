@@ -1,5 +1,4 @@
 ﻿. $PSScriptRoot\CredentialManager.ps1
-. $PSScriptRoot\OnCommand-Insight-Examples.ps1
 
 # Workaround to allow Powershell to accept untrusted certificates
 add-type @"
@@ -178,7 +177,10 @@ function global:Connect-OciServer {
                    HelpMessage="If the OCI server certificate cannot be verified, the connection will fail. Specify -Insecure to ignore the validity of the OCI server certificate.")][Switch]$Insecure,
         [parameter(Position=4,
                    Mandatory=$False,
-                   HelpMessage="Specify -Transient to not set the global variable `$CurrentOciServer.")][Switch]$Transient
+                   HelpMessage="Specify -Transient to not set the global variable `$CurrentOciServer.")][Switch]$Transient,
+        [parameter(Mandatory=$False,
+                   Position=5,
+                   HelpMessage="As the timezone of the OCI Server is not available via the REST API, it needs to be manually set so that all timestamps are displayed with the correct timezone. By default the timezone will be set to the local timezone of the PowerShell environment.")][ValidateScript({[System.TimeZoneInfo]::GetSystemTimeZones().Id -contains $_})][String]$Timezone
     )
 
     if (!$Credential) {
@@ -210,7 +212,7 @@ function global:Connect-OciServer {
         Write-Warning "Proxy Server defined in automatic proxy configuration script $($ProxySettings.AutoConfigURL) configured in Internet Explorer may be used to connect to the OCI server!"
     }
  
-    if ($HTTPS) {
+    if ($HTTPS -or !$HTTP) {
         Try {
             $BaseURI = "https://$Name"
             $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec 10 -Headers $Headers
@@ -222,14 +224,20 @@ function global:Connect-OciServer {
                 return
             }
             else {
-                Write-Error "Login to $BaseURI/rest/v1/login failed via HTTPS protocol, but HTTPS was enforced"
-                return
+                if ($HTTPS) {
+                    Write-Error "Login to $BaseURI/rest/v1/login failed via HTTPS protocol, but HTTPS was enforced"
+                    return
+                }
+                else {
+                    $HTTP = $True
+                }
             }
         }
     }
-    elseif ($HTTP) {
+
+    if ($HTTP) {
         Try {
-            $BaseURI = "https://$Name"
+            $BaseURI = "http://$Name"
             $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec 10 -Headers $Headers
             $APIVersion = $Response.apiVersion
         }
@@ -244,38 +252,9 @@ function global:Connect-OciServer {
             }
         }
     }
-    else {
-        Try {
-            $BaseURI = "https://$Name"
-            $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec 10 -Headers $Headers
-            $APIVersion = $Response.apiVersion
-            $HTTPS = $True
-        }
-        Catch {
-            if ($_.Exception.Message -match "Unauthorized") {
-                Write-Error "Authorization for $BaseURI/rest/v1/login with user $($Credential.UserName) failed"
-                return
-            }
-            else {
-                Write-Warning "Login to $BaseURI/rest/v1/login failed via HTTPS protocol, falling back to HTTP protocol."
-                Try {
-                    $BaseURI = "http://$Name"
-                    $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec 10 -Headers $Headers
-                    $APIVersion = $Response.apiVersion
-                    $HTTP = $True
-                }
-                Catch {
-                    if ($_.Exception.Message -match "Unauthorized") {
-                        Write-Error "Authorization for $BaseURI/rest/v1/login with user $($Credential.UserName) failed"
-                        return
-                    }
-                    else {
-                        Write-Error "Login to $BaseURI/rest/v1/login failed via HTTP protocol."
-                        return
-                    }
-                }
-            }
-        }
+
+    if (!$Timezone) {
+        $Timezone = $([timezone]::CurrentTimeZone)
     }
  
     $Server = New-Object -TypeName psobject
@@ -284,7 +263,7 @@ function global:Connect-OciServer {
     $Server | Add-Member -MemberType NoteProperty -Name Credential -Value $Credential
     $Server | Add-Member -MemberType NoteProperty -Name Headers -Value $Headers
     $Server | Add-Member -MemberType NoteProperty -Name APIVersion -Value $APIVersion
-    $Server | Add-Member -MemberType NoteProperty -Name Timezone -Value $([timezone]::CurrentTimeZone)
+    $Server | Add-Member -MemberType NoteProperty -Name Timezone -Value $Timezone
  
     if (!$Transient) {
         Set-Variable -Name CurrentOciServer -Value $Server -Scope Global
@@ -318,6 +297,9 @@ function Get-OciCmdlets {
     if (!$Server) {
         $Server = $CurrentOciServer
     }
+
+    $OciExamples=@{}
+    . $PSScriptRoot\OnCommand-Insight-Examples.ps1
 
     $DocumentationURI = $Server.BaseURI + "/rest/v1/documentation/sections"
     Write-Verbose "Retrieving REST API Documentation from $DocumentationURI"
@@ -949,7 +931,7 @@ $CmdletParameters
                 Write-Error "$($Operation.httpMethod) to `$Uri failed`$responseBody"
             }
  
-            if (`$Result.toString().Trim().startsWith('{') -or `$Result.toString().Trim().startsWith('[')) {
+            if (([String]`$Result).Trim().startsWith('{') -or ([String]`$Result).toString().Trim().startsWith('[')) {
                 `$Result = ParseJsonString(`$Result.Trim())
             }
            
