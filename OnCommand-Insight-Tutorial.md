@@ -338,3 +338,18 @@ $DuplicateDevices = $Datasources.devices.Name | Group-Object | ? { $_.Count -gt 
 foreach ($Device in $DuplicateDevices) {
     "$Device," + (($Datasources | ? { $_.Devices.name -match $Device } | select -ExpandProperty Name) -join ',')
 }
+
+## Troubleshooting
+
+If you encounter issues with timeouts, this may be due to slow OCI Servers or very large environments. Try increasing the Timout from the default of 600 seconds (10 minutes) when connecting to the OCI Server
+
+```powershell
+$ServerName = 'localhost'
+$Timeout = 1200
+Connect-OciServer -Name $ServerName -Timeout $Timeout
+```
+
+Alternatively you can configure the timeout direcly using the $CurrentOciServer variable
+```powershell
+$CurrentOciServer.Timeout = 1200
+```
