@@ -180,7 +180,10 @@ function global:Connect-OciServer {
                    HelpMessage="Specify -Transient to not set the global variable `$CurrentOciServer.")][Switch]$Transient,
         [parameter(Mandatory=$False,
                    Position=5,
-                   HelpMessage="As the timezone of the OCI Server is not available via the REST API, it needs to be manually set so that all timestamps are displayed with the correct timezone. By default the timezone will be set to the local timezone of the PowerShell environment.")][PSObject]$Timezone
+                   HelpMessage="As the timezone of the OCI Server is not available via the REST API, it needs to be manually set so that all timestamps are displayed with the correct timezone. By default the timezone will be set to the local timezone of the PowerShell environment.")][PSObject]$Timezone,
+        [parameter(Mandatory=$False,
+                   Position=6,
+                   HelpMessage="Timeout value for HTTP connections. Defaults to 600 seconds.")][Int]$Timeout
     )
 
     if (!$Credential) {
@@ -265,6 +268,10 @@ function global:Connect-OciServer {
             $Timezone = [timezone]::CurrentTimeZone
         }
     }
+
+    if (!$Timeout) {
+        $Timeout = 600
+    }
  
     $Server = New-Object -TypeName psobject
     $Server | Add-Member -MemberType NoteProperty -Name Name -Value $Name
@@ -273,6 +280,7 @@ function global:Connect-OciServer {
     $Server | Add-Member -MemberType NoteProperty -Name Headers -Value $Headers
     $Server | Add-Member -MemberType NoteProperty -Name APIVersion -Value $APIVersion
     $Server | Add-Member -MemberType NoteProperty -Name Timezone -Value $Timezone
+    $Server | Add-Member -MemberType NoteProperty -Name Timeout -Value $Timeout
  
     if (!$Transient) {
         Set-Variable -Name CurrentOciServer -Value $Server -Scope Global
@@ -313,11 +321,11 @@ function Get-OciCmdlets {
     $DocumentationURI = $Server.BaseURI + "/rest/v1/documentation/sections"
     Write-Verbose "Retrieving REST API Documentation from $DocumentationURI"
     if ($Server -and $JsonOutFilePath) {
-        Invoke-RestMethod -Uri $DocumentationURI -Headers $Server.Headers -OutFile "$JsonOutFilePath\sections.json"
+        Invoke-RestMethod -TimeoutSec $Server.Timeout -Uri $DocumentationURI -Headers $Server.Headers -OutFile "$JsonOutFilePath\sections.json"
         $Sections = Get-Content -Raw -Path "$JsonOutFilePath\sections.json" | ConvertFrom-Json
     }
     elseif ($Server) {
-        $Sections = Invoke-RestMethod -Uri $DocumentationURI -Headers $Server.Headers
+        $Sections = Invoke-RestMethod -TimeoutSec $Server.Timeout -Uri $DocumentationURI -Headers $Server.Headers
     }
     elseif ($JsonInFilePath) {
         $Sections = Get-Content -Raw -Path "$JsonInFilePath\sections.json" | ConvertFrom-Json
@@ -331,7 +339,7 @@ function Get-OciCmdlets {
         Write-Verbose "Retrieving details for section $($Section.description)"
         if ($JsonOutFilePath) {
             $SectionName = $Section.description -split '\.' | select -last 1
-            Invoke-RestMethod -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers -OutFile "$JsonOutFilePath\$SectionName.json"
+            Invoke-RestMethod -TimeoutSec $Server.Timeout -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers -OutFile "$JsonOutFilePath\$SectionName.json"
             $Section = Get-Content -Raw -Path "$JsonOutFilePath\$SectionName.json" | ConvertFrom-Json
         }
         elseif ($JsonInFilePath) {
@@ -339,7 +347,7 @@ function Get-OciCmdlets {
             $Section = Get-Content -Raw -Path "$JsonInFilePath\$SectionName.json" | ConvertFrom-Json
         }
         else {
-            $Section = Invoke-RestMethod -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers
+            $Section = Invoke-RestMethod -TimeoutSec $Server.Timeout -Uri ($($Sections.BasePath) + $Section.path) -Headers $Server.Headers
         }
         foreach ($API in $($Section.APIs)) {
             foreach ($Operation in $($API.Operations)) {
@@ -924,10 +932,10 @@ $CmdletParameters
             try {
                 if ('$($Operation.httpMethod)' -match 'PUT|POST') {
                     Write-Verbose "Body: $Body"
-                    `$Result = Invoke-RestMethod -Method $($Operation.httpMethod) -Uri `$Uri -Headers `$CurrentOciServer.Headers -Body "$Body" -ContentType 'application/json'
+                    `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method $($Operation.httpMethod) -Uri `$Uri -Headers `$CurrentOciServer.Headers -Body "$Body" -ContentType 'application/json'
                 }
                 else {
-                    `$Result = Invoke-RestMethod -Method $($Operation.httpMethod) -Uri `$Uri -Headers `$CurrentOciServer.Headers
+                    `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method $($Operation.httpMethod) -Uri `$Uri -Headers `$CurrentOciServer.Headers
                 }
             }
             catch {
@@ -1061,7 +1069,7 @@ function Global:Search-Oci {
             `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/search?query=`$query"
  
             try {
-                `$Result = Invoke-RestMethod -Method Get -Uri `$Uri -Headers `$CurrentOciServer.Headers
+                `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method Get -Uri `$Uri -Headers `$CurrentOciServer.Headers
                 if (`$Result.toString().startsWith('{')) {
                     `$Result = ParseJsonString(`$Result)
                 }
@@ -1103,7 +1111,7 @@ function Global:Get-OciHealth {
         `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/admin/health"
  
         try {
-            `$Result = Invoke-RestMethod -Method Get -Uri `$Uri -Headers `$CurrentOciServer.Headers
+            `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method Get -Uri `$Uri -Headers `$CurrentOciServer.Headers
             if (`$Result.toString().startsWith('{')) {
                 `$Result = ParseJsonString(`$Result)
             }
