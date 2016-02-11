@@ -180,7 +180,7 @@ function global:Connect-OciServer {
                    HelpMessage="Specify -Transient to not set the global variable `$CurrentOciServer.")][Switch]$Transient,
         [parameter(Mandatory=$False,
                    Position=5,
-                   HelpMessage="As the timezone of the OCI Server is not available via the REST API, it needs to be manually set so that all timestamps are displayed with the correct timezone. By default the timezone will be set to the local timezone of the PowerShell environment.")][ValidateScript({[System.TimeZoneInfo]::GetSystemTimeZones().Id -contains $_})][String]$Timezone
+                   HelpMessage="As the timezone of the OCI Server is not available via the REST API, it needs to be manually set so that all timestamps are displayed with the correct timezone. By default the timezone will be set to the local timezone of the PowerShell environment.")][PSObject]$Timezone
     )
 
     if (!$Credential) {
@@ -254,7 +254,16 @@ function global:Connect-OciServer {
     }
 
     if (!$Timezone) {
-        $Timezone = $([timezone]::CurrentTimeZone)
+        $Timezone = [timezone]::CurrentTimeZone
+    }
+    
+    if ($Timezone -isnot [Timezone]) {
+        if ([System.TimeZoneInfo]::GetSystemTimeZones().Id -contains $Timezone) {
+            $Timezone = [System.TimeZoneInfo]::GetSystemTimeZones() | ? { $_.Id -contains $Timezone }
+        }
+        else {
+            $Timezone = [timezone]::CurrentTimeZone
+        }
     }
  
     $Server = New-Object -TypeName psobject
