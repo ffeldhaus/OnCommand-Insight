@@ -62,19 +62,24 @@ Connect-OciServer -Name $ServerName -Credential $Credential -HTTP
 
 As the timezone of the OCI Server is not available via the REST API, it needs to be manually set so that all timestamps are displayed with the correct timezone. By default the timezone will be set to the local timezone of the PowerShell environment.
 
-The currently configured timezone of the OCI Server can be checked with
-
-```powershell
-$CurrentOciServer.Timezone
-```
-    
 A list of all available timezones can be shown with
 
 ```powershell
 [System.TimeZoneInfo]::GetSystemTimeZones()
 ```
 
-To set a different timezone (e.g. CEST or PST), the following command can be used
+You can set a different than the local timezone when connecting to the OCI server with e.g.
+```powershell
+Connect-OciServer -Name $ServerName -Timezone "Pacific Standard Time"
+```
+
+The currently configured timezone of the OCI Server can be checked with
+
+```powershell
+$CurrentOciServer.Timezone
+```
+
+To manually set a different timezone (e.g. CEST or PST), the following command can be used
 
 ```powershell
 $CurrentOciServer.Timezone = [System.TimeZoneInfo]::FindSystemTimeZoneById("Central Europe Standard Time")
@@ -94,17 +99,22 @@ $NetAppStorages | Get-OciInternalVolumesByStorage
 As the OCI Cmdlets support pipelining, the above statements can be combined into one statement:
 
 ```powershell
-Get-OciStorages | ? { $_.vendor -eq "NetApp" -and $_.family -eq "FAS" } | Select-Object -First 1 | Get-OciInternalVolumesByStorage
+Get-OciStorages | ? { $_.vendor -eq "NetApp" -and $_.family -match "FAS" } | Select-Object -First 1 | Get-OciInternalVolumesByStorage
 ```
 
 ## Managing OCI Credentials
 
-The OCI PowerShell Cmdlets allow to securely store credentials in and retrieve credentials from the Windows Credential Manager. 
+The OCI PowerShell Cmdlets allow to securely store credentials in and retrieve credentials from the Windows Credential Manager. Please keep in mind that only the user who stored the credentials has access to them (especially important for automation) and that the user can retrieve the password in plain text.
 
 To add a credential for an OCI server use the following command
 ```powershell
 $ServerName = 'localhost'
 Add-OciCredential -Name $ServerName -Credential (Get-Credential)
+```
+
+You can list all stored credentials with
+```powershell
+Get-OciCredentials
 ```
 
 After a credential has been added, it is not necessary to supply the credential when connecting to the server
@@ -116,21 +126,23 @@ Connect-OciServer -Name $ServerName
 
 ### Retrieve all devices of all datasources
 
-To retrieve all devices of all datasources, first get a list of all datasources and then get the devices of all datasources
+To retrieve all devices of all datasources you can use the following command. For large environments, especially with a large number of ESX Hosts, this command can take some time:
 ```powershell
-$Datasources = Get-OciDatasources
-$Datasources | Get-OciDatasourceDevices
-```
-
-The following command combines getting the datasources and then getting their devices and also adds the datasource name to each device
-
-```powershell
-Get-OciDatasources | % { Get-OciDatasourceDevices $_.id | Add-Member -MemberType NoteProperty -Name Datasource -Value $_.Name -PassThru }
+Get-OciDatasources -Devices
 ```
 
 ### Retrieve Performance data
 
-Get-OciStorages | Get-OciVolumesByStorage | Get-OciVolume -Performance | % { New-Object -TypeName PSObject -Property @{Name=$_.Name;"Min total IOPS"=$_.performance.iops.total.min;"Max total IOPS"=$_.performance.iops.total.max; "Avg total IOPS"=$_.performance.iops.total.avg} } | ft -Wrap
+The following command will get all Volumes with all Performance Data. For everything else then small test environments this can result in huge amounts of data. Make sure to either only get the volumes for one storage system or restrict the timeframe for which you want to retrieve performance data with `-fromTime` and `-toTime`:
+
+```powershell
+$VolumesWithPerformance = Get-OciStorages | Get-OciVolumesByStorage -Performance -fromTime (Get-Date).addDays(-1)
+```
+
+To extract just the Minimum, Maximum and Average IOPS and pretty print the data use:
+```powershell
+$VolumesWithPerformance | % { New-Object -TypeName PSObject -Property @{Name=$_.Name;"Min total IOPS"=$_.performance.iops.total.min;"Max total IOPS"=$_.performance.iops.total.max; "Avg total IOPS"=$_.performance.iops.total.avg} } | ft -Wrap
+```
 
 ### Get related objects
 
@@ -192,6 +204,8 @@ $Storages | Export-Csv -NoTypeInformation -Path $FileName -Encoding $Encoding -D
 ```
 
 ### Export to Excel
+
+The integrated Excel functionality has been removed. Use the PS-Excel module instead!
 
 Retrieve OCI data (e.g. Storage Arrays)
 ```powershell
