@@ -13,7 +13,7 @@ param(
     [Parameter(Mandatory = $false)][switch]$Minor,
     [Parameter(Mandatory = $false)][switch]$Build,
     [Parameter(Mandatory = $false)][switch]$Release,
-    [Parameter(Mandatory = $false)][string]$OciServer='localhost'
+    [Parameter(Mandatory = $false)][string]$OciServer
 
 )
 
@@ -66,7 +66,7 @@ Copy-Item -Path "$src\*" `
 
 Write-Host "Import new OCI Cmdlets"
 Import-Module "$src\OnCommand-Insight.psm1"
-if (!$OciServer) { $OciServer = "cbc-oci-01.muccbc.hq.netapp.com" }
+if (!$OciServer) { $OciServer = "ff-oc1.muccbc.hq.netapp.com" }
 Write-Host "Connecting to $OciServer"
 Connect-OciServer -Name $OciServer -Credential $Credential -Insecure
 Get-OciCmdlets -FilePath "$dst\OnCommand-Insight.psm1"
