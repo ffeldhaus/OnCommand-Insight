@@ -1373,7 +1373,7 @@ function Global:Get-OciDatasource {
                     foreach (`$Attribute in `$Package.attributes) {
                         `$PackageIndex = `$Result.config.packages.IndexOf(`$Package)
                         `$AttributeIndex = `$Package.attributes.IndexOf(`$Attribute)
-                        Invoke-Command -ScriptBlock ([ScriptBlock]::Create("```$Result.config | Add-Member -MemberType ScriptProperty -Name `$(`$Attribute.name) -Value { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value } -SecondValue { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value = ```$args[0] } -Force"))
+                        Invoke-Command -ScriptBlock ([ScriptBlock]::Create("```$Result.config | Add-Member -MemberType ScriptProperty -Name `$(`$Attribute.name) -Value { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value } -SecondValue { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value = ```$args[0] }  -ErrorAction SilentlyContinue"))
                     }
                 }
             }
@@ -1494,7 +1494,7 @@ function Global:Get-OciDatasources {
                         foreach (`$Attribute in `$Package.attributes) {
                             `$PackageIndex = `$Datasource.config.packages.IndexOf(`$Package)
                             `$AttributeIndex = `$Package.attributes.IndexOf(`$Attribute)
-                            Invoke-Command -ScriptBlock ([ScriptBlock]::Create("```$Datasource.config | Add-Member -MemberType ScriptProperty -Name `$(`$Attribute.name) -Value { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value } -SecondValue { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value = ```$args[0] } -Force"))
+                            Invoke-Command -ScriptBlock ([ScriptBlock]::Create("```$Datasource.config | Add-Member -MemberType ScriptProperty -Name `$(`$Attribute.name) -Value { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value } -SecondValue { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value = ```$args[0] } -ErrorAction SilentlyContinue"))
                         }
                     }
                 }

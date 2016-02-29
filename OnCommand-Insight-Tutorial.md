@@ -353,6 +353,40 @@ foreach ($Device in $DuplicateDevices) {
     "$Device," + (($Datasources | ? { $_.Devices.name -match $Device } | select -ExpandProperty Name) -join ',')
 }
 
+### Manage Datasource Configuration
+
+Get all datasources including its configuration
+```powershell
+Get-OciDatasources -config
+```
+
+Get a single datasource including its configuration
+```powershell
+Get-OciDatasource -id 1 -config
+```
+
+The configuration contains packages (e.g. foundation, performance, cloud) and each package has several attributes which can be modified. 
+
+Here's an example to change the password of a NetApp 7-Mode datasource:
+```powershell
+$Datasource = Get-OciDatasource -id 1 -config
+# list packages
+$Datasource.config.packages
+# select foundation package and list it's attributes
+$Datasource.config.packages | ? { $_.id -eq "foundation" } | Select -ExpandProperty Attributes
+# modify password attribute
+($Datasource.config.packages | ? { $_.id -eq "foundation" } | Select -ExpandProperty Attributes | ? { $_.Name -eq "password" }).Value = "test"
+# update datasource
+$Datasource | Update-OciDatasource
+```
+
+To simplify changing attributes, if possible, attributes have aliases in the config section (attributes with same name in several packages will not work and attributes with some reserved names will also not work). This is to simplify usage. For robust scripts, use the methods above!
+```powershell
+$Datasource = Get-OciDatasource -id 1 -config
+$Datasource.config.password = "test"
+$Datasource | Update-OciDatasource
+```
+
 ## Troubleshooting
 
 If you encounter issues with timeouts, this may be due to slow OCI Servers or very large environments. Try increasing the Timout from the default of 600 seconds (10 minutes) when connecting to the OCI Server
