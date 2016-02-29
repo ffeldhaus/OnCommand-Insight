@@ -1090,6 +1090,14 @@ function Global:Search-Oci {
 }
 "@
 
+    Write-Debug "$CmdletFunction"
+    if ($FilePath) {
+        Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8
+    }
+    else {
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($CmdletFunction))
+    }
+
     # add Health Cmdlet
     $CmdletFunction = @"
 <#
@@ -1131,6 +1139,369 @@ function Global:Get-OciHealth {
         }
        
         Write-Output `$Result
+    }
+}
+"@
+
+    Write-Debug "$CmdletFunction"
+    if ($FilePath) {
+        Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8
+    }
+    else {
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($CmdletFunction))
+    }
+
+    # get DatasourceType Cmdlet
+    $CmdletFunction = @"
+<#
+    .SYNOPSIS
+    Retrieve OCI Datasource Types
+    .DESCRIPTION
+    Retrieve OCI Datasource Types
+#>
+function Global:Get-OciDatasourceTypes {
+    [CmdletBinding()]
+
+    PARAM ()
+ 
+    Begin {
+        `$Result = `$null
+    }
+   
+    Process {
+        `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/admin/datasourceTypes"
+ 
+        try {
+            `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method Get -Uri `$Uri -Headers `$CurrentOciServer.Headers
+            if (`$Result.toString().startsWith('{')) {
+                `$Result = ParseJsonString(`$Result)
+            }
+        }
+        catch {
+            `$Response = `$_.Exception.Response
+            if (`$Response) {
+                `$Result = `$Response.GetResponseStream()
+                `$Reader = New-Object System.IO.StreamReader(`$Result)
+                `$responseBody = " with response:``n" + `$reader.ReadToEnd()
+            } 
+            Write-Error "$($Operation.httpMethod) to `$Uri failed`$responseBody"
+        }
+       
+        Write-Output `$Result
+    }
+}
+"@
+
+    Write-Debug "$CmdletFunction"
+    if ($FilePath) {
+        Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8
+    }
+    else {
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($CmdletFunction))
+    }
+
+
+    # update Datasource Cmdlet
+    $CmdletFunction = @"
+<#
+    .SYNOPSIS
+    Update OCI Datasource
+    .DESCRIPTION
+    Update OCI Datasource
+#>
+function Global:Update-OciDatasource {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=`$True,
+                    Position=0,
+                    HelpMessage="Id of the datasource to be updated",
+                    ValueFromPipeline=`$True,
+                    ValueFromPipelineByPropertyName=`$True)][String[]]`$id,
+        [parameter(Mandatory=`$True,
+                    Position=1,
+                    HelpMessage="Datasource configuration",
+                    ValueFromPipeline=`$True,
+                    ValueFromPipelineByPropertyName=`$True)][PSObject[]]`$config
+        )
+ 
+    Begin {
+        `$Result = `$null
+    }
+   
+    Process {
+        $`id = @(`$id)
+        foreach (`$id in `$id) {
+            `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/`$id"
+ 
+            try {
+                `$Body = (`$config.config | ConvertTo-Json -Depth 10)
+                Write-Verbose "Body: `$Body"
+                `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method PUT -Uri `$Uri -Headers `$CurrentOciServer.Headers -Body `$Body -ContentType 'application/json'
+                if (`$Result.toString().startsWith('{')) {
+                    `$Result = ParseJsonString(`$Result)
+                }
+            }
+            catch {
+                `$Response = `$_.Exception.Response
+                `$Response
+                if (`$Response) {
+                    `$Result = `$Response.GetResponseStream()
+                    `$Reader = New-Object System.IO.StreamReader(`$Result)
+                    `$responseBody = " with response:``n" + `$reader.ReadToEnd()
+                } 
+                Write-Error "PUT to `$Uri failed`$responseBody"
+            }
+       
+            Write-Output `$Result
+        }
+    }
+}
+"@
+
+    Write-Debug "$CmdletFunction"
+    if ($FilePath) {
+        Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8
+    }
+    else {
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($CmdletFunction))
+    }
+
+    # get Datasource Cmdlet
+    $CmdletFunction = @"
+<#
+    .SYNOPSIS
+    Get OCI Datasource
+    .DESCRIPTION
+    Get OCI Datasource
+#>
+function Global:Get-OciDatasource {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=`$True,
+                    Position=0,
+                    HelpMessage="ID of the datasource to retrieve",
+                    ValueFromPipeline=`$True,
+                    ValueFromPipelineByPropertyName=`$True)][Long[]]`$id,
+        [parameter(Mandatory=`$False,
+                    Position=1,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]`$expand,
+        [parameter(Mandatory=`$False,
+                    Position=2,
+                    HelpMessage="Return related Acquisition unit")][Switch]`$acquisitionUnit,
+        [parameter(Mandatory=`$False,
+                    Position=3,
+                    HelpMessage="Return related Note")][Switch]`$note,
+        [parameter(Mandatory=`$False,
+                    Position=4,
+                    HelpMessage="Return list of related Changes")][Switch]`$changes,
+        [parameter(Mandatory=`$False,
+                    Position=5,
+                    HelpMessage="Return list of related Package statuses")][Switch]`$packageStatuses,
+        [parameter(Mandatory=`$False,
+                    Position=6,
+                    HelpMessage="Return related Active patch")][Switch]`$activePatch,
+        [parameter(Mandatory=`$False,
+                    Position=7,
+                    HelpMessage="Return list of related Events")][Switch]`$events,
+        [parameter(Mandatory=`$False,
+                    Position=8,
+                    HelpMessage="Return list of related Devices")][Switch]`$devices,
+        [parameter(Mandatory=`$False,
+                    Position=9,
+                    HelpMessage="Return datasource configuration")][Switch]`$config
+    )
+ 
+    Begin {
+        `$Result = `$null
+    }
+   
+    Process {
+        `$id = @(`$id)
+        foreach (`$id in `$id) {
+            `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/`$id"
+ 
+           
+            `$switchparameters=@("acquisitionUnit","note","changes","packageStatuses","activePatch","events","devices","config")
+            foreach (`$parameter in `$switchparameters) {
+                if ((Get-Variable `$parameter).Value) {
+                    if (`$expand) {
+                        `$expand += ",`$(`$parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                    }
+                    else {
+                        `$expand = `$(`$parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                    }
+                }
+            }
+ 
+            if (`$fromTime -or `$toTime -or `$expand) {
+                `$Uri += '?'
+                `$Separator = ''
+                if (`$fromTime) {
+                    `$Uri += "fromTime=`$(`$fromTime | ConvertTo-UnixTimestamp)"
+                    `$Separator = '&'
+                }
+                if (`$toTime) {
+                    `$Uri += "`$(`$Separator)toTime=`$(`$toTime | ConvertTo-UnixTimestamp)"
+                    `$Separator = '&'
+                }
+                if (`$expand) {
+                    `$Uri += "`$(`$Separator)expand=`$expand"
+                }
+            }
+ 
+            try {
+                `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method GET -Uri `$Uri -Headers `$CurrentOciServer.Headers
+            }
+            catch {
+                `$Response = `$_.Exception.Response
+                if (`$Response) {
+                    `$Result = `$Response.GetResponseStream()
+                    `$Reader = New-Object System.IO.StreamReader(`$Result)
+                    `$responseBody = " with response:`n" + `$reader.ReadToEnd()
+                } 
+                Write-Error "GET to `$Uri failed`$responseBody"
+            }
+ 
+            if (([String]`$Result).Trim().startsWith('{') -or ([String]`$Result).toString().Trim().startsWith('[')) {
+                `$Result = ParseJsonString(`$Result.Trim())
+            }
+            
+            if (`$Result.config) {
+                foreach (`$Package in `$Result.config.packages) {
+                    foreach (`$Attribute in `$Package.attributes) {
+                        `$PackageIndex = `$Result.config.packages.IndexOf(`$Package)
+                        `$AttributeIndex = `$Package.attributes.IndexOf(`$Attribute)
+                        Invoke-Command -ScriptBlock ([ScriptBlock]::Create("```$Result.config | Add-Member -MemberType ScriptProperty -Name `$(`$Attribute.name) -Value { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value } -SecondValue { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value = ```$args[0] } -Force"))
+                    }
+                }
+            }
+       
+            Write-Output `$Result
+        }
+    }
+}
+"@
+
+    Write-Debug "$CmdletFunction"
+    if ($FilePath) {
+        Out-File -Append -FilePath $FilePath -InputObject $CmdletFunction -Encoding utf8
+    }
+    else {
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($CmdletFunction))
+    }
+
+    # get Datasources Cmdlet
+    $CmdletFunction = @"
+<#
+    .SYNOPSIS
+    Get OCI Datasources
+    .DESCRIPTION
+    Get OCI Datasources
+#>
+function Global:Get-OciDatasources {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=`$False,
+                    Position=0,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]`$expand,
+        [parameter(Mandatory=`$False,
+                    Position=1,
+                    HelpMessage="Return related Acquisition unit")][Switch]`$acquisitionUnit,
+        [parameter(Mandatory=`$False,
+                    Position=2,
+                    HelpMessage="Return related Note")][Switch]`$note,
+        [parameter(Mandatory=`$False,
+                    Position=3,
+                    HelpMessage="Return list of related Changes")][Switch]`$changes,
+        [parameter(Mandatory=`$False,
+                    Position=4,
+                    HelpMessage="Return list of related Package statuses")][Switch]`$packageStatuses,
+        [parameter(Mandatory=`$False,
+                    Position=5,
+                    HelpMessage="Return related Active patch")][Switch]`$activePatch,
+        [parameter(Mandatory=`$False,
+                    Position=6,
+                    HelpMessage="Return list of related Events")][Switch]`$events,
+        [parameter(Mandatory=`$False,
+                    Position=7,
+                    HelpMessage="Return list of related Devices")][Switch]`$devices,
+        [parameter(Mandatory=`$False,
+                    Position=8,
+                    HelpMessage="Return datasource configuration")][Switch]`$config
+    )
+ 
+    Begin {
+        `$Result = `$null
+    }
+   
+    Process {
+        `$id = @(`$id)
+        foreach (`$id in `$id) {
+            `$Uri = `$(`$CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources"
+ 
+           
+            `$switchparameters=@("acquisitionUnit","note","changes","packageStatuses","activePatch","events","devices","config")
+            foreach (`$parameter in `$switchparameters) {
+                if ((Get-Variable `$parameter).Value) {
+                    if (`$expand) {
+                        `$expand += ",`$(`$parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                    }
+                    else {
+                        `$expand = `$(`$parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                    }
+                }
+            }
+ 
+            if (`$fromTime -or `$toTime -or `$expand) {
+                `$Uri += '?'
+                `$Separator = ''
+                if (`$fromTime) {
+                    `$Uri += "fromTime=`$(`$fromTime | ConvertTo-UnixTimestamp)"
+                    `$Separator = '&'
+                }
+                if (`$toTime) {
+                    `$Uri += "`$(`$Separator)toTime=`$(`$toTime | ConvertTo-UnixTimestamp)"
+                    `$Separator = '&'
+                }
+                if (`$expand) {
+                    `$Uri += "`$(`$Separator)expand=`$expand"
+                }
+            }
+ 
+            try {
+                `$Result = Invoke-RestMethod -TimeoutSec `$CurrentOciServer.Timeout -Method GET -Uri `$Uri -Headers `$CurrentOciServer.Headers
+            }
+            catch {
+                `$Response = `$_.Exception.Response
+                if (`$Response) {
+                    `$Result = `$Response.GetResponseStream()
+                    `$Reader = New-Object System.IO.StreamReader(`$Result)
+                    `$responseBody = " with response:`n" + `$reader.ReadToEnd()
+                } 
+                Write-Error "GET to `$Uri failed`$responseBody"
+            }
+ 
+            if (([String]`$Result).Trim().startsWith('{') -or ([String]`$Result).toString().Trim().startsWith('[')) {
+                `$Result = ParseJsonString(`$Result.Trim())
+            }
+
+            if (`$Result.config) {
+                foreach (`$Datasource in `$Result) {
+                    foreach (`$Package in `$Datasource.config.packages) {
+                        foreach (`$Attribute in `$Package.attributes) {
+                            `$PackageIndex = `$Datasource.config.packages.IndexOf(`$Package)
+                            `$AttributeIndex = `$Package.attributes.IndexOf(`$Attribute)
+                            Invoke-Command -ScriptBlock ([ScriptBlock]::Create("```$Datasource.config | Add-Member -MemberType ScriptProperty -Name `$(`$Attribute.name) -Value { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value } -SecondValue { ```$this.packages[`$PackageIndex].attributes[`$AttributeIndex].Value = ```$args[0] } -Force"))
+                        }
+                    }
+                }
+            }
+       
+            Write-Output `$Result
+        }
     }
 }
 "@
