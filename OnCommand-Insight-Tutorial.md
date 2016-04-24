@@ -387,6 +387,30 @@ $Datasource.config.password = "test"
 $Datasource | Update-OciDatasource
 ```
 
+### Creating and restoring OCI
+
+All available Backups on the OCI Server can be retrieved with
+```powershell
+Get-OciBackups
+```
+
+A backup can be created with and stored under C:\tmp
+```powershell
+$Path = "C:\tmp"
+Get-OciBackup -Path $Path
+```
+
+A backup can be restored with
+```powershell
+$BackupLocation = "C:\tmp\Backup_Lab_NetApp_Munich_V7-2-0_B773_D20160417_2300_4959387166860292236.zip
+Restore-OciBackup -FilePath $BackupLocation
+```
+
+The latest Backup available on the OCI Server can be restored with
+```powershell
+Get-OciBackups | Sort -Property Date -Descending | select -first 1 | Restore-OciBackup
+```
+
 ## Troubleshooting
 
 If you encounter issues with timeouts, this may be due to slow OCI Servers or very large environments. Try increasing the Timout from the default of 600 seconds (10 minutes) when connecting to the OCI Server
