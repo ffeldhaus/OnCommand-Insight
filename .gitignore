@@ -1,3 +1,4 @@
 *.psd1
 release/
 json/
+OnCommand-Insight-Examples.ps1
