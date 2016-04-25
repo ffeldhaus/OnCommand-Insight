@@ -550,14 +550,14 @@ function Global:Get-OciAcquisitionUnits {
  
     PARAM (
         [parameter(Mandatory=$False,
-                   Position=0,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer,
-        [parameter(Mandatory=$False,
-                    Position=1,
+                    Position=0,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][String]$expand,
         [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources
+                    Position=1,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -592,7 +592,7 @@ function Global:Get-OciAcquisitionUnits {
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
-            Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
  
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -620,20 +620,20 @@ function Global:Get-OciAcquisitionUnit {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
-                   Position=0,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer,
         [parameter(Mandatory=$True,
-                    Position=1,
+                    Position=0,
                     HelpMessage="Id of acquisition unit to retrieve",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
-                    Position=2,
+                    Position=1,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][String]$expand,
         [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources
+                    Position=2,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -670,7 +670,7 @@ function Global:Get-OciAcquisitionUnit {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -679,120 +679,6 @@ function Global:Get-OciAcquisitionUnit {
 
             $AcquisitionUnit = ParseAcquisitionUnits($Result)
             Write-Output $AcquisitionUnit
-        }
-    }
-}
-
-<#
-    .SYNOPSIS
-    Retrieve all datasources of an acquisition unit
-    .DESCRIPTION
-    Retrieve all datasources of an acquisition unit
-    .PARAMETER id
-    ID of acquisition unit to get datasources for
-    .PARAMETER expand
-    Expand parameter for underlying JSON object (e.g. expand=datasources)
-    .PARAMETER acquisitionUnit
-    Return related Acquisition unit
-    .PARAMETER note
-    Return related Note
-    .PARAMETER changes
-    Return list of related Changes
-    .PARAMETER packages
-    Return list of related Packages
-    .PARAMETER activePatch
-    Return related Active patch
-    .PARAMETER events
-    Return list of related Events
-    .PARAMETER devices
-    Return list of related Devices
-    .PARAMETER config
-    Return related Config
-#>
-function Global:Get-OciDatasourcesByAcquisitionUnit {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$False,
-                   Position=0,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer,
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="ID of acquisition unit to get datasources for",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][String]$expand,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
-        [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Return related Note")][Switch]$note,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Return list of related Changes")][Switch]$changes,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Return list of related Packages")][Switch]$packages,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="Return related Active patch")][Switch]$activePatch,
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return list of related Events")][Switch]$events,
-        [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return list of related Devices")][Switch]$devices,
-        [parameter(Mandatory=$False,
-                    Position=9,
-                    HelpMessage="Return related Config")][Switch]$config
-    )
- 
-    Begin {
-        $Result = $null
-        if (!$Server) {
-            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
-        }
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
- 
-           
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($expand) {
-                $Uri += "?$($Separator)expand=$expand"
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            $Datasources = ParseDatasources($Result)
-            Write-Output $Datasources
         }
     }
 }
@@ -809,14 +695,14 @@ function Global:Restart-OciAcquisitionUnit {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
-                   Position=0,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer,
         [parameter(Mandatory=$True,
-                    Position=1,
+                    Position=0,
                     HelpMessage="Id of acquisition unit to restart",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -836,7 +722,7 @@ function Global:Restart-OciAcquisitionUnit {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -880,7 +766,7 @@ function Global:Get-OciCertificates {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -918,7 +804,7 @@ To create from existing certificate file create a multi part request with the at
       
 
 #>
-function Global:Create-OciCertificate {
+function Global:Add-OciCertificate {
     [CmdletBinding()]
  
     PARAM (
@@ -974,7 +860,7 @@ function Global:Create-OciCertificate {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -1016,7 +902,7 @@ function Global:Get-OciDatasourceTypes {
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
-            Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
  
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -1031,145 +917,48 @@ function Global:Get-OciDatasourceTypes {
     .SYNOPSIS
     Retrieve one data source type.
     .DESCRIPTION
-    
+    Retrieve one data source type.
     .PARAMETER id
-    Id of data source type
+    ID of data source type
 #>
 function Global:Get-OciDatasourceType {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id of data source type",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                   Position=0,
+                   HelpMessage="Id of data source type",
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasourceTypes/{id}" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasourceTypes/$id"      
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -1179,67 +968,73 @@ function Global:Get-OciDatasourceType {
     .SYNOPSIS
     Retrieve all Data Sources
     .DESCRIPTION
-    
+    Retrieve all Data Sources
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)
-        .PARAMETER acquisitionUnit
-        Return related Acquisition unit
-        .PARAMETER note
-        Return related Note
-        .PARAMETER changes
-        Return list of related Changes
-        .PARAMETER packages
-        Return list of related Packages
-        .PARAMETER activePatch
-        Return related Active patch
-        .PARAMETER events
-        Return list of related Events
-        .PARAMETER devices
-        Return list of related Devices
-        .PARAMETER config
-        Return related Config
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
 #>
 function Global:Get-OciDatasources {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$False,
-                    Position=0,
+                    Position=1,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]$expand,
         [parameter(Mandatory=$False,
-                    Position=1,
+                    Position=2,
                     HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
         [parameter(Mandatory=$False,
-                    Position=2,
+                    Position=3,
                     HelpMessage="Return related Note")][Switch]$note,
         [parameter(Mandatory=$False,
-                    Position=3,
+                    Position=4,
                     HelpMessage="Return list of related Changes")][Switch]$changes,
         [parameter(Mandatory=$False,
-                    Position=4,
+                    Position=5,
                     HelpMessage="Return list of related Packages")][Switch]$packages,
         [parameter(Mandatory=$False,
-                    Position=5,
+                    Position=6,
                     HelpMessage="Return related Active patch")][Switch]$activePatch,
         [parameter(Mandatory=$False,
-                    Position=6,
+                    Position=7,
                     HelpMessage="Return list of related Events")][Switch]$events,
         [parameter(Mandatory=$False,
-                    Position=7,
+                    Position=8,
                     HelpMessage="Return list of related Devices")][Switch]$devices,
         [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return related Config")][Switch]$config
+                    Position=9,
+                    HelpMessage="Return related Config")][Switch]$config,
+        [parameter(Mandatory=$False,
+                   Position=10,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources" -replace "{id}","$id"
  
            
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
@@ -1254,116 +1049,147 @@ function Global:Get-OciDatasources {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
-            Write-Output $Result
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
         }
     }
 }
 
 <#
     .SYNOPSIS
-    Create Data Source
+    Retrieve all datasources of an acquisition unit
+    .DESCRIPTION
+    Retrieve all datasources of an acquisition unit
+    .PARAMETER id
+    ID of acquisition unit to get datasources for
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=datasources)
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
+#>
+function Global:Get-OciDatasourcesByAcquisitionUnit {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="ID of acquisition unit to get datasources for",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                    Position=1,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][String]$expand,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Return related Note")][Switch]$note,
+        [parameter(Mandatory=$False,
+                    Position=4,
+                    HelpMessage="Return list of related Changes")][Switch]$changes,
+        [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Return list of related Packages")][Switch]$packages,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Return related Active patch")][Switch]$activePatch,
+        [parameter(Mandatory=$False,
+                    Position=7,
+                    HelpMessage="Return list of related Events")][Switch]$events,
+        [parameter(Mandatory=$False,
+                    Position=8,
+                    HelpMessage="Return list of related Devices")][Switch]$devices,
+        [parameter(Mandatory=$False,
+                    Position=9,
+                    HelpMessage="Return related Config")][Switch]$config,
+        [parameter(Mandatory=$False,
+                   Position=10,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $id = @($id)
+        foreach ($id in $id) {
+            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
+ 
+           
+            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+            foreach ($parameter in $switchparameters) {
+                if ((Get-Variable $parameter).Value) {
+                    if ($expand) {
+                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                    }
+                    else {
+                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                    }
+                }
+            }
+ 
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
+            }
+ 
+            try {
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            }
+            catch {
+                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            }
+ 
+            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+                $Result = ParseJsonString($Result.Trim())
+            }
+
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
+        }
+    }
+}
+
+# TODO: Implemenet and test adding of datasoure
+
+<#
+    .SYNOPSIS
+    Add Data Source
     .DESCRIPTION
     Request payload for new datasource should contain JSON in the format that is obtained by using following expands on GET one datasource: acquisitionUnit,config<br/>
 <pre>
@@ -1406,7 +1232,7 @@ function Global:Get-OciDatasources {
         .PARAMETER config
         Return related Config
 #>
-function Global:Add {
+function Global:Add-OciDatasource {
     [CmdletBinding()]
  
     PARAM (
@@ -1485,7 +1311,7 @@ function Global:Add {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -1569,7 +1395,7 @@ function Global:Add {
     .SYNOPSIS
     Retrieve Datasource event details
     .DESCRIPTION
-    
+    Retrieve Datasource event details
     .PARAMETER id
     Id of data source event to get data for
 #>
@@ -1633,7 +1459,7 @@ function Global:Get-OciDatasourceEventDetails {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -1821,7 +1647,7 @@ function Global:Remove-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -2014,7 +1840,7 @@ function Global:Get-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -2223,7 +2049,7 @@ function Global:Update-Oci {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -2376,7 +2202,7 @@ function Global:Get-OciDatasourceAcquisitionUnit {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -2534,7 +2360,7 @@ function Global:Get-OciActivePatchByDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -2687,7 +2513,7 @@ function Global:Get-OciDatasourceChanges {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -2835,7 +2661,7 @@ function Global:Get-OciConfigByDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -2983,7 +2809,7 @@ function Global:Get-OciDatasourceDevices {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -3136,7 +2962,7 @@ function Global:Get-OciDatasourceEvents {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -3284,7 +3110,7 @@ function Global:Get-OciDatasourceNote {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -3444,7 +3270,7 @@ function Global:Update-OciDatasourceNote {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -3592,7 +3418,7 @@ function Global:Get-OciDatasourcePackageStatuses {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -3740,7 +3566,7 @@ function Global:Poll-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -3893,7 +3719,7 @@ function Global:Suspend-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -4041,7 +3867,7 @@ function Global:Resume-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -4189,7 +4015,7 @@ function Global:Test-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -4332,7 +4158,7 @@ function Global:Get-Oci {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -4502,7 +4328,7 @@ function Global:Update {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -4654,7 +4480,7 @@ function Global:Connect-OciTest {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -4797,7 +4623,7 @@ function Global:Get-OciLicense {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -4948,7 +4774,7 @@ function Global:Update {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -5099,7 +4925,7 @@ function Global:Replace-OciLicense {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -5250,7 +5076,7 @@ function Global:Get-OciPatches {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -5396,7 +5222,7 @@ function Global:Add-OciPatches {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -5554,7 +5380,7 @@ function Global:Update-OciPatch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -5707,7 +5533,7 @@ function Global:Update {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -5855,7 +5681,7 @@ function Global:Approve-OciPatch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -6008,7 +5834,7 @@ function Global:Get-OciPatchDatasources {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -6163,7 +5989,7 @@ function Global:Update-OciPatchNote {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -6311,7 +6137,7 @@ function Global:Rollback-OciPatch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -6454,7 +6280,7 @@ function Global:Get-OciUsers {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -6608,7 +6434,7 @@ function Global:Add-OciUsers {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -6751,7 +6577,7 @@ function Global:Get-OciCurrentUser {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -6899,7 +6725,7 @@ function Global:Delete-OciUser {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -7047,7 +6873,7 @@ function Global:Get-OciUser {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -7205,7 +7031,7 @@ function Global:Update-OciUser {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -7348,7 +7174,7 @@ function Global:Get-OciAnnotations {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -7509,7 +7335,7 @@ function Global:Create-OciDefinition {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -7657,7 +7483,7 @@ function Global:Remove-OciDefinition {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -7805,7 +7631,7 @@ function Global:Get-OciAnnotation {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -7975,7 +7801,7 @@ function Global:Update-OciDefinition {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -8137,7 +7963,7 @@ function Global:Remove-OciDefinitionValues {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -8285,7 +8111,7 @@ function Global:Get-OciAnnotationValues {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -8487,7 +8313,7 @@ function Global:Update-OciAnnotationValues {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -8640,7 +8466,7 @@ function Global:Get-OciAnnotationValuesByObjectType {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -8798,7 +8624,7 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -8964,7 +8790,7 @@ function Global:Get-OciApplications {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -9142,7 +8968,7 @@ function Global:Add-OciApplication {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -9328,7 +9154,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAssets {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -9514,7 +9340,7 @@ function Global:Bulk-OciAssignApplicationsToAssets {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -9672,7 +9498,7 @@ function Global:Delete {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -9845,7 +9671,7 @@ function Global:Get-OciApplication {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -10007,7 +9833,7 @@ function Global:Update {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -10175,7 +10001,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -10333,7 +10159,7 @@ function Global:Get-OciApplicationAssets {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -10501,7 +10327,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -10689,7 +10515,7 @@ function Global:Get-OciComputeResourcesByApplication {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -10887,7 +10713,7 @@ function Global:Get-OciStorageResourcesByApplication {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -11030,7 +10856,7 @@ function Global:Get-OciBusinessEntities {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -11183,7 +11009,7 @@ function Global:Add {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -11331,7 +11157,7 @@ function Global:Delete {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -11479,7 +11305,7 @@ function Global:Get-OciBusinessEntity {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -11685,7 +11511,7 @@ function Global:Get-OciDatastores {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -11828,7 +11654,7 @@ function Global:Get-OciCount {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -12026,7 +11852,7 @@ function Global:Get-OciDatastore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -12192,7 +12018,7 @@ function Global:Remove-OciAnnotationsByDatastore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -12350,7 +12176,7 @@ function Global:Get-OciAnnotationsByDatastore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -12516,7 +12342,7 @@ function Global:Update-OciAnnotationsByDatastore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -12719,7 +12545,7 @@ function Global:Get-OciDatasourcesByDataStore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -12937,7 +12763,7 @@ function Global:Get-OciHostsByDatastore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -13105,7 +12931,7 @@ function Global:Get-OciDatastorePerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -13303,7 +13129,7 @@ function Global:Get-OciStorageResourcesByDatastore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -13501,7 +13327,7 @@ function Global:Get-OciVmdksByDatastore {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -13704,7 +13530,7 @@ function Global:Get-OciDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -13870,7 +13696,7 @@ function Global:Remove-OciAnnotationsByDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -14028,7 +13854,7 @@ function Global:Get-OciAnnotationsByDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -14194,7 +14020,7 @@ function Global:Update-OciAnnotationsByDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -14442,7 +14268,7 @@ function Global:Get-OciBackendVolumesByDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -14645,7 +14471,7 @@ function Global:Get-OciDatasourcesByDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -14813,7 +14639,7 @@ function Global:Get-OciDiskPerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -15026,7 +14852,7 @@ function Global:Get-OciStoragePoolsByDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -15224,7 +15050,7 @@ function Global:Get-OciStorageResourcesByDisk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -15400,7 +15226,7 @@ function Global:Get-OciFabrics {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -15543,7 +15369,7 @@ function Global:Get-OciCount {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -15716,7 +15542,7 @@ function Global:Get-OciFabric {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -15919,7 +15745,7 @@ function Global:Get-OciDatasourcesByFabric {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -16137,7 +15963,7 @@ function Global:Get-OciPortsByFabric {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -16295,7 +16121,7 @@ function Global:Get-OciPortsByFabricCount {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -16493,7 +16319,7 @@ function Global:Get-OciSwitchesByFabric {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -16671,7 +16497,7 @@ function Global:Get-OciFilesystem {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -16859,7 +16685,7 @@ function Global:Get-OciComputeResourceByFileSystem {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -17057,7 +16883,7 @@ function Global:Get-OciStorageResorcesByFileSystem {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -17255,7 +17081,7 @@ function Global:Get-OciVmdksByFileSystem {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -17481,7 +17307,7 @@ function Global:Get-OciHosts {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -17624,7 +17450,7 @@ function Global:Get-OciCount {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -17842,7 +17668,7 @@ function Global:Get-OciHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -18008,7 +17834,7 @@ function Global:Remove-OciAnnotationsByHosts {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -18166,7 +17992,7 @@ function Global:Get-OciAnnotationsByHosts {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -18332,7 +18158,7 @@ function Global:Update-OciAnnotationsByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -18502,7 +18328,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -18675,7 +18501,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -18845,7 +18671,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -19010,7 +18836,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -19173,7 +18999,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -19391,7 +19217,7 @@ function Global:Get-OciClusterHostsByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -19554,7 +19380,7 @@ function Global:Get-OciDataCenterByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -19757,7 +19583,7 @@ function Global:Get-OciDatasourcesByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -19935,7 +19761,7 @@ function Global:Get-OciFileSystemsByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -20103,7 +19929,7 @@ function Global:Get-OciHostPerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -20306,7 +20132,7 @@ function Global:Get-OciPortsByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -20504,7 +20330,7 @@ function Global:Get-OciStorageResourcesByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -20722,7 +20548,7 @@ function Global:Get-OciVirtualMachinesByHost {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -20950,7 +20776,7 @@ function Global:Get-OciInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -21116,7 +20942,7 @@ function Global:Remove-OciAnnotationsByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -21274,7 +21100,7 @@ function Global:Get-OciAnnotationsByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -21440,7 +21266,7 @@ function Global:Update-OciAnnotationsByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -21610,7 +21436,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -21783,7 +21609,7 @@ function Global:Get-OciApplicationsByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -21953,7 +21779,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -22123,7 +21949,7 @@ function Global:Update-OciApplicationsByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -22286,7 +22112,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -22474,7 +22300,7 @@ function Global:Get-OciComputeResourcesByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -22672,7 +22498,7 @@ function Global:Get-OciDataStoresByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -22875,7 +22701,7 @@ function Global:Get-OciDatasourcesByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -23043,7 +22869,7 @@ function Global:Get-OciInternalVolumePerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -23236,7 +23062,7 @@ function Global:Get-OciQtreesByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -23464,7 +23290,7 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -23667,7 +23493,7 @@ function Global:Get-OciStorageNodesByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -23915,7 +23741,7 @@ function Global:Get-OciVolumesByInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -24118,7 +23944,7 @@ function Global:Get-OciPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -24284,7 +24110,7 @@ function Global:Remove-OciAnnotationsByPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -24442,7 +24268,7 @@ function Global:Get-OciAnnotationsByPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -24608,7 +24434,7 @@ function Global:Update-OciAnnotationsByPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -24778,7 +24604,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -24951,7 +24777,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -25121,7 +24947,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -25286,7 +25112,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -25489,7 +25315,7 @@ function Global:Get-OciConnectedPortsByPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -25692,7 +25518,7 @@ function Global:Get-OciDatasourcesByPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -25855,7 +25681,7 @@ function Global:Get-OciDeviceByPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -26028,7 +25854,7 @@ function Global:Get-OciFabricsByPort {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -26196,7 +26022,7 @@ function Global:Get-OciPortPerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -26389,7 +26215,7 @@ function Global:Get-Oci {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -26555,7 +26381,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -26713,7 +26539,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -26879,7 +26705,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -27049,7 +26875,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -27222,7 +27048,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -27392,7 +27218,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -27557,7 +27383,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -27720,7 +27546,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -27948,7 +27774,7 @@ function Global:Get-OciInternalVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -28131,7 +27957,7 @@ function Global:Get-OciSharesByQtree {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -28369,7 +28195,7 @@ function Global:Get-OciStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -28617,7 +28443,7 @@ function Global:Get-OciVolumesByQtree {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -28800,7 +28626,7 @@ function Global:Get-Oci {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -28966,7 +28792,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -29124,7 +28950,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -29290,7 +29116,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -29460,7 +29286,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -29633,7 +29459,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -29803,7 +29629,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -29968,7 +29794,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -30131,7 +29957,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -30324,7 +30150,7 @@ function Global:Get-OciQtree {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -30562,7 +30388,7 @@ function Global:Get-OciStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -30765,7 +30591,7 @@ function Global:Get-OciStorageNode {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -30931,7 +30757,7 @@ function Global:Remove-OciAnnotationsByStorageNode {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -31089,7 +30915,7 @@ function Global:Get-OciAnnotationsByStorageNode {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -31255,7 +31081,7 @@ function Global:Update-OciAnnotationsByStorageNode {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -31458,7 +31284,7 @@ function Global:Get-OciDatasourcesByStorageNode {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -31626,7 +31452,7 @@ function Global:Get-OciStorageNodePerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -31829,7 +31655,7 @@ function Global:Get-OciPortsByStorageNode {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -32042,7 +31868,7 @@ function Global:Get-OciStoragePoolsByNode {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -32255,7 +32081,7 @@ function Global:Get-OciStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -32421,7 +32247,7 @@ function Global:Remove-OciAnnotationsByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -32579,7 +32405,7 @@ function Global:Get-OciAnnotationsByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -32745,7 +32571,7 @@ function Global:Update-OciAnnotationsByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -32948,7 +32774,7 @@ function Global:Get-OciDatasourcesByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -33151,7 +32977,7 @@ function Global:Get-OciDisksByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -33379,7 +33205,7 @@ function Global:Get-OciInternalVolumesByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -33547,7 +33373,7 @@ function Global:Get-OciStoragePoolPerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -33785,7 +33611,7 @@ function Global:Get-OciStorageByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -33988,7 +33814,7 @@ function Global:Get-OciStorageNodesByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -34186,7 +34012,7 @@ function Global:Get-OciStorageResourcesByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -34434,7 +34260,7 @@ function Global:Get-OciVolumesByStoragePool {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -34680,7 +34506,7 @@ function Global:Get-OciStorages {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -34823,7 +34649,7 @@ function Global:Get-OciCount {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -35061,7 +34887,7 @@ function Global:Get-OciStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -35227,7 +35053,7 @@ function Global:Remove-OciAnnotationsByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -35385,7 +35211,7 @@ function Global:Get-OciAnnotationsByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -35551,7 +35377,7 @@ function Global:Update-OciAnnotationsByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -35721,7 +35547,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -35894,7 +35720,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -36064,7 +35890,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -36229,7 +36055,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -36432,7 +36258,7 @@ function Global:Get-OciDatasourcesByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -36635,7 +36461,7 @@ function Global:Get-OciDisksByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -36863,7 +36689,7 @@ function Global:Get-OciInternalVolumesByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -37031,7 +36857,7 @@ function Global:Get-OciStoragePerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -37234,7 +37060,7 @@ function Global:Get-OciPortsByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -37382,7 +37208,7 @@ function Global:Get-OciProtocolsByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -37575,7 +37401,7 @@ function Global:Get-OciQtreesByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -37758,7 +37584,7 @@ function Global:Get-OciSharesByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -37961,7 +37787,7 @@ function Global:Get-OciStorageNodesByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -38174,7 +38000,7 @@ function Global:Get-OciStoragePoolsByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -38372,7 +38198,7 @@ function Global:Get-OciStorageResourcesByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -38620,7 +38446,7 @@ function Global:Get-OciVolumesByStorage {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -38821,7 +38647,7 @@ function Global:Get-OciSwitches {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -38964,7 +38790,7 @@ function Global:Get-OciCount {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -39162,7 +38988,7 @@ function Global:Get-OciSwitch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -39328,7 +39154,7 @@ function Global:Remove-OciAnnotationsBySwitch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -39486,7 +39312,7 @@ function Global:Get-OciAnnotationsBySwitch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -39652,7 +39478,7 @@ function Global:Update-OciAnnotationsBySwitch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -39822,7 +39648,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -39995,7 +39821,7 @@ function Global:Get-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -40165,7 +39991,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -40330,7 +40156,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -40533,7 +40359,7 @@ function Global:Get-OciDatasourcesBySwitch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -40706,7 +40532,7 @@ function Global:Get-OciFabricBySwitch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -40874,7 +40700,7 @@ function Global:Get-OciSwitchPerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -41077,7 +40903,7 @@ function Global:Get-OciPortsBySwitch {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -41303,7 +41129,7 @@ function Global:Get-OciVirtualMachines {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -41446,7 +41272,7 @@ function Global:Get-OciCount {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -41664,7 +41490,7 @@ function Global:Get-OciVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -41830,7 +41656,7 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -41988,7 +41814,7 @@ function Global:Get-OciAnnotationsByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -42154,7 +41980,7 @@ function Global:Update-OciAnnotationsByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -42324,7 +42150,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -42497,7 +42323,7 @@ function Global:Get-OciApplicationsByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -42667,7 +42493,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -42832,7 +42658,7 @@ function Global:Update-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -42995,7 +42821,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -43193,7 +43019,7 @@ function Global:Get-OciDataStoreByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -43396,7 +43222,7 @@ function Global:Get-OciDatasourcesByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -43574,7 +43400,7 @@ function Global:Get-OciFileSystemsByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -43792,7 +43618,7 @@ function Global:Get-OciHostByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -43960,7 +43786,7 @@ function Global:Get-OciVirtualMachinePerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -44163,7 +43989,7 @@ function Global:Get-OciPortsByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -44361,7 +44187,7 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -44559,7 +44385,7 @@ function Global:Get-OciVmdksByVirtualMachine {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -44757,7 +44583,7 @@ function Global:Get-OciVmdk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -44923,7 +44749,7 @@ function Global:Remove-OciAnnotationsByVmdk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -45081,7 +44907,7 @@ function Global:Get-OciAnnotationsByVmdk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -45247,7 +45073,7 @@ function Global:Update-OciAnnotationsByVmdk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -45450,7 +45276,7 @@ function Global:Get-OciDatasourcesByVmdk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -45618,7 +45444,7 @@ function Global:Get-OciVmdkPerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -45816,7 +45642,7 @@ function Global:Get-OciStorageResourcesByVmdk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -46034,7 +45860,7 @@ function Global:Get-OciVirtualMachineByVmdk {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -46282,7 +46108,7 @@ function Global:Get-OciVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -46448,7 +46274,7 @@ function Global:Remove-OciAnnotationsByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -46606,7 +46432,7 @@ function Global:Get-OciAnnotationsByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -46772,7 +46598,7 @@ function Global:Update-OciAnnotationsByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -46942,7 +46768,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -47115,7 +46941,7 @@ function Global:Get-OciApplicationsByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -47285,7 +47111,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -47455,7 +47281,7 @@ function Global:Update-OciApplicationsByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -47618,7 +47444,7 @@ function Global:Remove-OciByTypeAndId {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -47766,7 +47592,7 @@ function Global:Get-OciAutoTierPolicyByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -47954,7 +47780,7 @@ function Global:Get-OciComputeResourcesByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -48152,7 +47978,7 @@ function Global:Get-OciDatastoresByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -48262,7 +48088,7 @@ function Global:Get-OciDatastoresByVolume {
         .PARAMETER config
         Return related Config
 #>
-function Global:Get-OciDatasources {
+function Global:Get-OciDatasourcesByVolume {
     [CmdletBinding()]
  
     PARAM (
@@ -48355,7 +48181,7 @@ function Global:Get-OciDatasources {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -48583,7 +48409,7 @@ function Global:Get-OciInternalVolumeByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -48751,7 +48577,7 @@ function Global:Get-OciVolumePerformance {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -48954,7 +48780,7 @@ function Global:Get-OciPortsByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -49147,7 +48973,7 @@ function Global:Get-OciQtree {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -49395,7 +49221,7 @@ function Global:Get-OciSourceVolumesByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -49633,7 +49459,7 @@ function Global:Get-OciStorageByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -49836,7 +49662,7 @@ function Global:Get-OciStorageNodesByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -50049,7 +49875,7 @@ function Global:Get-OciStoragePoolsByVolume {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -50262,7 +50088,7 @@ function Global:Get-OciVirtualStoragePools {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -50500,7 +50326,7 @@ function Global:Get-OciVirtualizer {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -50616,7 +50442,7 @@ function Global:Search-Oci {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
        
             Write-Output $Result.resultsByCategory
@@ -50649,7 +50475,7 @@ function Global:Get-OciHealth {
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
-            Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
         foreach ($Item in $Result) {
@@ -50701,7 +50527,7 @@ function Global:Update-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
        
             Write-Output $Result
@@ -50795,7 +50621,7 @@ function Global:Get-OciDatasource {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
  
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
@@ -50808,112 +50634,6 @@ function Global:Get-OciDatasource {
                         $PackageIndex = $Result.config.packages.IndexOf($Package)
                         $AttributeIndex = $Package.attributes.IndexOf($Attribute)
                         Invoke-Command -ScriptBlock ([ScriptBlock]::Create("`$Result.config | Add-Member -MemberType ScriptProperty -Name $($Attribute.name) -Value { `$this.packages[$PackageIndex].attributes[$AttributeIndex].Value } -SecondValue { `$this.packages[$PackageIndex].attributes[$AttributeIndex].Value = `$args[0] }  -ErrorAction SilentlyContinue"))
-                    }
-                }
-            }
-       
-            Write-Output $Result
-        }
-    }
-}
-
-<#
-    .SYNOPSIS
-    Get OCI Datasources
-    .DESCRIPTION
-    Get OCI Datasources
-#>
-function Global:Get-OciDatasources {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$False,
-                    Position=0,
-                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]$expand,
-        [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return related Note")][Switch]$note,
-        [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Return list of related Changes")][Switch]$changes,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Return list of related Package statuses")][Switch]$packageStatuses,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Return related Active patch")][Switch]$activePatch,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="Return list of related Events")][Switch]$events,
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return list of related Devices")][Switch]$devices,
-        [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return datasource configuration")][Switch]$config
-    )
- 
-    Begin {
-        $Result = $null
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources"
- 
-           
-            $switchparameters=@("acquisitionUnit","note","changes","packageStatuses","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            if ($Result.config) {
-                foreach ($Datasource in $Result) {
-                    foreach ($Package in $Datasource.config.packages) {
-                        foreach ($Attribute in $Package.attributes) {
-                            $PackageIndex = $Datasource.config.packages.IndexOf($Package)
-                            $AttributeIndex = $Package.attributes.IndexOf($Attribute)
-                            Invoke-Command -ScriptBlock ([ScriptBlock]::Create("`$Datasource.config | Add-Member -MemberType ScriptProperty -Name $($Attribute.name) -Value { `$this.packages[$PackageIndex].attributes[$AttributeIndex].Value } -SecondValue { `$this.packages[$PackageIndex].attributes[$AttributeIndex].Value = `$args[0] } -ErrorAction SilentlyContinue"))
-                        }
                     }
                 }
             }
@@ -51034,7 +50754,7 @@ function Global:Restore-OciBackup {
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
         }
         Write-Output $Result
@@ -51111,7 +50831,7 @@ function Global:Get-OciBackup {
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
-            Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
         $FilePath = $Path + '\' + (($Uri -split '/') | select -last 1)
@@ -51127,7 +50847,7 @@ function Global:Get-OciBackup {
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
-            Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
     }
 }
@@ -51163,7 +50883,7 @@ function Global:Get-OciBackups {
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
-            Write-Error "GET to $Uri failed with Exception $($_Exception.Message) `n $responseBody"
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
     }
 }
