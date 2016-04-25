@@ -535,6 +535,23 @@ function ParseCertificates($Certificates) {
     }
 }
 
+function ParseLicenseStatus($LicenseStatus) {
+    $LicenseStatus.LicenseParts = ParseLicenses($LicenseStatus.LicenseParts)
+
+    Write-Output $LicenseStatus
+}
+
+function ParseLicenses($Licenses) {
+    $Licenses = @($Licenses)
+    foreach ($License in $Licenses) {
+        if ($License.ExpirationDate) {
+            $License.ExpirationDate = $License.ExpirationDate | Get-Date
+        }
+
+        Write-Output $License
+    }
+}
+
 <#
     .SYNOPSIS
     Retrieve all Acquisition Units
@@ -730,6 +747,120 @@ function Global:Restart-OciAcquisitionUnit {
             }
        
             Write-Output $Result
+        }
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve all datasources of an acquisition unit
+    .DESCRIPTION
+    Retrieve all datasources of an acquisition unit
+    .PARAMETER id
+    ID of acquisition unit to get datasources for
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=datasources)
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
+#>
+function Global:Get-OciDatasourcesByAcquisitionUnit {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="ID of acquisition unit to get datasources for",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                    Position=1,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][String]$expand,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Return related Note")][Switch]$note,
+        [parameter(Mandatory=$False,
+                    Position=4,
+                    HelpMessage="Return list of related Changes")][Switch]$changes,
+        [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Return list of related Packages")][Switch]$packages,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Return related Active patch")][Switch]$activePatch,
+        [parameter(Mandatory=$False,
+                    Position=7,
+                    HelpMessage="Return list of related Events")][Switch]$events,
+        [parameter(Mandatory=$False,
+                    Position=8,
+                    HelpMessage="Return list of related Devices")][Switch]$devices,
+        [parameter(Mandatory=$False,
+                    Position=9,
+                    HelpMessage="Return related Config")][Switch]$config,
+        [parameter(Mandatory=$False,
+                   Position=10,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $id = @($id)
+        foreach ($id in $id) {
+            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
+ 
+           
+            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+            foreach ($parameter in $switchparameters) {
+                if ((Get-Variable $parameter).Value) {
+                    if ($expand) {
+                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                    }
+                    else {
+                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                    }
+                }
+            }
+ 
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
+            }
+ 
+            try {
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            }
+            catch {
+                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            }
+ 
+            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+                $Result = ParseJsonString($Result.Trim())
+            }
+
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
         }
     }
 }
@@ -993,34 +1124,34 @@ function Global:Get-OciDatasources {
  
     PARAM (
         [parameter(Mandatory=$False,
-                    Position=1,
+                    Position=0,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]$expand,
         [parameter(Mandatory=$False,
-                    Position=2,
+                    Position=1,
                     HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
         [parameter(Mandatory=$False,
-                    Position=3,
+                    Position=2,
                     HelpMessage="Return related Note")][Switch]$note,
         [parameter(Mandatory=$False,
-                    Position=4,
+                    Position=3,
                     HelpMessage="Return list of related Changes")][Switch]$changes,
         [parameter(Mandatory=$False,
-                    Position=5,
+                    Position=4,
                     HelpMessage="Return list of related Packages")][Switch]$packages,
         [parameter(Mandatory=$False,
-                    Position=6,
+                    Position=5,
                     HelpMessage="Return related Active patch")][Switch]$activePatch,
         [parameter(Mandatory=$False,
-                    Position=7,
+                    Position=6,
                     HelpMessage="Return list of related Events")][Switch]$events,
         [parameter(Mandatory=$False,
-                    Position=8,
+                    Position=7,
                     HelpMessage="Return list of related Devices")][Switch]$devices,
         [parameter(Mandatory=$False,
-                    Position=9,
+                    Position=8,
                     HelpMessage="Return related Config")][Switch]$config,
         [parameter(Mandatory=$False,
-                   Position=10,
+                   Position=9,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -1071,121 +1202,9 @@ function Global:Get-OciDatasources {
     }
 }
 
-<#
-    .SYNOPSIS
-    Retrieve all datasources of an acquisition unit
-    .DESCRIPTION
-    Retrieve all datasources of an acquisition unit
-    .PARAMETER id
-    ID of acquisition unit to get datasources for
-    .PARAMETER expand
-    Expand parameter for underlying JSON object (e.g. expand=datasources)
-    .PARAMETER acquisitionUnit
-    Return related Acquisition unit
-    .PARAMETER note
-    Return related Note
-    .PARAMETER changes
-    Return list of related Changes
-    .PARAMETER packages
-    Return list of related Packages
-    .PARAMETER activePatch
-    Return related Active patch
-    .PARAMETER events
-    Return list of related Events
-    .PARAMETER devices
-    Return list of related Devices
-    .PARAMETER config
-    Return related Config
-#>
-function Global:Get-OciDatasourcesByAcquisitionUnit {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="ID of acquisition unit to get datasources for",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][String]$expand,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
-        [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Return related Note")][Switch]$note,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Return list of related Changes")][Switch]$changes,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Return list of related Packages")][Switch]$packages,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="Return related Active patch")][Switch]$activePatch,
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return list of related Events")][Switch]$events,
-        [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return list of related Devices")][Switch]$devices,
-        [parameter(Mandatory=$False,
-                    Position=9,
-                    HelpMessage="Return related Config")][Switch]$config,
-        [parameter(Mandatory=$False,
-                   Position=10,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
-    )
- 
-    Begin {
-        $Result = $null
-        if (!$Server) {
-            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
-        }
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
- 
-           
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($expand) {
-                $Uri += "?$($Separator)expand=$expand"
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
 
-            $Datasources = ParseDatasources($Result)
-            Write-Output $Datasources
-        }
-    }
-}
 
-# TODO: Implemenet and test adding of datasoure
+# TODO: Implement and test adding of datasoure
 
 <#
     .SYNOPSIS
@@ -1317,75 +1336,7 @@ function Global:Add-OciDatasource {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
 
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -1407,55 +1358,26 @@ function Global:Get-OciDatasourceEventDetails {
                     Position=0,
                     HelpMessage="Id of data source event to get data for",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/events/{id}/details" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/events/$id/details"
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1465,75 +1387,7 @@ function Global:Get-OciDatasourceEventDetails {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
+          
             Write-Output $Result
         }
     }
@@ -1541,27 +1395,27 @@ function Global:Get-OciDatasourceEventDetails {
 
 <#
     .SYNOPSIS
-    Remove one Data Source
+    Remove a Datasource
     .DESCRIPTION
-    
+    Remove a Datasource
     .PARAMETER id
     Id of data source to remove
-        .PARAMETER acquisitionUnit
-        Return related Acquisition unit
-        .PARAMETER note
-        Return related Note
-        .PARAMETER changes
-        Return list of related Changes
-        .PARAMETER packages
-        Return list of related Packages
-        .PARAMETER activePatch
-        Return related Active patch
-        .PARAMETER events
-        Return list of related Events
-        .PARAMETER devices
-        Return list of related Devices
-        .PARAMETER config
-        Return related Config
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
 #>
 function Global:Remove-OciDatasource {
     [CmdletBinding()]
@@ -1573,77 +1427,24 @@ function Global:Remove-OciDatasource {
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return related Note")][Switch]$note,
-        [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Return list of related Changes")][Switch]$changes,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Return list of related Packages")][Switch]$packages,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Return related Active patch")][Switch]$activePatch,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="Return list of related Events")][Switch]$events,
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return list of related Devices")][Switch]$devices,
-        [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return related Config")][Switch]$config
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
  
             try {
-                if ('DELETE' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method DELETE -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method DELETE -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1654,74 +1455,6 @@ function Global:Remove-OciDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -1729,29 +1462,29 @@ function Global:Remove-OciDatasource {
 
 <#
     .SYNOPSIS
-    Retrieve one Data Source
+    Retrieve a DataSource
     .DESCRIPTION
-    
+    Retrieve a DataSource
     .PARAMETER id
     Id of data source to retrieve
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)
-        .PARAMETER acquisitionUnit
-        Return related Acquisition unit
-        .PARAMETER note
-        Return related Note
-        .PARAMETER changes
-        Return list of related Changes
-        .PARAMETER packages
-        Return list of related Packages
-        .PARAMETER activePatch
-        Return related Active patch
-        .PARAMETER events
-        Return list of related Events
-        .PARAMETER devices
-        Return list of related Devices
-        .PARAMETER config
-        Return related Config
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
 #>
 function Global:Get-OciDatasource {
     [CmdletBinding()]
@@ -1788,19 +1521,24 @@ function Global:Get-OciDatasource {
                     HelpMessage="Return list of related Devices")][Switch]$devices,
         [parameter(Mandatory=$False,
                     Position=9,
-                    HelpMessage="Return related Config")][Switch]$config
+                    HelpMessage="Return related Config")][Switch]$config,
+        [parameter(Mandatory=$False,
+                   Position=10,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
  
-           
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -1813,30 +1551,12 @@ function Global:Get-OciDatasource {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1846,83 +1566,18 @@ function Global:Get-OciDatasource {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
        
-            Write-Output $Result
+            $Datasource = ParseDatasources($Result)
+            Write-Output $Datasource
         }
     }
 }
 
+# TODO: Implement and test update DataSource
+
 <#
     .SYNOPSIS
-    Update one Data Source.
+    Update one DataSource.
     .DESCRIPTION
     Request payload for datasource to be updated should contain JSON in the format that is obtained by using following expands on GET one datasource: acquisitionUnit,config <br/>
 <pre>
@@ -1965,7 +1620,7 @@ function Global:Get-OciDatasource {
         .PARAMETER config
         Return related Config
 #>
-function Global:Update-Oci {
+function Global:Update-OciDataSource {
     [CmdletBinding()]
  
     PARAM (
@@ -2056,74 +1711,6 @@ function Global:Update-Oci {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -2131,38 +1718,43 @@ function Global:Update-Oci {
 
 <#
     .SYNOPSIS
-    Retrieve one Data Source Acquisition Unit.
+    Get Acquisition Unit by datasource.
     .DESCRIPTION
-    
+    Get Acquisition Unit by datasource.
     .PARAMETER id
-    Id of data source to retrieve
-        .PARAMETER datasources
-        Return list of related Datasources
+    Id of datasource for which to retrieve acquisition unit
+    .PARAMETER datasources
+    Return list of related Datasources
 #>
-function Global:Get-OciDatasourceAcquisitionUnit {
+function Global:Get-OciAcquisitionUnitByDatasource {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id of data source to retrieve",
+                    HelpMessage="Id of datasource for which to retrieve acquisition unit",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/acquisitionUnit" -replace "{id}","$id"
- 
-           
+            $Uri = $($Server.BaseUri) + "/rest/v1/admin/datasources/$id/acquisitionUnit"
+
             $switchparameters=@("datasources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2175,30 +1767,12 @@ function Global:Get-OciDatasourceAcquisitionUnit {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2208,76 +1782,10 @@ function Global:Get-OciDatasourceAcquisitionUnit {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
 
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
-            Write-Output $Result
+            $AcquisitionUnit = ParseAcquisitionUnits($Result)
+           
+            Write-Output $AcquisitionUnit
         }
     }
 }
@@ -2286,13 +1794,13 @@ function Global:Get-OciDatasourceAcquisitionUnit {
     .SYNOPSIS
     Retrieves the active patch for a data source
     .DESCRIPTION
-    
+    Retrieves the active patch for a data source
     .PARAMETER id
     Id of data source to find active patch
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER datasourceConclusions
-        Return list of related Patched datasources status
+    .PARAMETER datasourceConclusions
+    Return list of related Patched datasources status
 #>
 function Global:Get-OciActivePatchByDatasource {
     [CmdletBinding()]
@@ -2308,19 +1816,24 @@ function Global:Get-OciActivePatchByDatasource {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions
+                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/activePatch" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/activePatch"
  
-           
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2333,30 +1846,12 @@ function Global:Get-OciActivePatchByDatasource {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2367,74 +1862,6 @@ function Global:Get-OciActivePatchByDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -2444,11 +1871,11 @@ function Global:Get-OciActivePatchByDatasource {
     .SYNOPSIS
     Retrieve Data Source changes
     .DESCRIPTION
-    
+    Retrieve Data Source changes
     .PARAMETER id
     Id of data source to get data for
-        .PARAMETER details
-        Return list of related Details
+    .PARAMETER details
+    Return list of related Details
 #>
 function Global:Get-OciDatasourceChanges {
     [CmdletBinding()]
@@ -2461,19 +1888,24 @@ function Global:Get-OciDatasourceChanges {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Details")][Switch]$details
+                    HelpMessage="Return list of related Details")][Switch]$details,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/changes" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/changes"
  
-           
             $switchparameters=@("details")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2486,30 +1918,13 @@ function Global:Get-OciDatasourceChanges {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2520,144 +1935,48 @@ function Global:Get-OciDatasourceChanges {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
-            Write-Output $Result
+            $Change = ParseChanges($Result)
+            Write-Output $Change
         }
     }
 }
 
 <#
     .SYNOPSIS
-    Retrieve one Datasource config.
+    Retrieve Datasource configuration.
     .DESCRIPTION
-    
+    Retrieve Datasource configuration.
     .PARAMETER id
-    Id of data source to retrieve
+    Id of data source to retrieve configuration for
 #>
-function Global:Get-OciConfigByDatasource {
+function Global:Get-OciDatasourceConfiguration {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id of data source to retrieve",
+                    HelpMessage="Id of data source to retrieve configuration for",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/config" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/config"
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2668,74 +1987,6 @@ function Global:Get-OciConfigByDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -2743,9 +1994,9 @@ function Global:Get-OciConfigByDatasource {
 
 <#
     .SYNOPSIS
-    Retrieve devices
+    Retrieve datasource devices
     .DESCRIPTION
-    
+    Retrieve datasource devices
     .PARAMETER id
     Id of data source to get devices for
 #>
@@ -2757,55 +2008,26 @@ function Global:Get-OciDatasourceDevices {
                     Position=0,
                     HelpMessage="Id of data source to get devices for",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/devices" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/devices"
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2816,74 +2038,6 @@ function Global:Get-OciDatasourceDevices {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -2893,11 +2047,11 @@ function Global:Get-OciDatasourceDevices {
     .SYNOPSIS
     Retrieve Data Source events (audits)
     .DESCRIPTION
-    
+    Retrieve Data Source events (audits)
     .PARAMETER id
     Id of data source to get data for
-        .PARAMETER details
-        Return list of related Details
+    .PARAMETER details
+    Return event details
 #>
 function Global:Get-OciDatasourceEvents {
     [CmdletBinding()]
@@ -2910,17 +2064,23 @@ function Global:Get-OciDatasourceEvents {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Details")][Switch]$details
+                    HelpMessage="Return event details")][Switch]$details,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/events" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/events"
  
            
             $switchparameters=@("details")
@@ -2935,30 +2095,12 @@ function Global:Get-OciDatasourceEvents {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2969,74 +2111,6 @@ function Global:Get-OciDatasourceEvents {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -3044,9 +2118,9 @@ function Global:Get-OciDatasourceEvents {
 
 <#
     .SYNOPSIS
-    Retrieve one Data Source note
+    Retrieve DataSource note
     .DESCRIPTION
-    
+    Retrieve DataSource note
     .PARAMETER id
     Id of data source to retrieve note for
 #>
@@ -3058,55 +2132,26 @@ function Global:Get-OciDatasourceNote {
                     Position=0,
                     HelpMessage="Id of data source to retrieve note for",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/note" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/note"
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3116,79 +2161,13 @@ function Global:Get-OciDatasourceNote {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
+          
             Write-Output $Result
         }
     }
 }
+
+# TODO: Check and implement updating of datasource note
 
 <#
     .SYNOPSIS
@@ -3277,74 +2256,6 @@ function Global:Update-OciDatasourceNote {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -3352,13 +2263,13 @@ function Global:Update-OciDatasourceNote {
 
 <#
     .SYNOPSIS
-    Retrieve Data Source package status
+    Retrieve DataSource package status
     .DESCRIPTION
-    
+    Retrieve DataSource package status
     .PARAMETER id
-    Id of data source to get data for
+    Id of data source to get package status for
 #>
-function Global:Get-OciDatasourcePackageStatuses {
+function Global:Get-OciDatasourcePackageStatus {
     [CmdletBinding()]
  
     PARAM (
@@ -3366,55 +2277,26 @@ function Global:Get-OciDatasourcePackageStatuses {
                     Position=0,
                     HelpMessage="Id of data source to get data for",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/{id}/packages" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/packages"
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3424,79 +2306,13 @@ function Global:Get-OciDatasourcePackageStatuses {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
+          
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement polling of datasources
 
 <#
     .SYNOPSIS
@@ -3573,78 +2389,12 @@ function Global:Poll-OciDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / Check suspending of datasources
 
 <#
     .SYNOPSIS
@@ -3726,78 +2476,12 @@ function Global:Suspend-OciDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / Test resuming of datasources
 
 <#
     .SYNOPSIS
@@ -3874,78 +2558,12 @@ function Global:Resume-OciDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / Test testing of datasources
 
 <#
     .SYNOPSIS
@@ -4022,74 +2640,6 @@ function Global:Test-OciDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -4099,62 +2649,31 @@ function Global:Test-OciDatasource {
     .SYNOPSIS
     Retrieve LDAP configuration
     .DESCRIPTION
-    
-
+    Retrieve LDAP configuration
 #>
-function Global:Get-Oci {
+function Global:Get-OciLdapConfiguration {
     [CmdletBinding()]
  
     PARAM (
-
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/ldap" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4164,79 +2683,13 @@ function Global:Get-Oci {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
+          
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / Test updating o ldap configuration
 
 <#
     .SYNOPSIS
@@ -4272,7 +2725,7 @@ function Global:Get-Oci {
       
 
 #>
-function Global:Update {
+function Global:Update-OciLdapConfiguration {
     [CmdletBinding()]
  
     PARAM (
@@ -4335,78 +2788,12 @@ function Global:Update {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / Test LDAP connection test
 
 <#
     .SYNOPSIS
@@ -4424,7 +2811,7 @@ function Global:Update {
       
 
 #>
-function Global:Connect-OciTest {
+function Global:Test-OciLdapConfiguration {
     [CmdletBinding()]
  
     PARAM (
@@ -4487,74 +2874,6 @@ function Global:Connect-OciTest {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -4564,144 +2883,46 @@ function Global:Connect-OciTest {
     .SYNOPSIS
     Retrieve license status
     .DESCRIPTION
-    
-
+    Retrieve license status
 #>
-function Global:Get-OciLicense {
+function Global:Get-OciLicenseStatus {
     [CmdletBinding()]
  
     PARAM (
-
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/license" -replace "{id}","$id"
+        $Uri = $Server.BaseUri + "/rest/v1/admin/license"
  
-           
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
-            Write-Output $Result
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $LicenseStatus = ParseLicenseStatus($Result)
+           
+        Write-Output $LicenseStatus
     }
 }
+
+# Todo: Implement / Test Updating of licenses
 
 <#
     .SYNOPSIS
@@ -4718,7 +2939,7 @@ function Global:Get-OciLicense {
         
 
 #>
-function Global:Update {
+function Global:Update-OciLicenses {
     [CmdletBinding()]
  
     PARAM (
@@ -4781,78 +3002,12 @@ function Global:Update {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / Test replacing of licenses
 
 <#
     .SYNOPSIS
@@ -4932,74 +3087,6 @@ function Global:Replace-OciLicense {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -5009,11 +3096,11 @@ function Global:Replace-OciLicense {
     .SYNOPSIS
     Retrieve all patches
     .DESCRIPTION
-    
+    Retrieve all patches
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER datasourceConclusions
-        Return list of related Patched datasources status
+    .PARAMETER datasourceConclusions
+    Return related datasource status
 #>
 function Global:Get-OciPatches {
     [CmdletBinding()]
@@ -5024,145 +3111,63 @@ function Global:Get-OciPatches {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions
+                    HelpMessage="Return related datasource status")][Switch]$datasourceConclusions,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/patches" -replace "{id}","$id"
- 
-           
-            $switchparameters=@("datasourceConclusions")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
+
+        $switchparameters=@("datasourceConclusions")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
                 if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
                 }
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
-            Write-Output $Result
         }
+ 
+        if ($expand) {
+            $Uri += "?$($Separator)expand=$expand"
+        }
+ 
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        Write-Output $Result
     }
 }
 
+# TODO: Implement / Test adding of patches
+
 <#
     .SYNOPSIS
-    Create Patch
+    Add Patch
     .DESCRIPTION
     POST request to include 'patchFile' file parameter
-        .PARAMETER datasourceConclusions
-        Return list of related Patched datasources status
+    .PARAMETER datasourceConclusions
+    Return list of related Patched datasources status
 #>
 function Global:Add-OciPatches {
     [CmdletBinding()]
@@ -5229,74 +3234,6 @@ function Global:Add-OciPatches {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -5304,17 +3241,17 @@ function Global:Add-OciPatches {
 
 <#
     .SYNOPSIS
-    Retrieve one patch
+    Get patch
     .DESCRIPTION
-    
+    Get patch
     .PARAMETER id
     Id of a patch to retrieve
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER datasourceConclusions
-        Return list of related Patched datasources status
+    .PARAMETER datasourceConclusions
+    Return list of related Patched datasources status
 #>
-function Global:Update-OciPatch {
+function Global:Get-OciPatch {
     [CmdletBinding()]
  
     PARAM (
@@ -5328,19 +3265,24 @@ function Global:Update-OciPatch {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions
+                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/patches/{id}" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
  
-           
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5353,30 +3295,12 @@ function Global:Update-OciPatch {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
-            try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+            try {               
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5386,79 +3310,13 @@ function Global:Update-OciPatch {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
+          
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / Test updating of patch
 
 <#
     .SYNOPSIS
@@ -5470,7 +3328,7 @@ function Global:Update-OciPatch {
         .PARAMETER datasourceConclusions
         Return list of related Patched datasources status
 #>
-function Global:Update {
+function Global:Update-OciPatch {
     [CmdletBinding()]
  
     PARAM (
@@ -5540,78 +3398,12 @@ function Global:Update {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
 }
+
+# TODO: Implement / test approving of patch
 
 <#
     .SYNOPSIS
@@ -5688,74 +3480,6 @@ function Global:Approve-OciPatch {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            # check performance data
-            foreach ($Object in $Result) {
-                if ($Object.performance) {
-                    # convert timestamps from unix to data format
-                    if ($Object.performance.accessed) {
-                        $Object.performance.accessed.start = $Object.performance.accessed.start | ConvertFrom-UnixDate
-                        $Object.performance.accessed.end = $Object.performance.accessed.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.iops) {
-                        $Object.performance.iops.read.start = $Object.performance.iops.read.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.read.end = $Object.performance.iops.read.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.start = $Object.performance.iops.write.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.write.end = $Object.performance.iops.write.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.start = $Object.performance.iops.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.totalMax.end = $Object.performance.iops.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.start = $Object.performance.iops.total.start | ConvertFrom-UnixDate
-                        $Object.performance.iops.total.end = $Object.performance.iops.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.cacheHitRatio) {
-                        $Object.performance.cacheHitRatio.read.start = $Object.performance.cacheHitRatio.read.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.read.end = $Object.performance.cacheHitRatio.read.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.start = $Object.performance.cacheHitRatio.write.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.write.end = $Object.performance.cacheHitRatio.write.end | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.start = $Object.performance.cacheHitRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.cacheHitRatio.total.end = $Object.performance.cacheHitRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.latency) {
-                        $Object.performance.latency.read.start = $Object.performance.latency.read.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.read.end = $Object.performance.latency.read.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.start = $Object.performance.latency.write.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.write.end = $Object.performance.latency.write.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.start = $Object.performance.latency.total.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.total.end = $Object.performance.latency.total.end | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.start = $Object.performance.latency.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.latency.totalMax.end = $Object.performance.latency.totalMax.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.partialBlocksRatio.total) {
-                        $Object.performance.partialBlocksRatio.total.start = $Object.performance.partialBlocksRatio.total.start | ConvertFrom-UnixDate
-                        $Object.performance.partialBlocksRatio.total.end = $Object.performance.partialBlocksRatio.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.writePending.total) {
-                        $Object.performance.writePending.total.start = $Object.performance.writePending.total.start | ConvertFrom-UnixDate
-                        $Object.performance.writePending.total.end = $Object.performance.writePending.total.end | ConvertFrom-UnixDate
-                    }
-                    if ($Object.performance.throughput) {
-                        $Object.performance.throughput.read.start = $Object.performance.throughput.read.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.read.end = $Object.performance.throughput.read.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.start = $Object.performance.throughput.write.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.write.end = $Object.performance.throughput.write.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.start = $Object.performance.throughput.totalMax.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.totalMax.end = $Object.performance.throughput.totalMax.end | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.start = $Object.performance.throughput.total.start | ConvertFrom-UnixDate
-                        $Object.performance.throughput.total.end = $Object.performance.throughput.total.end | ConvertFrom-UnixDate
-                    }
-
-                    # check and convert historical performance data
-                    if ($Object.performance.history) {
-                        if ($Object.performance.history[0].count -eq 2) {
-                            $Object.performance.history = foreach ($entry in $Object.performance.history) {
-                                if ($entry[1]) {
-                                    $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ConvertFrom-UnixDate) -PassThru
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-       
             Write-Output $Result
         }
     }
@@ -50528,114 +48252,6 @@ function Global:Update-OciDatasource {
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
-       
-            Write-Output $Result
-        }
-    }
-}
-<#
-    .SYNOPSIS
-    Get OCI Datasource
-    .DESCRIPTION
-    Get OCI Datasource
-#>
-function Global:Get-OciDatasource {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="ID of the datasource to retrieve",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]$expand,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
-        [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Return related Note")][Switch]$note,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Return list of related Changes")][Switch]$changes,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Return list of related Package statuses")][Switch]$packageStatuses,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="Return related Active patch")][Switch]$activePatch,
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return list of related Events")][Switch]$events,
-        [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return list of related Devices")][Switch]$devices,
-        [parameter(Mandatory=$False,
-                    Position=9,
-                    HelpMessage="Return datasource configuration")][Switch]$config
-    )
- 
-    Begin {
-        $Result = $null
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/datasources/$id"
- 
-           
-            $switchparameters=@("acquisitionUnit","note","changes","packageStatuses","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-            
-            if ($Result.config) {
-                foreach ($Package in $Result.config.packages) {
-                    foreach ($Attribute in $Package.attributes) {
-                        $PackageIndex = $Result.config.packages.IndexOf($Package)
-                        $AttributeIndex = $Package.attributes.IndexOf($Attribute)
-                        Invoke-Command -ScriptBlock ([ScriptBlock]::Create("`$Result.config | Add-Member -MemberType ScriptProperty -Name $($Attribute.name) -Value { `$this.packages[$PackageIndex].attributes[$AttributeIndex].Value } -SecondValue { `$this.packages[$PackageIndex].attributes[$AttributeIndex].Value = `$args[0] }  -ErrorAction SilentlyContinue"))
-                    }
-                }
             }
        
             Write-Output $Result
