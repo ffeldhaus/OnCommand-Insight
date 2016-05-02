@@ -55,7 +55,7 @@ function New-OciRelease {
         -Copyright "(c) $((Get-Date).Year) NetApp Deutschland GmbH. All rights reserved." `
         -Description 'OnCommand-Insight Powershell Cmdlet.' `
         -PowerShellVersion '3.0' `
-        -DotNetFrameworkVersion '3.5' `
+        -DotNetFrameworkVersion '4.5' `
         -NestedModules (Get-ChildItem $src\*.psm1,$src\*.dll | % { $_.Name }) `
         -FormatsToProcess (Get-ChildItem $src\*.format.ps1xml | % { $_.Name })
 
