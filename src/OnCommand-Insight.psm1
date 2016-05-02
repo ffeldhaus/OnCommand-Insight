@@ -45518,6 +45518,9 @@ function Global:Restore-OciBackup {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -45526,7 +45529,7 @@ function Global:Restore-OciBackup {
         $StartTime = Get-Date
 
         foreach ($FilePath in $FilePath) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/restore"
+            $Uri = $Server.BaseUri + "/rest/v1/admin/restore"
 
             if (Test-Path $FilePath) {
                 Write-Host "Found local OCI Backup in $FilePath which will be restored"
@@ -45539,7 +45542,7 @@ function Global:Restore-OciBackup {
                     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
                     Invoke-MultipartFormDataUpload -InFile $args[0] -Uri $args[1] -Header $args[2]
-                } -ArgumentList $FilePath,$URI,$CurrentOciServer.Headers
+                } -ArgumentList $FilePath,$URI,$Server.Headers
                 
             }
             else {
@@ -45568,7 +45571,7 @@ function Global:Restore-OciBackup {
                     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
                     Invoke-RestMethod -Uri $args[0] -Timeout 3600 -Method Post -ContentType "multipart/form-data; boundary=`"$($args[1])`"" -Body $args[2] -Headers $args[3]
-                } -ArgumentList $URI,$boundary,$Body,$CurrentOciServer.Headers
+                } -ArgumentList $URI,$boundary,$Body,$Server.Headers
             }
 
             try {
@@ -45580,7 +45583,7 @@ function Global:Restore-OciBackup {
                 $i = 0
                 while ($true) {
                     $i++
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
+                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
                     if ($i -eq 1440) { 
                         Write-Host ''
                         throw 'Backup did not finish within 24 hours' 
@@ -45637,10 +45640,13 @@ function Global:Get-OciBackup {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
-        $URI = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/backups/current"
+        $URI = $Server.BaseUri + "/rest/v1/admin/backups/current"
  
         Write-Host "Starting Backup"  
         Start-Job { 
@@ -45661,14 +45667,14 @@ function Global:Get-OciBackup {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
             Invoke-RestMethod -TimeoutSec 5 -Method POST -Uri $args[0] -Headers $args[1] 
-        } -ArgumentList $URI,$CurrentOciServer.Headers
+        } -ArgumentList $URI,$Server.Headers
 
         try {
             Write-Progress -Activity "Backup started" -status "Backing up" -percentComplete 0
             $i = 0
             while ($true) {
                 $i++
-                $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
                 if ($i -eq ($Timeout * 12)) { 
                     Write-Progress -Activity "Backup did not complete in $Timeout minutes" -status "Backing failed" -percentComplete 100
                 }
@@ -45680,7 +45686,7 @@ function Global:Get-OciBackup {
                 Write-Progress -Activity "Backup started" -status $Result.status -percentComplete (100*$i/($Timeout*12))
                 sleep 5
             }
-            $Uri = $($CurrentOciServer.BaseUri) + $Result.Url
+            $Uri = $($Server.BaseUri) + $Result.Url
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -45688,10 +45694,11 @@ function Global:Get-OciBackup {
         }
 
         $FilePath = $Path + '\' + (($Uri -split '/') | select -last 1)
+        Write-Host $FilePath
         $Date = [datetime]::ParseExact($($FilePath -replace '.+_D(.*)_[0-9]+.zip','$1'),"yyyyMMdd_HHmm",$null)
 
         try {
-            Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -OutFile $FilePath
+            Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -OutFile $FilePath
             Write-Host "Backup Saved to $FilePath"
             
             $Result = New-Object -TypeName PSCustomObject -ArgumentList @{FilePath=$FilePath;Date=$Date;URI=$Uri}
@@ -45722,13 +45729,16 @@ function Global:Get-OciBackups {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
-        $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/admin/backups"
+        $Uri = $Server.BaseUri + "/rest/v1/admin/backups"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             
             $Result = $Result | % { [PSCustomObject]@{FilePath=$_.path;Date=($_.date | get-date)} }
 
