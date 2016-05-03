@@ -14,8 +14,7 @@ function New-OciRelease {
         [Parameter(Mandatory = $false)][switch]$Major,
         [Parameter(Mandatory = $false)][switch]$Minor,
         [Parameter(Mandatory = $false)][switch]$Build,
-        [Parameter(Mandatory = $false)][switch]$Release,
-        [Parameter(Mandatory = $false)][string]$OciServer
+        [Parameter(Mandatory = $false)][switch]$Release
 
     )
 
@@ -69,17 +68,14 @@ function New-OciRelease {
 
     Write-Host "Import new OCI Cmdlets"
     Import-Module "$src\OnCommand-Insight.psm1"
-    if (!$OciServer) { $OciServer = "ff-oc1.muccbc.hq.netapp.com" }
-    Write-Host "Connecting to $OciServer"
-    Connect-OciServer -Name $OciServer -Credential $Credential -Insecure
 
-    Write-Host "Running Pester tests"
-
-    $Version = '7.1.1'
-    $Record = $True
-    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
-
-    Invoke-Pester -Script @{Path='./';Parameters=@{Server=$OciServer;Credential=$Credential;Version=$Version;Record=$Record}}
+#    Write-Host "Running Pester tests"
+#
+#    $Version = '7.1.1'
+#    $Record = $True
+#    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
+#
+#    Invoke-Pester -Script @{Path='./';Parameters=@{Server=$OciServer;Credential=$Credential;Version=$Version;Record=$Record}}
 
     Write-Host "Copying files to release folder"
 
