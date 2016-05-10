@@ -6820,6 +6820,8 @@ function Global:Get-OciDatastore {
     }
 }
 
+# TODO: Implement / Test
+
 <#
     .SYNOPSIS
     Delete annotations from object
@@ -6840,8 +6842,8 @@ function Global:Get-OciDatastore {
                     
     .PARAMETER id
     Id of object to delete
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
 #>
 function Global:Remove-OciAnnotationsByDatastore {
     [CmdletBinding()]
@@ -6849,23 +6851,33 @@ function Global:Remove-OciAnnotationsByDatastore {
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id of object to delete",
+                    HelpMessage="Id of datastore to delete annotations from",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of annotation to delete",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$annotationId,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return related Definition")][Switch]$definition
+                    HelpMessage="Return related Definition")][Switch]$definition,
+        [parameter(Mandatory=$False,
+                   Position=11,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/assets/dataStores/{id}/annotations" -replace "{id}","$id"
- 
+            $Uri = $CurrentOciServer.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
            
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
@@ -6896,13 +6908,9 @@ function Global:Remove-OciAnnotationsByDatastore {
             }
  
             try {
-                if ('DELETE' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method DELETE -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method DELETE -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
+                Write-Verbose "Body: "
+                $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method DELETE -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6946,19 +6954,24 @@ function Global:Get-OciAnnotationsByDatastore {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=definition)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Return related Definition")][Switch]$definition
+                    HelpMessage="Return related Definition")][Switch]$definition,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/assets/dataStores/{id}/annotations" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
  
-           
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6971,30 +6984,12 @@ function Global:Get-OciAnnotationsByDatastore {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "?$($Separator)expand=$expand"
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7005,8 +7000,6 @@ function Global:Get-OciAnnotationsByDatastore {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-
-       
             Write-Output $Result
         }
     }
@@ -7044,21 +7037,32 @@ function Global:Update-OciAnnotationsByDatastore {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=1,
-                    HelpMessage="Return related Definition")][Switch]$definition
+                    HelpMessage="Annotation ID")][String]$annotationId,
+        [parameter(Mandatory=$True,
+                    Position=2,
+                    HelpMessage="Annotation value")][String]$value,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Return related Definition")][Switch]$definition,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/assets/dataStores/{id}/annotations" -replace "{id}","$id"
- 
-           
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
+
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7071,30 +7075,14 @@ function Global:Update-OciAnnotationsByDatastore {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
  
             try {
-                if ('PUT' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method PUT -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method PUT -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Body = ConvertTo-Json @(@{rawValue=$value;definition=@{id=$annotationId}}) -Compress -Depth 3
+                Write-Verbose "Body: $Body"
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7104,9 +7092,7 @@ function Global:Update-OciAnnotationsByDatastore {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
 
-       
             Write-Output $Result
         }
     }
@@ -7183,19 +7169,24 @@ function Global:Get-OciDatasourcesByDataStore {
                     HelpMessage="Return list of related Devices")][Switch]$devices,
         [parameter(Mandatory=$False,
                     Position=11,
-                    HelpMessage="Return related Config")][Switch]$config
+                    HelpMessage="Return related Config")][Switch]$config,
+        [parameter(Mandatory=$False,
+                   Position=12,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/assets/dataStores/{id}/datasources" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"
  
-           
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7225,13 +7216,7 @@ function Global:Get-OciDatasourcesByDataStore {
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7242,8 +7227,6 @@ function Global:Get-OciDatasourcesByDataStore {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-
-       
             Write-Output $Result
         }
     }
@@ -7335,19 +7318,24 @@ function Global:Get-OciHostsByDatastore {
                     HelpMessage="Return list of related Datasources")][Switch]$datasources,
         [parameter(Mandatory=$False,
                     Position=14,
-                    HelpMessage="Return related Performance History")][Switch]$performancehistory
+                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+        [parameter(Mandatory=$False,
+                   Position=12,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/assets/dataStores/{id}/hosts" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"
  
-           
             $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7377,13 +7365,7 @@ function Global:Get-OciHostsByDatastore {
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7393,9 +7375,7 @@ function Global:Get-OciHostsByDatastore {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-
-       
+          
             Write-Output $Result
         }
     }
@@ -7437,19 +7417,24 @@ function Global:Get-OciDatastorePerformance {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=4,
-                    HelpMessage="Return list of related History")][Switch]$history
+                    HelpMessage="Return list of related History")][Switch]$history,
+        [parameter(Mandatory=$False,
+                   Position=5,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($CurrentOciServer.BaseUri) + "/rest/v1/assets/dataStores/{id}/performance" -replace "{id}","$id"
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/performance"
  
-           
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7479,13 +7464,7 @@ function Global:Get-OciDatastorePerformance {
             }
  
             try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $CurrentOciServer.Timeout -Method GET -Uri $Uri -Headers $CurrentOciServer.Headers
-                }
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7495,10 +7474,10 @@ function Global:Get-OciDatastorePerformance {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
 
-       
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+           
+            Write-Output $Performance
         }
     }
 }
@@ -31767,7 +31746,7 @@ function Global:Restore-OciBackup {
 
                     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
-                    Invoke-RestMethod -Uri $args[0] -Timeout 3600 -Method Post -ContentType "multipart/form-data; boundary=`"$($args[1])`"" -Body $args[2] -Headers $args[3]
+                    Invoke-RestMethod -Uri $args[0] -Timeout 864000000000 -Method Post -ContentType "multipart/form-data; boundary=`"$($args[1])`"" -Body $args[2] -Headers $args[3]
                 } -ArgumentList $URI,$boundary,$Body,$Server.Headers
             }
 
@@ -31848,7 +31827,7 @@ function Global:Get-OciBackup {
         $URI = $Server.BaseUri + "/rest/v1/admin/backups/current"
  
         Write-Host "Starting Backup"  
-        Start-Job { 
+        $Job = Start-Job { 
             add-type @"
                     using System.Net;
                     using System.Security.Cryptography.X509Certificates;
@@ -31865,7 +31844,7 @@ function Global:Get-OciBackup {
 
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-            Invoke-RestMethod -TimeoutSec 5 -Method POST -Uri $args[0] -Headers $args[1] 
+            Invoke-RestMethod -TimeoutSec 864000000000 -Method POST -Uri $args[0] -Headers $args[1] 
         } -ArgumentList $URI,$Server.Headers
 
         try {
@@ -31874,7 +31853,7 @@ function Global:Get-OciBackup {
             while ($true) {
                 $i++
                 $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-                if ($i -eq ($Timeout * 12)) { 
+                if ($i -eq ($Timeout * 12) -or $Job.State -ne 'Running') { 
                     Write-Progress -Activity "Backup did not complete in $Timeout minutes" -status "Backing failed" -percentComplete 100
                 }
                 if ($Result.status -eq 'SUCCESSFUL') { 
