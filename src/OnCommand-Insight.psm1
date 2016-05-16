@@ -679,6 +679,8 @@ function global:Connect-OciServer {
     Expand parameter for underlying JSON object (e.g. expand=datasources)
     .PARAMETER datasources
     Return list of related Datasources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAcquisitionUnits {
     [CmdletBinding()]
@@ -704,8 +706,7 @@ function Global:Get-OciAcquisitionUnits {
    
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits"
- 
-           
+  
         $switchparameters=@("datasources")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -750,6 +751,8 @@ function Global:Get-OciAcquisitionUnits {
     Expand parameter for underlying JSON object (e.g. expand=datasources)
     .PARAMETER datasources
     Return list of related Datasources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAcquisitionUnit {
     [CmdletBinding()]
@@ -820,57 +823,6 @@ function Global:Get-OciAcquisitionUnit {
 
 <#
     .SYNOPSIS
-    Restart an Acquisition Unit
-    .DESCRIPTION
-    Restart an Acquisition Unit
-    .PARAMETER id
-    ID of acquisition unit to restart
-#>
-function Global:Restart-OciAcquisitionUnit {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id of acquisition unit to restart",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                   Position=1,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
-    )
- 
-    Begin {
-        $Result = $null
-        if (!$Server) {
-            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
-        }
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/restart"
- 
-            try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-       
-            Write-Output $Result
-        }
-    }
-}
-
-<#
-    .SYNOPSIS
     Retrieve all datasources of an acquisition unit
     .DESCRIPTION
     Retrieve all datasources of an acquisition unit
@@ -894,6 +846,8 @@ function Global:Restart-OciAcquisitionUnit {
     Return list of related Devices
     .PARAMETER config
     Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourcesByAcquisitionUnit {
     [CmdletBinding()]
@@ -947,8 +901,7 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
- 
-           
+
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -985,9 +938,64 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
 
 <#
     .SYNOPSIS
+    Restart an Acquisition Unit
+    .DESCRIPTION
+    Restart an Acquisition Unit
+    .PARAMETER id
+    ID of acquisition unit to restart
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Restart-OciAcquisitionUnit {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of acquisition unit to restart",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $id = @($id)
+        foreach ($id in $id) {
+            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/restart"
+ 
+            try {
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+            }
+            catch {
+                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            }
+ 
+            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+                $Result = ParseJsonString($Result.Trim())
+            }
+       
+            Write-Output $Result
+        }
+    }
+}
+
+<#
+    .SYNOPSIS
     Retrieve list of certificates
     .DESCRIPTION
     Retrieve list of certificates
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciCertificates {
     [CmdletBinding()]
@@ -1030,7 +1038,6 @@ function Global:Get-OciCertificates {
 
 
 # TODO: Check and implement uploading of certificates
-
 <#
     .SYNOPSIS
     Add a certificate based on source host/port or certificate file
@@ -1050,18 +1057,38 @@ To create from existing certificate file create a multi part request with the at
     alias: the alias for certificate in store
     certificateFile: the actual file to load into store
 </pre>
-      
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Add-OciCertificate {
     [CmdletBinding()]
  
     PARAM (
-
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Alias,
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   ParameterSetName='host',
+                   HelpMessage="OnCommand Insight Server.")]$Host,
+        [parameter(Mandatory=$True,
+                   Position=2,
+                   ParameterSetName='host',
+                   HelpMessage="OnCommand Insight Server.")]$Port='389',
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   ParameterSetName='file',
+                   HelpMessage="OnCommand Insight Server.")]$File,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -1126,6 +1153,8 @@ function Global:Add-OciCertificate {
     Retrieve all data source types.
     .DESCRIPTION
     Retrieve all data source types.
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceTypes {
     [CmdletBinding()]
@@ -1169,6 +1198,8 @@ function Global:Get-OciDatasourceTypes {
     Retrieve one data source type.
     .PARAMETER id
     ID of data source type
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceType {
     [CmdletBinding()]
@@ -1236,6 +1267,8 @@ function Global:Get-OciDatasourceType {
     Return list of related Devices
     .PARAMETER config
     Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasources {
     [CmdletBinding()]
@@ -1284,8 +1317,7 @@ function Global:Get-OciDatasources {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
- 
-           
+
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -1319,8 +1351,6 @@ function Global:Get-OciDatasources {
         }
     }
 }
-
-
 
 # TODO: Implement and test adding of datasoure
 
