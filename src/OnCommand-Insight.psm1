@@ -357,6 +357,20 @@ function ParseAcquisitionUnits($AcquisitionUnits) {
     }
 }
 
+function ParseActivePatches($ActivePatches) {
+    $ActivePatches = @($ActivePatches)
+    foreach ($ActivePatch in $ActivePatches) {
+        if ($ActivePatch.createTime) {
+            $ActivePatch.createTime = $ActivePatch.createTime | Get-Date
+        }
+        if ($ActivePatch.lastUpdateTime) {
+            $ActivePatch.lastUpdateTime = $ActivePatch.lastUpdateTime | Get-Date
+        }
+
+        Write-Output $ActivePatch
+    }
+}
+
 function ParseDatasources($Datasources) {
     $Datasources = @($Datasources)
     foreach ($Datasource in $Datasources) {
@@ -375,6 +389,9 @@ function ParseDatasources($Datasources) {
         }
         if ($Datasource.Events) {
             $Datasource.Events = ParseEvents($Datasource.Events)
+        }
+        if ($Datasource.activePatch) {
+            $Datasource.activePatch = ParseActivePatches($Datasource.activePatch)
         }
         Write-Output $Datasource
     }
@@ -450,9 +467,6 @@ function ParseDatastores($Datastores) {
         if ($Datastore.performance) {
             $Datastore.performance = ParsePerformance($Datastore.performance)
         }
-        if ($Datastore.performance.history) {
-            $Datastore.performance.history = ParsePerformanceHistory($Datastore.performance.history)
-        }
 
         Write-Output $Datastore
     }
@@ -509,6 +523,9 @@ function ParsePerformance($Performance) {
         $Performance.throughput.total.start = $Performance.throughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
         $Performance.throughput.total.end = $Performance.throughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
     }
+    if ($Performance.history) {
+        $Performance.history = ParsePerformanceHistory($Performance.history)
+    }
 
     Write-Output $Performance
 }
@@ -521,7 +538,155 @@ function ParsePerformanceHistory($PerformanceHistory) {
             }
         }
     }
+    Write-Output $PerformanceHistory
 } 
+
+function ParseVirtualMachines($VirtualMachines) {
+    $VirtualMachines = @($VirtualMachines)
+    foreach ($VirtualMachine in $VirtualMachines) {
+        if ($VirtualMachine.createTime) {
+            $VirtualMachine.createTime = $VirtualMachine.createTime | Get-Date
+        }
+        if ($VirtualMachine.performance) {
+            $VirtualMachine.performance = ParsePerformance($VirtualMachine.performance)
+        }
+        if ($VirtualMachine.vmdks) {
+            $VirtualMachine.vmdks = ParseVmdks($VirtualMachine.vmdks)
+        }
+        if ($VirtualMachine.host) {
+            $VirtualMachine.host = ParseHosts($VirtualMachine.host)
+        }
+        if ($VirtualMachine.ports) {
+            $VirtualMachine.ports = ParsePorts($VirtualMachine.ports)
+        }
+        if ($VirtualMachine.dataStore) {
+            $VirtualMachine.dataStore = ParseDatastores($VirtualMachine.dataStore)
+        }
+        if ($VirtualMachine.applications) {
+            $VirtualMachine.applications = ParseApplications($VirtualMachine.applications)
+        }
+        if ($VirtualMachine.fileSystems) {
+            $VirtualMachine.fileSystems = ParseFileSystems($VirtualMachine.fileSystems)
+        }
+        if ($VirtualMachine.storageResources) {
+            $VirtualMachine.storageResources = ParseStorageResources($VirtualMachine.storageResources)
+        }
+        if ($VirtualMachine.annotations) {
+            $VirtualMachine.annotations = ParseAnnotations($VirtualMachine.annotations)
+        }
+        if ($VirtualMachine.datasources) {
+            $VirtualMachine.datasources = ParseDatasources($VirtualMachine.datasources)
+        }
+
+        Write-Output $VirtualMachine
+    }
+}
+
+function ParseVmdks($Vmdks) {
+    $Vmdks = @($Vmdks)
+    foreach ($Vmdk in $Vmdks) {
+        if ($vmdk.dataStore) {
+            $vmdk.dataStore = ParseDatastores($vmdk.dataStore)
+        }
+        if ($vmdk.virtualMachine) {
+            $vmdk.virtualMachine = ParseVirtualMachines($vmdk.virtualMachine)
+        }
+        if ($vmdk.performance) {
+            $vmdk.performance = ParsePerformance($vmdk.performance)
+        }
+        if ($vmdk.storageResources) {
+            $vmdk.storageResources = ParseStorageResources($vmdk.storageResources)
+        }
+        if ($vmdk.annotations) {
+            $vmdk.annotations = ParseAnnotations($vmdk.annotations)
+        }
+        if ($vmdk.datasources) {
+            $vmdk.datasources = ParseDatasources($vmdk.datasources)
+        }
+
+        Write-Output $vmdk
+    }
+}
+
+function ParseHosts($Hosts) {
+    $Hosts = @($Hosts)
+    foreach ($Host in $Hosts) {
+        if ($Host.createTime) {
+            $Host.createTime = $Host.createTime | Get-Date
+        }
+        if ($Host.performance) {
+            $Host.performance = ParsePerformance($Host.performance)
+        }
+        if ($Host.storageResources) {
+            $Host.storageResources = ParseStorageResources($Host.storageResources)
+        }
+        if ($Host.fileSystems) {
+            $Host.fileSystems = ParseFileSystems($Host.fileSystems)
+        }
+        if ($Host.ports) {
+            $Host.ports = ParsePorts($Host.ports)
+        }
+        if ($Host.applications) {
+            $Host.applications = ParseApplications($Host.applications)
+        }
+        if ($Host.virtualMachines) {
+            $Host.virtualMachines = ParseVirtualMachines($Host.virtualMachines)
+        }
+        if ($Host.clusterHosts) {
+            $Host.clusterHosts = ParseHosts($Host.clusterHosts)
+        }
+        if ($Host.annotations) {
+            $Host.annotations = ParseAnnotations($Host.annotations)
+        }
+        if ($Host.datasources) {
+            $Host.datasources = ParseDatasources($Host.datasources)
+        }
+
+        Write-Output $Host
+    }
+}
+
+function ParsePorts($Ports) {
+    $Ports = @($Ports)
+    foreach ($Port in $Ports) {
+        if ($Port.performance) {
+            $Port.performance = ParsePerformance($Port.performance)
+        }
+        if ($Port.device) {
+            $Port.device = ParseDevice($Port.device)
+        }
+        if ($Port.fabrics) {
+            $Port.fabrics = ParseFabrics($Port.fabrics)
+        }
+        if ($Port.annotations) {
+            $Port.annotations = ParseAnnotations($Port.annotations)
+        }
+        if ($Port.datasources) {
+            $Port.datasources = ParseDatasources($Port.datasources)
+        }
+        if ($Port.application) {
+            $Port.application = ParseApplication($Port.application)
+        }
+
+        Write-Output $Port
+    }
+}
+
+function ParseApplications($Applications) {
+    $Applications = @($Applications)
+    foreach ($Application in $Applications) {
+
+        Write-Output $Application
+    }
+}
+
+function ParseAnnotations($Annotations) {
+    $Annotations = @($Annotations)
+    foreach ($Annotation in $Annotations) {
+
+        Write-Output $Annotation
+    }
+}
 
 <#
 .EXAMPLE
@@ -1353,7 +1518,6 @@ function Global:Get-OciDatasources {
 }
 
 # TODO: Implement and test adding of datasoure
-
 <#
     .SYNOPSIS
     Add Data Source
@@ -1380,24 +1544,25 @@ function Global:Get-OciDatasources {
         ]
       }
     }
-</pre>
-                
-        .PARAMETER acquisitionUnit
-        Return related Acquisition unit
-        .PARAMETER note
-        Return related Note
-        .PARAMETER changes
-        Return list of related Changes
-        .PARAMETER packages
-        Return list of related Packages
-        .PARAMETER activePatch
-        Return related Active patch
-        .PARAMETER events
-        Return list of related Events
-        .PARAMETER devices
-        Return list of related Devices
-        .PARAMETER config
-        Return related Config
+</pre>           
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Add-OciDatasource {
     [CmdletBinding()]
@@ -1490,57 +1655,7 @@ function Global:Add-OciDatasource {
     }
 }
 
-<#
-    .SYNOPSIS
-    Retrieve Datasource event details
-    .DESCRIPTION
-    Retrieve Datasource event details
-    .PARAMETER id
-    Id of data source event to get data for
-#>
-function Global:Get-OciDatasourceEventDetails {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id of data source event to get data for",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                   Position=1,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
-    )
- 
-    Begin {
-        $Result = $null
-        if (!$Server) {
-            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
-        }
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/events/$id/details"
- 
-            try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-          
-            Write-Output $Result
-        }
-    }
-}
-
+# TODO: Test deletion of datasoure
 <#
     .SYNOPSIS
     Remove a Datasource
@@ -1564,6 +1679,8 @@ function Global:Get-OciDatasourceEventDetails {
     Return list of related Devices
     .PARAMETER config
     Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciDatasource {
     [CmdletBinding()]
@@ -1633,6 +1750,8 @@ function Global:Remove-OciDatasource {
     Return list of related Devices
     .PARAMETER config
     Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasource {
     [CmdletBinding()]
@@ -1721,8 +1840,7 @@ function Global:Get-OciDatasource {
     }
 }
 
-# TODO: Implement and test update DataSource
-
+# TODO: Implement and test updating of DataSource
 <#
     .SYNOPSIS
     Update one DataSource.
@@ -1751,22 +1869,24 @@ function Global:Get-OciDatasource {
             
     .PARAMETER id
     Id of data source to update
-        .PARAMETER acquisitionUnit
-        Return related Acquisition unit
-        .PARAMETER note
-        Return related Note
-        .PARAMETER changes
-        Return list of related Changes
-        .PARAMETER packages
-        Return list of related Packages
-        .PARAMETER activePatch
-        Return related Active patch
-        .PARAMETER events
-        Return list of related Events
-        .PARAMETER devices
-        Return list of related Devices
-        .PARAMETER config
-        Return related Config
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciDataSource {
     [CmdletBinding()]
@@ -1800,19 +1920,24 @@ function Global:Update-OciDataSource {
                     HelpMessage="Return list of related Devices")][Switch]$devices,
         [parameter(Mandatory=$False,
                     Position=8,
-                    HelpMessage="Return related Config")][Switch]$config
+                    HelpMessage="Return related Config")][Switch]$config,
+        [parameter(Mandatory=$False,
+                   Position=9,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
- 
-           
+
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -1842,13 +1967,9 @@ function Global:Update-OciDataSource {
             }
  
             try {
-                if ('PATCH' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
-                }
+                $Body = ""
+                Write-Verbose "Body: $Body"
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1866,13 +1987,17 @@ function Global:Update-OciDataSource {
 
 <#
     .SYNOPSIS
-    Get Acquisition Unit by datasource.
+    Retrieves Acquisition Unit by datasource.
     .DESCRIPTION
-    Get Acquisition Unit by datasource.
+    Retrieves Acquisition Unit by datasource.
     .PARAMETER id
     Id of datasource for which to retrieve acquisition unit
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)
     .PARAMETER datasources
     Return list of related Datasources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAcquisitionUnitByDatasource {
     [CmdletBinding()]
@@ -1885,6 +2010,9 @@ function Global:Get-OciAcquisitionUnitByDatasource {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]$expand,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return list of related Datasources")][Switch]$datasources,
         [parameter(Mandatory=$False,
                    Position=2,
@@ -1949,6 +2077,8 @@ function Global:Get-OciAcquisitionUnitByDatasource {
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER datasourceConclusions
     Return list of related Patched datasources status
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciActivePatchByDatasource {
     [CmdletBinding()]
@@ -2010,7 +2140,8 @@ function Global:Get-OciActivePatchByDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $ActivePatch = ParseActivePatches($Result)
+            Write-Output $ActivePatch
         }
     }
 }
@@ -2263,6 +2394,59 @@ function Global:Get-OciDatasourceEvents {
         }
     }
 }
+
+<#
+    .SYNOPSIS
+    Retrieve Datasource event details
+    .DESCRIPTION
+    Retrieve Datasource event details
+    .PARAMETER id
+    Id of data source event to get data for
+#>
+function Global:Get-OciDatasourceEventDetails {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of data source event to get data for",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $id = @($id)
+        foreach ($id in $id) {
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/events/$id/details"
+ 
+            try {
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            }
+            catch {
+                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            }
+ 
+            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+                $Result = ParseJsonString($Result.Trim())
+            }
+          
+            $Events = ParseEvents($Result)
+            Write-Output $Events
+        }
+    }
+}
+
 
 <#
     .SYNOPSIS
@@ -3032,6 +3216,8 @@ function Global:Test-OciLdapConfiguration {
     Retrieve license status
     .DESCRIPTION
     Retrieve license status
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciLicenseStatus {
     [CmdletBinding()]
@@ -3249,6 +3435,8 @@ function Global:Replace-OciLicense {
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER datasourceConclusions
     Return related datasource status
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciPatches {
     [CmdletBinding()]
@@ -3398,6 +3586,8 @@ function Global:Add-OciPatches {
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER datasourceConclusions
     Return list of related Patched datasources status
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciPatch {
     [CmdletBinding()]
@@ -3473,8 +3663,10 @@ function Global:Get-OciPatch {
     POST request to include 'patchFile' file parameter
     .PARAMETER id
     Id of patch to update
-        .PARAMETER datasourceConclusions
-        Return list of related Patched datasources status
+    .PARAMETER datasourceConclusions
+    Return list of related Patched datasources status
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciPatch {
     [CmdletBinding()]
@@ -3560,6 +3752,8 @@ function Global:Update-OciPatch {
     Empty body
     .PARAMETER id
     Id of patch to approve
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Approve-OciPatch {
     [CmdletBinding()]
@@ -3642,6 +3836,8 @@ function Global:Approve-OciPatch {
     Id of patch to get data sources for
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciPatchDatasources {
     [CmdletBinding()]
@@ -3709,6 +3905,8 @@ function Global:Get-OciPatchDatasources {
                 
     .PARAMETER id
     Id of patch to update
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciPatchNote {
     [CmdletBinding()]
@@ -3791,6 +3989,8 @@ function Global:Update-OciPatchNote {
     Empty body
     .PARAMETER id
     Id of patch to rolback
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Rollback-OciPatch {
     [CmdletBinding()]
@@ -3869,6 +4069,8 @@ function Global:Rollback-OciPatch {
     Retrieve all users
     .DESCRIPTION
     Retrieve all users
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciUsers {
     [CmdletBinding()]
@@ -3922,9 +4124,9 @@ function Global:Get-OciUsers {
     "insightRole": "USER",
     "isActive": false
 }
-</pre>
-            
-
+</pre>      
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Add-OciUsers {
     [CmdletBinding()]
@@ -3999,6 +4201,8 @@ function Global:Add-OciUsers {
     Retrieve current user
     .DESCRIPTION
     Retrieve current user
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciCurrentUser {
     [CmdletBinding()]
@@ -4045,6 +4249,8 @@ function Global:Get-OciCurrentUser {
     
     .PARAMETER id
     The id of user to delete
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Delete-OciUser {
     [CmdletBinding()]
@@ -4128,6 +4334,8 @@ function Global:Delete-OciUser {
     Retrieve one user
     .PARAMETER id
     The id of user to retrieve
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciUser {
     [CmdletBinding()]
@@ -4192,6 +4400,8 @@ function Global:Get-OciUser {
             
     .PARAMETER id
     The id of user to update
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciUser {
     [CmdletBinding()]
@@ -4270,7 +4480,8 @@ function Global:Update-OciUser {
     Retrieve all annotation definitions
     .DESCRIPTION
     
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAnnotations {
     [CmdletBinding()]
@@ -4331,8 +4542,8 @@ function Global:Get-OciAnnotations {
     ]
 }
 </pre>
-        
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Create-OciAnnotationDefinition {
     [CmdletBinding()]
@@ -4411,6 +4622,8 @@ function Global:Create-OciAnnotationDefinition {
     
     .PARAMETER id
     Id or name of annotation definition to delete
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciDefinition {
     [CmdletBinding()]
@@ -4530,7 +4743,8 @@ function Global:Get-OciAnnotation {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Annotation = ParseAnnotations($Result)
+            Write-Output $Annotation
         }
     }
 }
@@ -4566,6 +4780,8 @@ function Global:Get-OciAnnotation {
         
     .PARAMETER id
     Id or name of annotation definition to update
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciDefinition {
     [CmdletBinding()]
@@ -4662,6 +4878,8 @@ function Global:Update-OciDefinition {
             
     .PARAMETER id
     Id or name of annotation definition to update
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciDefinitionValues {
     [CmdletBinding()]
@@ -4742,6 +4960,8 @@ function Global:Remove-OciDefinitionValues {
     'values.targets' in response contains URLs for target objects
     .PARAMETER id
     Id or name of annotation definition to retrieve values for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAnnotationValues {
     [CmdletBinding()]
@@ -4840,6 +5060,8 @@ function Global:Get-OciAnnotationValues {
     Value of Annotation
     .PARAMETER targets
     IDs of object where annotation should be added
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciAnnotationValues {
     [CmdletBinding()]
@@ -4904,6 +5126,8 @@ function Global:Update-OciAnnotationValues {
     Id or name of annotation definition to retrieve
     .PARAMETER objectType
     The object type to retrieve values for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAnnotationValuesByObjectType {
     [CmdletBinding()]
@@ -4964,6 +5188,8 @@ function Global:Get-OciAnnotationValuesByObjectType {
     The object type to retrieve target objects for
     .PARAMETER value
     The specific value to retrieve target objects for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
     [CmdletBinding()]
@@ -5058,6 +5284,8 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
     Return list of related Compute resources
     .PARAMETER storageResources
     Return list of related Storage resources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciApplications {
     [CmdletBinding()]
@@ -5135,7 +5363,8 @@ function Global:Get-OciApplications {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Applications = ParseApplications($Result)
+            Write-Output $Applications
         }
     }
 }
@@ -5169,6 +5398,8 @@ function Global:Get-OciApplications {
     Return list of related Compute resources
     .PARAMETER storageResources
     Return list of related Storage resources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Add-OciApplication {
     [CmdletBinding()]
@@ -5297,10 +5528,12 @@ function Global:Add-OciApplication {
 ]
 </pre>
             
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciApplicationsFromAssets {
     [CmdletBinding()]
@@ -5415,12 +5648,13 @@ function Global:Remove-OciApplicationsFromAssets {
         ]
     }
 ]
-</pre>
-            
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
+</pre>     
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Add-OciApplicationsToAssets {
     [CmdletBinding()]
@@ -5504,10 +5738,12 @@ function Global:Add-OciApplicationsToAssets {
     
     .PARAMETER id
     Id of application to delete
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciApplication {
     [CmdletBinding()]
@@ -5603,6 +5839,8 @@ function Global:Remove-OciApplication {
     Return list of related Compute resources
     .PARAMETER storageResources
     Return list of related Storage resources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciApplication {
     [CmdletBinding()]
@@ -5708,10 +5946,12 @@ function Global:Get-OciApplication {
         }
         </pre>
                     
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciApplication {
     [CmdletBinding()]
@@ -5815,6 +6055,8 @@ function Global:Update-OciApplication {
             
     .PARAMETER id
     Id of application to un-assign from assets
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Bulk-OciUnAssignApplicationFromAssets {
     [CmdletBinding()]
@@ -5899,6 +6141,8 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
     Filter for time range, to time in milliseconds
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciApplicationAssets {
     [CmdletBinding()]
@@ -5994,6 +6238,8 @@ function Global:Get-OciApplicationAssets {
             
     .PARAMETER id
     Id of application to assign to assets
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Bulk-OciAssignApplicationToAssets {
     [CmdletBinding()]
@@ -6093,6 +6339,8 @@ function Global:Bulk-OciAssignApplicationToAssets {
     Return list of related File systems
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciComputeResourcesByApplication {
     [CmdletBinding()]
@@ -6216,6 +6464,8 @@ function Global:Get-OciComputeResourcesByApplication {
     Return list of related Storage pools
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciStorageResourcesByApplication {
     [CmdletBinding()]
@@ -6323,6 +6573,8 @@ function Global:Get-OciStorageResourcesByApplication {
     Retrieve all business entities
     .DESCRIPTION
     Retrieve all business entities
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciBusinessEntities {
     [CmdletBinding()]
@@ -6375,8 +6627,8 @@ function Global:Get-OciBusinessEntities {
                 "project":"project1"
             }
             </pre>
-                    
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Add-OciBusinessEntity {
     [CmdletBinding()]
@@ -6436,6 +6688,8 @@ function Global:Add-OciBusinessEntity {
     Delete a business entity
     .PARAMETER id
     Id of business entity to delete
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Delete-OciBusinessEntity {
     [CmdletBinding()]
@@ -6487,6 +6741,8 @@ function Global:Delete-OciBusinessEntity {
     Retrieve business entity with empty fields set to N/A
     .PARAMETER id
     Id of business entity to retrieve
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciBusinessEntity {
     [CmdletBinding()]
@@ -6562,6 +6818,8 @@ function Global:Get-OciBusinessEntity {
     Return list of related Annotations
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatastores {
     [CmdletBinding()]
@@ -6684,6 +6942,8 @@ function Global:Get-OciDatastores {
     Retrieve total count of datastores.
     .DESCRIPTION
     Retrieve total count of datastores.
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatastoreCount {
     [CmdletBinding()]
@@ -6747,6 +7007,8 @@ function Global:Get-OciDatastoreCount {
     Return list of related Annotations
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatastore {
     [CmdletBinding()]
@@ -6874,6 +7136,8 @@ function Global:Get-OciDatastore {
     Id of object to delete
     .PARAMETER definition
     Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciAnnotationsByDatastore {
     [CmdletBinding()]
@@ -6950,8 +7214,6 @@ function Global:Remove-OciAnnotationsByDatastore {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-
        
             Write-Output $Result
         }
@@ -6967,8 +7229,10 @@ function Global:Remove-OciAnnotationsByDatastore {
     Id of object to retrieve
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=definition)
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAnnotationsByDatastore {
     [CmdletBinding()]
@@ -7029,8 +7293,10 @@ function Global:Get-OciAnnotationsByDatastore {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+            
+            $Annotations = ParseAnnotations($Result)
+            
+            Write-Output $Annotations
         }
     }
 }
@@ -7055,8 +7321,10 @@ function Global:Get-OciAnnotationsByDatastore {
             
     .PARAMETER id
     Id of object to update
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciAnnotationsByDatastore {
     [CmdletBinding()]
@@ -7141,22 +7409,22 @@ function Global:Update-OciAnnotationsByDatastore {
     Filter for time range, to time in milliseconds
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER acquisitionUnit
-        Return related Acquisition unit
-        .PARAMETER note
-        Return related Note
-        .PARAMETER changes
-        Return list of related Changes
-        .PARAMETER packages
-        Return list of related Packages
-        .PARAMETER activePatch
-        Return related Active patch
-        .PARAMETER events
-        Return list of related Events
-        .PARAMETER devices
-        Return list of related Devices
-        .PARAMETER config
-        Return related Config
+    .PARAMETER acquisitionUnit
+    Return related Acquisition unit
+    .PARAMETER note
+    Return related Note
+    .PARAMETER changes
+    Return list of related Changes
+    .PARAMETER packages
+    Return list of related Packages
+    .PARAMETER activePatch
+    Return related Active patch
+    .PARAMETER events
+    Return list of related Events
+    .PARAMETER devices
+    Return list of related Devices
+    .PARAMETER config
+    Return related Config
 #>
 function Global:Get-OciDatasourcesByDataStore {
     [CmdletBinding()]
@@ -7256,8 +7524,10 @@ function Global:Get-OciDatasourcesByDataStore {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+            
+            $Datasources = ParseDatasources($Result)
+            
+            Write-Output $Datasources
         }
     }
 }
@@ -7275,28 +7545,28 @@ function Global:Get-OciDatasourcesByDataStore {
     Filter for time range, to time in milliseconds
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER performance
-        Return related Performance
-        .PARAMETER ports
-        Return list of related Ports
-        .PARAMETER storageResources
-        Return list of related Storage resources
-        .PARAMETER fileSystems
-        Return list of related File systems
-        .PARAMETER applications
-        Return list of related Applications
-        .PARAMETER virtualMachines
-        Return list of related Virtual machines
-        .PARAMETER dataCenter
-        Return related Data center
-        .PARAMETER annotations
-        Return list of related Annotations
-        .PARAMETER clusterHosts
-        Return list of related Cluster hosts
-        .PARAMETER datasources
-        Return list of related Datasources
-        .PARAMETER performancehistory
-        Return related Performance History
+    .PARAMETER performance
+    Return related Performance
+    .PARAMETER ports
+    Return list of related Ports
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER fileSystems
+    Return list of related File systems
+    .PARAMETER applications
+    Return list of related Applications
+    .PARAMETER virtualMachines
+    Return list of related Virtual machines
+    .PARAMETER dataCenter
+    Return related Data center
+    .PARAMETER annotations
+    Return list of related Annotations
+    .PARAMETER clusterHosts
+    Return list of related Cluster hosts
+    .PARAMETER datasources
+    Return list of related Datasources
+    .PARAMETER performancehistory
+    Return related Performance History
 #>
 function Global:Get-OciHostsByDatastore {
     [CmdletBinding()]
@@ -7405,8 +7675,10 @@ function Global:Get-OciHostsByDatastore {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
+
+            $Hosts = ParseHosts($Result)
           
-            Write-Output $Result
+            Write-Output $Hosts
         }
     }
 }
@@ -7424,8 +7696,10 @@ function Global:Get-OciHostsByDatastore {
     Filter for time range, to time in milliseconds
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER history
-        Return list of related History
+    .PARAMETER history
+    Return list of related History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatastorePerformance {
     [CmdletBinding()]
@@ -7525,20 +7799,22 @@ function Global:Get-OciDatastorePerformance {
     Filter for time range, to time in milliseconds
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER storage
-        Return related Storage
-        .PARAMETER performance
-        Return related Performance
-        .PARAMETER dataStores
-        Return list of related Datastores
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER applications
-        Return list of related Applications
-        .PARAMETER storagePools
-        Return list of related Storage pools
-        .PARAMETER performancehistory
-        Return related Performance History
+    .PARAMETER storage
+    Return related Storage
+    .PARAMETER performance
+    Return related Performance
+    .PARAMETER dataStores
+    Return list of related Datastores
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER applications
+    Return list of related Applications
+    .PARAMETER storagePools
+    Return list of related Storage pools
+    .PARAMETER performancehistory
+    Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciStorageResourcesByDatastore {
     [CmdletBinding()]
@@ -7654,20 +7930,20 @@ function Global:Get-OciStorageResourcesByDatastore {
     Filter for time range, to time in milliseconds
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER performance
-        Return related Performance
-        .PARAMETER dataStore
-        Return related Datastore
-        .PARAMETER storageResources
-        Return list of related Storage resources
-        .PARAMETER virtualMachine
-        Return related Virtual machine
-        .PARAMETER annotations
-        Return list of related Annotations
-        .PARAMETER datasources
-        Return list of related Datasources
-        .PARAMETER performancehistory
-        Return related Performance History
+    .PARAMETER performance
+    Return related Performance
+    .PARAMETER dataStore
+    Return related Datastore
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER virtualMachine
+    Return related Virtual machine
+    .PARAMETER annotations
+    Return list of related Annotations
+    .PARAMETER datasources
+    Return list of related Datasources
+    .PARAMETER performancehistory
+    Return related Performance History
 #>
 function Global:Get-OciVmdksByDatastore {
     [CmdletBinding()]
@@ -7764,8 +8040,10 @@ function Global:Get-OciVmdksByDatastore {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
+
+            $Vmdks = ParseVmdks($Result)
            
-            Write-Output $Result
+            Write-Output $Vmdks
         }
     }
 }
@@ -7783,22 +8061,24 @@ function Global:Get-OciVmdksByDatastore {
     Filter for time range, to time in milliseconds
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER storage
-        Return related Storage
-        .PARAMETER storagePools
-        Return list of related Storage pools
-        .PARAMETER performance
-        Return related Performance
-        .PARAMETER storageResources
-        Return list of related Storage resources
-        .PARAMETER backendVolumes
-        Return list of related Backend volumes
-        .PARAMETER annotations
-        Return list of related Annotations
-        .PARAMETER datasources
-        Return list of related Datasources
-        .PARAMETER performancehistory
-        Return related Performance History
+    .PARAMETER storage
+    Return related Storage
+    .PARAMETER storagePools
+    Return list of related Storage pools
+    .PARAMETER performance
+    Return related Performance
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER backendVolumes
+    Return list of related Backend volumes
+    .PARAMETER annotations
+    Return list of related Annotations
+    .PARAMETER datasources
+    Return list of related Datasources
+    .PARAMETER performancehistory
+    Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDisk {
     [CmdletBinding()]
@@ -7924,8 +8204,10 @@ function Global:Get-OciDisk {
                     
     .PARAMETER id
     Id of object to delete
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciAnnotationsByDisk {
     [CmdletBinding()]
@@ -8010,8 +8292,10 @@ function Global:Remove-OciAnnotationsByDisk {
     Id of object to retrieve
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=definition)
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAnnotationsByDisk {
     [CmdletBinding()]
@@ -8110,8 +8394,10 @@ function Global:Get-OciAnnotationsByDisk {
             
     .PARAMETER id
     Id of object to update
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciAnnotationsByDisk {
     [CmdletBinding()]
@@ -8236,6 +8522,8 @@ function Global:Update-OciAnnotationsByDisk {
     Return related Qtree
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciBackendVolumesByDisk {
     [CmdletBinding()]
@@ -8397,6 +8685,8 @@ function Global:Get-OciBackendVolumesByDisk {
     Return list of related Devices
     .PARAMETER config
     Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourcesByDisk {
     [CmdletBinding()]
@@ -8497,7 +8787,9 @@ function Global:Get-OciDatasourcesByDisk {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Datasources = ParseDatasources($Result)
+
+            Write-Output $Datasources
         }
     }
 }
@@ -8515,8 +8807,10 @@ function Global:Get-OciDatasourcesByDisk {
     Filter for time range, to time in milliseconds
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-        .PARAMETER history
-        Return list of related History
+    .PARAMETER history
+    Return list of related History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDiskPerformance {
     [CmdletBinding()]
@@ -8596,7 +8890,9 @@ function Global:Get-OciDiskPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+
+            Write-Output $Performance
         }
     }
 }
@@ -8634,6 +8930,8 @@ function Global:Get-OciDiskPerformance {
     Return list of related Annotations
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciStoragePoolsByDisk {
     [CmdletBinding()]
@@ -8772,6 +9070,8 @@ function Global:Get-OciStoragePoolsByDisk {
     Return list of related Storage pools
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciStorageResourcesByDisk {
     [CmdletBinding()]
@@ -8889,10 +9189,12 @@ function Global:Get-OciStorageResourcesByDisk {
     Number of fabrics per page.
     .PARAMETER offset
     Offset to be used with limit
-        .PARAMETER switches
-        Return list of related Switches
-        .PARAMETER datasources
-        Return list of related Datasources
+    .PARAMETER switches
+    Return list of related Switches
+    .PARAMETER datasources
+    Return list of related Datasources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciFabrics {
     [CmdletBinding()]
@@ -8986,7 +9288,8 @@ function Global:Get-OciFabrics {
     Retrieve total count of fabrics.
     .DESCRIPTION
     
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciFabricCount {
     [CmdletBinding()]
@@ -9040,6 +9343,8 @@ function Global:Get-OciFabricCount {
     Return list of related Switches
     .PARAMETER datasources
     Return list of related Datasources
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciFabric {
     [CmdletBinding()]
@@ -9156,6 +9461,8 @@ function Global:Get-OciFabric {
     Return list of related Devices
     .PARAMETER config
     Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourcesByFabric {
     [CmdletBinding()]
@@ -9296,6 +9603,8 @@ function Global:Get-OciDatasourcesByFabric {
     Return list of related Applications
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciPortsByFabric {
     [CmdletBinding()]
@@ -9421,6 +9730,8 @@ function Global:Get-OciPortsByFabric {
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
     Filter for time range, to time in milliseconds
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciPortsByFabricCount {
     [CmdletBinding()]
@@ -9526,6 +9837,8 @@ function Global:Get-OciPortsByFabricCount {
     Return list of related Applications
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciSwitchesByFabric {
     [CmdletBinding()]
@@ -9647,6 +9960,8 @@ function Global:Get-OciSwitchesByFabric {
     Return list of related Vmdks
     .PARAMETER computeResource
     Return related Compute resource
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciFilesystem {
     [CmdletBinding()]
@@ -9760,6 +10075,8 @@ function Global:Get-OciFilesystem {
     Return list of related File systems
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciComputeResourceByFileSystem {
     [CmdletBinding()]
@@ -9883,6 +10200,8 @@ function Global:Get-OciComputeResourceByFileSystem {
     Return list of related Storage pools
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciStorageResorcesByFileSystem {
     [CmdletBinding()]
@@ -10012,6 +10331,8 @@ function Global:Get-OciStorageResorcesByFileSystem {
     Return list of related Datasources
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciVmdksByFileSystem {
     [CmdletBinding()]
@@ -10153,6 +10474,8 @@ function Global:Get-OciVmdksByFileSystem {
     Return list of related Datasources
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciHosts {
     [CmdletBinding()]
@@ -10266,7 +10589,9 @@ function Global:Get-OciHosts {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Hosts = ParseHosts($Result)
+
+            Write-Output $Hosts
         }
     }
 }
@@ -10276,7 +10601,8 @@ function Global:Get-OciHosts {
     Retrieve total count of hosts.
     .DESCRIPTION
     
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciHostCount {
     [CmdletBinding()]
@@ -10348,6 +10674,8 @@ function Global:Get-OciHostCount {
     Return list of related Datasources
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciHost {
     [CmdletBinding()]
@@ -10456,8 +10784,10 @@ function Global:Get-OciHost {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+            
+            $Host = ParseHosts($Result)
+            
+            Write-Output $Host
         }
     }
 }
@@ -10482,8 +10812,10 @@ function Global:Get-OciHost {
                     
     .PARAMETER id
     Id of object to delete
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Remove-OciAnnotationsByHosts {
     [CmdletBinding()]
@@ -10572,6 +10904,8 @@ function Global:Remove-OciAnnotationsByHosts {
     Expand parameter for underlying JSON object (e.g. expand=definition)
     .PARAMETER definition
     Return related Definition
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAnnotationsByHosts {
     [CmdletBinding()]
@@ -25101,7 +25435,8 @@ function Global:Get-OciVirtualMachines {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $VirtualMachines = ParseVirtualMachines($Result)
+            Write-Output $VirtualMachines
         }
     }
 }
@@ -25292,7 +25627,8 @@ function Global:Get-OciVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $VirtualMachine = ParseVirtualMachines($Result)
+            Write-Output $VirtualMachine
         }
     }
 }
@@ -26702,7 +27038,8 @@ function Global:Get-OciVirtualMachinePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
