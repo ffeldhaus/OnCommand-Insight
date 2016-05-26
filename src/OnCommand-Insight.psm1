@@ -688,6 +688,114 @@ function ParseAnnotations($Annotations) {
     }
 }
 
+function ParseComputeResources($ComputeResources) {
+    $ComputeResources = @($ComputeResources)
+    foreach ($ComputeResource in $ComputeResources) {
+        if ($ComputeResource.createTime) {
+            $ComputeResource.createTime = $ComputeResource.createTime | Get-Date
+        }
+        if ($ComputeResource.performance) {
+            $ComputeResource.performance = ParsePerformance($ComputeResource.performance)
+        }
+        if ($ComputeResource.storageResources) {
+            $ComputeResource.storageResources = ParseStorageResources($ComputeResource.storageResources)
+        }
+        if ($ComputeResource.fileSystems) {
+            $ComputeResource.fileSystems = ParseFileSystems($ComputeResource.fileSystems)
+        }
+        if ($ComputeResource.ports) {
+            $ComputeResource.ports = ParsePorts($ComputeResource.ports)
+        }
+        if ($ComputeResource.applications) {
+            $ComputeResource.applications = ParseApplications($ComputeResource.applications)
+        }
+        if ($ComputeResource.virtualMachines) {
+            $ComputeResource.virtualMachines = ParseVirtualMachines($ComputeResource.virtualMachines)
+        }
+        if ($ComputeResource.clusterHosts) {
+            $ComputeResource.clusterHosts = ParseHosts($ComputeResource.clusterHosts)
+        }
+        if ($ComputeResource.annotations) {
+            $ComputeResource.annotations = ParseAnnotations($ComputeResource.annotations)
+        }
+        if ($ComputeResource.datasources) {
+            $ComputeResource.datasources = ParseDatasources($ComputeResource.datasources)
+        }
+
+        Write-Output $ComputeResource
+    }
+}
+
+function ParseStorageResources($StorageResources) {
+    $StorageResources = @($StorageResources)
+    foreach ($StorageResource in $StorageResources) {
+        if ($StorageResource.createTime) {
+            $StorageResource.createTime = $StorageResource.createTime | Get-Date
+        }
+        if ($StorageResource.performance) {
+            $StorageResource.performance = ParsePerformance($StorageResource.performance)
+        }
+        if ($StorageResource.computeResources) {
+            $StorageResource.computeResources = ParseComputeResources($StorageResource.computeResources)
+        }
+        if ($StorageResource.fileSystems) {
+            $StorageResource.fileSystems = ParseFileSystems($StorageResource.fileSystems)
+        }
+        if ($StorageResource.storagePools) {
+            $StorageResource.storagePools = ParseStoragePools($StorageResource.storagePools)
+        }
+        if ($StorageResource.applications) {
+            $StorageResource.applications = ParseApplications($StorageResource.applications)
+        }
+        if ($StorageResource.virtualMachines) {
+            $StorageResource.virtualMachines = ParseVirtualMachines($StorageResource.virtualMachines)
+        }
+        if ($StorageResource.annotations) {
+            $StorageResource.annotations = ParseAnnotations($StorageResource.annotations)
+        }
+        if ($StorageResource.datasources) {
+            $StorageResource.datasources = ParseDatasources($StorageResource.datasources)
+        }
+
+        Write-Output $StorageResource
+    }
+}
+
+function ParseStoragePools($StoragePools) {
+    $StoragePools = @($StoragePools)
+    foreach ($StoragePool in $StoragePools) {
+        if ($StoragePool.performance) {
+            $StoragePool.performance = ParsePerformance($StoragePool.performance)
+        }
+        if ($StoragePool.storage) {
+            $StoragePool.storage = ParseStorages($StoragePool.storage)
+        }
+        if ($StoragePool.disks) {
+            $StoragePool.disks = ParseDisks($StoragePool.disks)
+        }
+        if ($StoragePool.storageResources) {
+            $StoragePool.storageResources = ParseStorageResources($StoragePool.storageResources)
+        }
+        if ($StoragePool.internalVolumes) {
+            $StoragePool.internalVolumes = ParseInternalVolumes($StoragePool.internalVolumes)
+        }
+        if ($StoragePool.volumes) {
+            $StoragePool.volumes = ParseVolumes($StoragePool.volumes)
+        }
+        if ($StoragePool.storageNodes) {
+            $StoragePool.storageNodes = ParseStorageNodes($StoragePool.storageNodes)
+        }
+        if ($StoragePool.datasources) {
+            $StoragePool.datasources = ParseDatasources($StoragePool.datasources)
+        }
+        if ($StoragePool.annotations) {
+            $StoragePool.annotations = ParseAnnotations($StoragePool.annotations)
+        }
+
+        Write-Output $StoragePool
+    }
+}
+
 <#
 .EXAMPLE
 Connect-OciServer -Name ociserver.example.com -Credential (Get-Credential)
@@ -2153,8 +2261,12 @@ function Global:Get-OciActivePatchByDatasource {
     Retrieve Data Source changes
     .PARAMETER id
     Id of data source to get data for
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER details
     Return list of related Details
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceChanges {
     [CmdletBinding()]
@@ -2167,9 +2279,12 @@ function Global:Get-OciDatasourceChanges {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return list of related Details")][Switch]$details,
         [parameter(Mandatory=$False,
-                   Position=2,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -2227,6 +2342,8 @@ function Global:Get-OciDatasourceChanges {
     Retrieve Datasource configuration.
     .PARAMETER id
     Id of data source to retrieve configuration for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceConfiguration {
     [CmdletBinding()]
@@ -2278,6 +2395,8 @@ function Global:Get-OciDatasourceConfiguration {
     Retrieve datasource devices
     .PARAMETER id
     Id of data source to get devices for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceDevices {
     [CmdletBinding()]
@@ -2331,6 +2450,8 @@ function Global:Get-OciDatasourceDevices {
     Id of data source to get data for
     .PARAMETER details
     Return event details
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceEvents {
     [CmdletBinding()]
@@ -2361,7 +2482,6 @@ function Global:Get-OciDatasourceEvents {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/events"
  
-           
             $switchparameters=@("details")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2402,6 +2522,8 @@ function Global:Get-OciDatasourceEvents {
     Retrieve Datasource event details
     .PARAMETER id
     Id of data source event to get data for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceEventDetails {
     [CmdletBinding()]
@@ -2447,7 +2569,6 @@ function Global:Get-OciDatasourceEventDetails {
     }
 }
 
-
 <#
     .SYNOPSIS
     Retrieve DataSource note
@@ -2455,6 +2576,8 @@ function Global:Get-OciDatasourceEventDetails {
     Retrieve DataSource note
     .PARAMETER id
     Id of data source to retrieve note for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourceNote {
     [CmdletBinding()]
@@ -2500,7 +2623,6 @@ function Global:Get-OciDatasourceNote {
 }
 
 # TODO: Check and implement updating of datasource note
-
 <#
     .SYNOPSIS
     Update one Data Source note
@@ -2517,6 +2639,8 @@ function Global:Get-OciDatasourceNote {
     Id of data source to update
     .PARAMETER value
     Note to be added to datasource
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciDatasourceNote {
     [CmdletBinding()]
@@ -2541,7 +2665,6 @@ function Global:Update-OciDatasourceNote {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/note"
  
-           
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2600,6 +2723,8 @@ function Global:Update-OciDatasourceNote {
     Retrieve DataSource package status
     .PARAMETER id
     Id of data source to get package status for
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourcePackageStatus {
     [CmdletBinding()]
@@ -2645,7 +2770,6 @@ function Global:Get-OciDatasourcePackageStatus {
 }
 
 # TODO: Implement polling of datasources
-
 <#
     .SYNOPSIS
     Poll one Data Source
@@ -2653,6 +2777,8 @@ function Global:Get-OciDatasourcePackageStatus {
     Empty POST body
     .PARAMETER id
     Id of data source to poll
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Poll-OciDatasource {
     [CmdletBinding()]
@@ -2727,7 +2853,6 @@ function Global:Poll-OciDatasource {
 }
 
 # TODO: Implement / Check suspending of datasources
-
 <#
     .SYNOPSIS
     Postpone one Data Source
@@ -2737,6 +2862,8 @@ function Global:Poll-OciDatasource {
     Id of data source to postpone
     .PARAMETER Days
     Number of days to postpone datasource polling
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Suspend-OciDatasource {
     [CmdletBinding()]
@@ -2814,7 +2941,6 @@ function Global:Suspend-OciDatasource {
 }
 
 # TODO: Implement / Test resuming of datasources
-
 <#
     .SYNOPSIS
     Resume one Data Source
@@ -2896,7 +3022,6 @@ function Global:Resume-OciDatasource {
 }
 
 # TODO: Implement / Test testing of datasources
-
 <#
     .SYNOPSIS
     Test Data Source
@@ -2904,6 +3029,8 @@ function Global:Resume-OciDatasource {
     Empty POST body
     .PARAMETER id
     Id of data source to test
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Test-OciDatasource {
     [CmdletBinding()]
@@ -2982,6 +3109,8 @@ function Global:Test-OciDatasource {
     Retrieve LDAP configuration
     .DESCRIPTION
     Retrieve LDAP configuration
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciLdapConfiguration {
     [CmdletBinding()]
@@ -3022,7 +3151,6 @@ function Global:Get-OciLdapConfiguration {
 }
 
 # TODO: Implement / Test updating o ldap configuration
-
 <#
     .SYNOPSIS
     Update LDAP config
@@ -3054,8 +3182,8 @@ function Global:Get-OciLdapConfiguration {
     }
 }
 </pre>
-      
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciLdapConfiguration {
     [CmdletBinding()]
@@ -3126,7 +3254,6 @@ function Global:Update-OciLdapConfiguration {
 }
 
 # TODO: Implement / Test LDAP connection test
-
 <#
     .SYNOPSIS
     Perform an LDAP connection test
@@ -3140,8 +3267,8 @@ function Global:Update-OciLdapConfiguration {
   "password": "password"
 }
 </pre>
-      
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Test-OciLdapConfiguration {
     [CmdletBinding()]
@@ -3257,7 +3384,6 @@ function Global:Get-OciLicenseStatus {
 }
 
 # Todo: Implement / Test Updating of licenses
-
 <#
     .SYNOPSIS
     Update license information
@@ -3270,8 +3396,8 @@ function Global:Get-OciLicenseStatus {
     "TEST1234567890LicenceKey2"
 ]
 </pre>
-        
-
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Update-OciLicenses {
     [CmdletBinding()]
@@ -3342,7 +3468,6 @@ function Global:Update-OciLicenses {
 }
 
 # TODO: Implement / Test replacing of licenses
-
 <#
     .SYNOPSIS
     Replace license information
@@ -3496,7 +3621,6 @@ function Global:Get-OciPatches {
 }
 
 # TODO: Implement / Test adding of patches
-
 <#
     .SYNOPSIS
     Add Patch
@@ -3655,7 +3779,6 @@ function Global:Get-OciPatch {
 }
 
 # TODO: Implement / Test updating of patch
-
 <#
     .SYNOPSIS
     Update one patch
@@ -3744,7 +3867,6 @@ function Global:Update-OciPatch {
 }
 
 # TODO: Implement / test approving of patch
-
 <#
     .SYNOPSIS
     Approve one patch
@@ -3829,23 +3951,23 @@ function Global:Approve-OciPatch {
 
 <#
     .SYNOPSIS
-    Retrieve Patch Data Sources
+    Retrieve Patch Data Source Conclusions
     .DESCRIPTION
-    Retrieve Patch Data Sources
+    Retrieve Patch Data Source Conclusions
     .PARAMETER id
-    Id of patch to get data sources for
+    Id of patch to get data source conslusions for
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Get-OciPatchDatasources {
+function Global:Get-OciPatchDatasourceConclusions {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id of patch to get data sources for",
+                    HelpMessage="Id of patch to get data source conslusions for",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
@@ -3890,7 +4012,6 @@ function Global:Get-OciPatchDatasources {
 }
 
 # TODO: Implement / Test updating of patch note
-
 <#
     .SYNOPSIS
     Update one patch note
@@ -3981,7 +4102,6 @@ function Global:Update-OciPatchNote {
 }
 
 # TODO: Implement / Test rollback of patch
-
 <#
     .SYNOPSIS
     Rollback one patch
@@ -4109,7 +4229,6 @@ function Global:Get-OciUsers {
 }
 
 # TODO: Implement / Test creation of new user
-
 <#
     .SYNOPSIS
     Create a new user
@@ -4198,9 +4317,9 @@ function Global:Add-OciUsers {
 
 <#
     .SYNOPSIS
-    Retrieve current user
+    Retrieve currently logged in user
     .DESCRIPTION
-    Retrieve current user
+    Retrieve currently logged in user
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -4241,7 +4360,6 @@ function Global:Get-OciCurrentUser {
 }
 
 # TODO: Implement / Test deletion of user
-
 <#
     .SYNOPSIS
     Delete one user
@@ -4382,7 +4500,6 @@ function Global:Get-OciUser {
 }
 
 # TODO: Implement / Test updating of users
-
 <#
     .SYNOPSIS
     Update one user
@@ -4479,7 +4596,7 @@ function Global:Update-OciUser {
     .SYNOPSIS
     Retrieve all annotation definitions
     .DESCRIPTION
-    
+    Retrieve all annotation definitions
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -4519,7 +4636,6 @@ function Global:Get-OciAnnotations {
 }
 
 # TODO: Implement / Test creation of annotation definitions
-
 <#
     .SYNOPSIS
     Create annotation definition
@@ -4614,12 +4730,11 @@ function Global:Create-OciAnnotationDefinition {
 }
 
 # TODO: Implement / Test deletion of annotation definitions
-
 <#
     .SYNOPSIS
     Delete annotation definition by id or name
     .DESCRIPTION
-    
+    Delete annotation definition by id or name
     .PARAMETER id
     Id or name of annotation definition to delete
     .PARAMETER server
@@ -4699,11 +4814,13 @@ function Global:Remove-OciDefinition {
 
 <#
     .SYNOPSIS
-    Retrieve annotation definition by id or name
+    Retrieve annotation definition
     .DESCRIPTION
-    
+    Retrieve annotation definition
     .PARAMETER id
     Id or name of annotation definition to retrieve
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciAnnotation {
     [CmdletBinding()]
@@ -4750,7 +4867,6 @@ function Global:Get-OciAnnotation {
 }
 
 # TODO: Implement / Test updating of annotations
-
 <#
     .SYNOPSIS
     Update annotation definition by id or name
@@ -4856,7 +4972,6 @@ function Global:Update-OciDefinition {
 }
 
 # TODO: Implement / Test removing of annotation definitions
-
 <#
     .SYNOPSIS
     Remove object annotations in bulk by annotation definition
@@ -4957,7 +5072,7 @@ function Global:Remove-OciDefinitionValues {
     .SYNOPSIS
     Retrieve annotation definition values for all supported object types
     .DESCRIPTION
-    'values.targets' in response contains URLs for target objects
+    Retrieve annotation definition values for all supported object types
     .PARAMETER id
     Id or name of annotation definition to retrieve values for
     .PARAMETER server
@@ -5007,7 +5122,6 @@ function Global:Get-OciAnnotationValues {
 }
 
 # TODO: Implement / Test updating of annotation definition
-
 <#
     .SYNOPSIS
     Update object annotations in bulk by annotation definition
@@ -5176,7 +5290,6 @@ function Global:Get-OciAnnotationValuesByObjectType {
 }
 
 # TODO: Implement / Test updating of annotation definitions
-
 <#
     .SYNOPSIS
     Retrieve annotation definition targets for one supported object type, one specific value
@@ -5369,31 +5482,17 @@ function Global:Get-OciApplications {
     }
 }
 
-# TODO: Implement / Check adding of new applications
-
 <#
     .SYNOPSIS
     Add a new application
     .DESCRIPTION
-    Request body should contain valid application name, priority and and optional business entity ID and ignoreShareViolations, example: <br/>
-
-            <pre>
-            {
-                "name":"Test",
-                "priority":"Low",
-                "ignoreShareViolations":false,
-                "businessEntity": {
-                    "id": "123"
-                }
-            }
-            </pre>
-                    
+    Add a new application
     .PARAMETER name
     Name of the application
     .PARAMETER priority
-    Name of the application
+    Application priority (Critical, High, Medium or Low). Default is Medium.
     .PARAMETER businessEntity
-    Business entity of the application
+    Business entity ID to attach the application to
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
@@ -5413,15 +5512,18 @@ function Global:Add-OciApplication {
                     HelpMessage="Application priority (Critical, High, Medium or Low). Default is Medium.")][ValidateSet("Critical", "High", "Medium", "Low")][String]$priority="Medium",
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Business entity of the application")][String]$businessEntity,
+                    HelpMessage="Business entity ID to attach the application to")][String]$businessEntity,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+                    HelpMessage="Business entity ID to attach the application to")][Switch]$ignoreShareViolations,
         [parameter(Mandatory=$False,
                     Position=4,
+                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+        [parameter(Mandatory=$False,
+                    Position=5,
                     HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -5465,10 +5567,10 @@ function Global:Add-OciApplication {
  
         try {
             if ($businessEntity) {
-                $Body = ConvertTo-Json @{name=$name;priority=$priority;businessEntity=@{id=$businessEntity}} -Compress
+                $Body = ConvertTo-Json @{name=$name;priority=$priority;businessEntity=@{id=$businessEntity};ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
             }
             else {
-                $Body = ConvertTo-Json @{name=$name;priority=$priority} -Compress
+                $Body = ConvertTo-Json @{name=$name;priority=$priority;ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
             }
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
@@ -5482,12 +5584,12 @@ function Global:Add-OciApplication {
             $Result = ParseJsonString($Result.Trim())
         }
            
-        Write-Output $Result
+        $Application = ParseApplications($Result)
+        Write-Output $Application
     }
 }
 
 # TODO: Implemet / Test unassigning of applications from assets
-
 <#
     .SYNOPSIS
     Bulk un-assign applications from assets
@@ -5609,7 +5711,6 @@ function Global:Remove-OciApplicationsFromAssets {
 }
 
 # TODO: Implement / Test
-
 <#
     .SYNOPSIS
     Bulk assign applications to assets
@@ -5729,13 +5830,11 @@ function Global:Add-OciApplicationsToAssets {
     }
 }
 
-# TODO: Implement / Test
-
 <#
     .SYNOPSIS
-    Delete an application
+    Remove an application
     .DESCRIPTION
-    
+    Remove an application
     .PARAMETER id
     Id of application to delete
     .PARAMETER computeResources
@@ -5761,7 +5860,7 @@ function Global:Remove-OciApplication {
                     Position=2,
                     HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -5817,7 +5916,8 @@ function Global:Remove-OciApplication {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Application = ParseApplications($Result)
+            Write-Output $Application
         }
     }
 }
@@ -5922,30 +6022,24 @@ function Global:Get-OciApplication {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-          
-            Write-Output $Result
+            
+            $Application = ParseApplications($Result)
+            Write-Output $Application
         }
     }
 }
-
-# TODO: Implement / Test
 
 <#
     .SYNOPSIS
     Update an application
     .DESCRIPTION
-    Request body should contain valid application priority and business entity ID, example: <br/>
-
-        <pre>
-        {
-            "priority":"Low",
-            "ignoreShareViolations": false,
-            "businessEntity": {
-                "id": "123"
-            }
-        }
-        </pre>
-                    
+    Update an application  
+    .PARAMETER id
+    Id of application to update 
+    .PARAMETER priority
+    Application priority (Critical, High, Medium or Low). Default is Medium.
+    .PARAMETER businessEntity
+    Business entity ID to attach the application to
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
@@ -5957,12 +6051,29 @@ function Global:Update-OciApplication {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+                    HelpMessage="Id of application to update",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources
+                    HelpMessage="Application priority (Critical, High, Medium or Low). Default is Medium.")][ValidateSet("Critical", "High", "Medium", "Low")][String]$priority="Medium",
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Business entity ID to attach the application to")][String]$businessEntity,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Business entity ID to attach the application to")][Switch]$ignoreShareViolations,
+        [parameter(Mandatory=$False,
+                    Position=4,
+                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+        [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                   Position=6,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -5974,7 +6085,6 @@ function Global:Update-OciApplication {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
  
-           
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6004,13 +6114,14 @@ function Global:Update-OciApplication {
             }
  
             try {
-                if ('PUT' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                if ($businessEntity) {
+                    $Body = ConvertTo-Json @{name=$name;priority=$priority;businessEntity=@{id=$businessEntity};ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers
+                    $Body = ConvertTo-Json @{name=$name;priority=$priority;ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
                 }
+                Write-Verbose "Body: $Body"
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6021,13 +6132,13 @@ function Global:Update-OciApplication {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Application = ParseApplications($Result)
+            Write-Output $Application
         }
     }
 }
 
 # TODO: Implement / Test
-
 <#
     .SYNOPSIS
     Bulk un-assign application from assets
@@ -6144,7 +6255,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Get-OciApplicationAssets {
+function Global:Get-OciAssetsByApplication {
     [CmdletBinding()]
  
     PARAM (
@@ -6210,7 +6321,6 @@ function Global:Get-OciApplicationAssets {
 }
 
 # TODO: Implement / Test
-
 <#
     .SYNOPSIS
     Bulk assign application to assets
@@ -6431,8 +6541,9 @@ function Global:Get-OciComputeResourcesByApplication {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+            
+            $ComputeResources = ParseComputeResources($Result)
+            Write-Output $ComputeResources
         }
     }
 }
@@ -6562,8 +6673,9 @@ function Global:Get-OciStorageResourcesByApplication {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+            
+            $StorageResources = ParseStorageResources($Result)
+            Write-Output $StorageResources
         }
     }
 }
@@ -6612,7 +6724,6 @@ function Global:Get-OciBusinessEntities {
 }
 
 # TODO: Implemement / Test
-
 <#
     .SYNOPSIS
     Add a new business entity
@@ -6680,7 +6791,6 @@ function Global:Add-OciBusinessEntity {
 }
 
 # TODO: Implement / Test
-
 <#
     .SYNOPSIS
     Delete a business entity
@@ -6797,11 +6907,11 @@ function Global:Get-OciBusinessEntity {
     .PARAMETER toTime
     Filter for time range, to time in milliseconds
     .PARAMETER sort
-    Filter for sorting by metric/s
+    Filter for sorting by performance metric/s (Default iops.total)
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER limit
-    Number of datastores per page.
+    Number of datastores per page (range: 0-50, default: 0)
     .PARAMETER offset
     Offset to be used with limit
     .PARAMETER performance
@@ -6833,19 +6943,19 @@ function Global:Get-OciDatastores {
                     HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for sorting by metric/s")][String]$sort,
-        [parameter(Mandatory=$False,
-                    Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Return related Performance")][Switch]$performance,
+        [parameter(Mandatory=$False,
                     Position=4,
-                    HelpMessage="Number of datastores per page.")][Long]$limit,
+                    HelpMessage="Filter for sorting by performance metric/s (Default iops.total)")][String]$sort="iops.total",
         [parameter(Mandatory=$False,
                     Position=5,
-                    HelpMessage="Offset to be used with limit")][Long]$offset,
+                    HelpMessage="Number of datastores per page (range: 0-50, default: 0)")][Long]$limit=0,
         [parameter(Mandatory=$False,
                     Position=6,
-                    HelpMessage="Return related Performance")][Switch]$performance,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
         [parameter(Mandatory=$False,
                     Position=7,
                     HelpMessage="Return list of related Hosts")][Switch]$hosts,
@@ -6876,6 +6986,12 @@ function Global:Get-OciDatastores {
     Process {
         $id = @($id)
         foreach ($id in $id) {
+            # OCI allows to only fetch maximum 50 items when performance data is requested, thus we need to repeat the command if no limit is specified to fetch all items
+            if ($Performance -and $Limit -eq 0) {
+                $FetchAll = $true
+                $Limit = 50
+            }
+
             $Uri = $($Server.BaseUri) + "/rest/v1/assets/dataStores"
  
             $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations")
@@ -6889,7 +7005,7 @@ function Global:Get-OciDatastores {
                     }
                 }
             }
- 
+            
             if ($fromTime -or $toTime -or $expand -or $sort -or $limit -or $offset) {
                 $Uri += '?'
                 $Separator = ''
@@ -6901,7 +7017,7 @@ function Global:Get-OciDatastores {
                     $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
                     $Separator = '&'
                 }
-                if ($sort) {
+                if ($performance -and $sort) {
                     $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
                     $Separator = '&'
                 }
@@ -6909,7 +7025,7 @@ function Global:Get-OciDatastores {
                     $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
                     $Separator = '&'
                 }
-                if ($offset) {
+                if ($limit -and $offset) {
                     $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
                     $Separator = '&'
                 }
@@ -6933,6 +7049,11 @@ function Global:Get-OciDatastores {
             $Datastores = ParseDatastores($Result)
                         
             Write-Output $Datastores
+
+            if ($FetchAll -and $Datastores.Count -eq $Limit) {
+                $Offset += $Limit
+                Get-OciDatastores -fromTime $fromTime -to $toTime -performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
+            }
         }
     }
 }
