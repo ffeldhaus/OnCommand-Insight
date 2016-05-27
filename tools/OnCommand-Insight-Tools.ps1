@@ -40,7 +40,7 @@ function New-OciRelease {
     if (Test-Path $dst) {
         Remove-Item $dst -Force -Recurse
     }
-    New-Item $dst -ItemType Directory | Out-Null
+    New-Item $dst -ItemType Directory -Force | Out-Null
 
     Write-Host "Creating module manifest..."
 
