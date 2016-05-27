@@ -52,7 +52,7 @@ To force connections via HTTPS use the `-HTTPS` switch
 Connect-OciServer -Name $ServerName -Credential $Credential -HTTPS
 ```
 
-To force connections via HTTP use the `-HTTP` switch
+To force connections via HTTP use the `-HTTP` switch (HTTP is not available in OCI 7.2 and later)
 
 ```powershell
 Connect-OciServer -Name $ServerName -Credential $Credential -HTTP
@@ -153,7 +153,7 @@ get-help Get-OciInternalVolume -Detailed
 
 To retrieve all related objects for e.g. internal volumes use
 ```powershell
-Get-Storages | Get-OciInternalVolumesByStorage | Select -first 1 | Get-OciInternalVolume -storage -performance -dataStores -computeResources -storagePool -volumes -storageNodes -applications -annotations -replicaSources -performancehistory
+Get-OciStorages | Get-OciInternalVolumesByStorage | Select -first 1 | Get-OciInternalVolume -storage -performance -dataStores -computeResources -storagePool -volumes -storageNodes -applications -annotations -replicaSources -performancehistory -datasources -qtrees
 ```
 
 ### Update annotation
@@ -185,7 +185,7 @@ An easy way to show tabular data and to filter columns is included in PowerShell
 
 To show output in the Grid-View use
 ```powershell
-Get-Storages | Out-Gridview -Title 'Storages'
+Get-OciStorages | Out-Gridview -Title 'Storages'
 ```
 
 ### Export to CSV
@@ -205,18 +205,20 @@ $Storages | Export-Csv -NoTypeInformation -Path $FileName -Encoding $Encoding -D
 
 ### Export to Excel
 
-The integrated Excel functionality has been removed. Use the PS-Excel module instead!
+Install PSExcel from https://github.com/RamblingCookieMonster/PSExcel and load PSExcel Module
+```
+Import-Module PSExcel
+```
 
 Retrieve OCI data (e.g. Storage Arrays)
 ```powershell
 $Storages = Get-OciStorages
 ```
 
-Specify filename, worksheet name and optionally a password to encrypt the Excel file. Then export to Excel
+Specify filename and worksheet name for the Excel file. Then export to Excel
 ```powershell
 $FileName = "$HOME\Documents\OCItest.xlsx"
 $WorksheetName = 'Storage Arrays'
-$Password = 'password'
 $Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
 ```
 
