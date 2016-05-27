@@ -35,6 +35,7 @@ function New-OciRelease {
 
     $src = (Join-Path (Split-Path $PSScriptRoot) 'src')
     $dst = (Join-Path (Split-Path $PSScriptRoot) 'release')
+    $out = (Join-Path (Split-Path $PSScriptRoot) 'out')
 
     if (Test-Path $dst) {
         Remove-Item $dst -Force -Recurse
@@ -44,6 +45,10 @@ function New-OciRelease {
     Write-Host "Creating module manifest..."
 
     $manifestFileName = Join-Path $dst 'OnCommand-Insight.psd1'
+
+    $functionsToExport = Get-Command -Module OnCommand-Insight -Name *-Oci* | Select -ExpandProperty Name
+
+    $tags = @("OnCommand-Insight","OCI","NetApp")
 
     New-ModuleManifest `
         -Path $manifestFileName `
@@ -56,18 +61,19 @@ function New-OciRelease {
         -PowerShellVersion '3.0' `
         -DotNetFrameworkVersion '4.5' `
         -NestedModules (Get-ChildItem $src\*.psm1,$src\*.dll | % { $_.Name }) `
-        -FormatsToProcess (Get-ChildItem $src\*.format.ps1xml | % { $_.Name })
+        -FormatsToProcess (Get-ChildItem $src\*.format.ps1xml | % { $_.Name }) `
+        -LicenseUri "https://github.com/ffeldhaus/OnCommand-Insight/blob/master/LICENSE" `
+        -ProjectUri "https://github.com/ffeldhaus/OnCommand-Insight" `
+        -RootModule "OnCommand-Insight" `
+        -FunctionsToExport $functionsToExport `
+        -Tags $tags
 
     Write-Host "Copying file to release folder..."
 
-    # Copy the distributable files to the dist folder.
-    Copy-Item -Path "$src\*" `
+    # Copy the Module files to the dist folder.
+    Copy-Item -Path "$src\*.psm1" `
               -Destination $dst `
               -Recurse
-
-
-    Write-Host "Import new OCI Cmdlets"
-    Import-Module "$src\OnCommand-Insight.psm1"
 
 #    Write-Host "Running Pester tests"
 #
@@ -87,13 +93,13 @@ function New-OciRelease {
     # Code Signing
     $cert = Get-ChildItem cert:\CurrentUser\My -CodeSigningCert
     Get-ChildItem $dst\*.ps*  | % { $_.FullName } | Set-AuthenticodeSignature -Certificate $cert | Out-Null
-
+    
     Write-Host "Creating the release archive..."
 
     # Requires .NET 4.5
     [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.FileSystem") | Out-Null
 
-    $zipFileName = Join-Path ([System.IO.Path]::GetDirectoryName($dst)) "$([System.IO.Path]::GetFileNameWithoutExtension($manifestFileName)).zip"
+    $zipFileName = Join-Path $out "OnCommand-Insight.zip"
 
     # Overwrite the ZIP if it already already exists.
     if (Test-Path $zipFileName) {
@@ -104,14 +110,22 @@ function New-OciRelease {
     $includeBaseDirectory = $false
     [System.IO.Compression.ZipFile]::CreateFromDirectory($dst, $zipFileName, $compressionLevel, $includeBaseDirectory)
 
-    Move-Item $zipFileName $dst -Force
+    Write-Host "Release zip file $zipFileName successfully created!" -ForegroundColor Green
 
-    Write-Host "Release file $zipFileName successfully created!" -ForegroundColor Green
+    Write-Host "Creating MSI installers..."
+    Start-WixBuild -Path $dst -OutputFolder $out -ProductShortName "OnCommand-Insight" -ProductName "OnCommand-Insight PowerShell Cmdlets" -ProductVersion $ModuleVersion -Manufacturer $Author -IconFile $PSScriptRoot\icon.ico -BannerFile $PSScriptRoot\banner.bmp -DialogFile $PSScriptRoot\dialog.bmp -UpgradeCodeX86 "8291AEAC-1A4D-CCFD-5870-70741560D087" -UpgradeCodeX64 "DF22600B-7719-B72A-9BA9-5E13FCA37628"
+
+    Write-Host "Release MSI Installer OnCommand_Insight_$($ModuleVersion)_x64.msi and OnCommand_Insight_$($ModuleVersion)_x86.msi successfully created!" -ForegroundColor Green
+
+    Remove-Item $dst\.wix.json
+
+    Write-Host "Publishing Module to PowerShell Gallery"
+    Publish-Module -Name OnCommand-Insight -NuGetApiKey $NuGetApiKey
 
     if ($Release) { 
         git pull
-        git tag $ModuleVersion 
-        if ($Major -or $Minor) { 
+        git tag $ModuleVersion
+        if ($Major) { 
             git branch $ModuleVersion
             Write-Host "New Git Branch $ModuleVersion created"
         }
