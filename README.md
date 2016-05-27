@@ -6,9 +6,15 @@ OnCommand-Insight PowerShell Module
 Installation
 ------------
 
-Extract OnCommand-Insight.zip either to your preferred PowerShell Module location (e.g. `$HOME\WindowsPowershell\Documents\WindowsPowerShell\Modules` or `C:\Windows\System32\WindowsPowerShell\v1.0\Modules`).
+The recommended way to install the PowerShell Module is through the new Install-Module Cmdlet available in PowerShell 5. Consider installing PowerShell 5 from https://www.microsoft.com/en-us/download/details.aspx?id=50395. Then run
 
-The OnComamnd Insight PowerShell Cmdlets require at least PowerShell 3.0. Microsoft has documented the required procedures to install PowerShell 3.0 or 4.0 in the technet article [Installing Windows PowerShell](https://technet.microsoft.com/de-de/library/hh847837.aspx?f=255&MSPPError=-2147217396).
+```powershell
+Install-Module OnCommand-Insight
+```
+
+The OnComamnd Insight PowerShell Cmdlets require at least PowerShell 3.0 and .NET 4.5. Microsoft has documented the required procedures to install PowerShell 3.0 in the article [Installing Windows PowerShell](https://technet.microsoft.com/de-de/library/hh847837.aspx?f=255&MSPPError=-2147217396).
+
+Extract OnCommand-Insight.zip either to your preferred PowerShell Module location (e.g. `$HOME\WindowsPowershell\Documents\WindowsPowerShell\Modules` or `C:\Windows\System32\WindowsPowerShell\v1.0\Modules`).
 
 Usage
 -----
