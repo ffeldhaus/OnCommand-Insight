@@ -1417,8 +1417,9 @@ function ParsePorts($Ports) {
 function ParseApplications($Applications) {
     $Applications = @($Applications)
     foreach ($Application in $Applications) {
-
-        Write-Output $Application
+        if (!$Application.isBusinessEntityDefault) {
+            Write-Output $Application
+        }
     }
 }
 
@@ -4082,13 +4083,13 @@ function Global:Test-OciLdapConfiguration {
 
 <#
     .SYNOPSIS
-    Retrieve license status
+    Retrieve licenses
     .DESCRIPTION
-    Retrieve license status
+    Retrieve licenses
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Get-OciLicenseStatus {
+function Global:Get-OciLicenses {
     [CmdletBinding()]
  
     PARAM (
@@ -7465,21 +7466,11 @@ function Global:Get-OciBusinessEntities {
     }
 }
 
-# TODO: Implemement / Test
 <#
     .SYNOPSIS
     Add a new business entity
     .DESCRIPTION
-    At least one of tenant, lob, businessUnit and project in request body should have valid value. Example: <br/>
-
-            <pre>
-            {
-                "tenant":"tenant1",
-                "lob":"lob1",
-                "businessUnit":"businessUnit1",
-                "project":"project1"
-            }
-            </pre>
+    Add a new business entity
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -7532,18 +7523,17 @@ function Global:Add-OciBusinessEntity {
     }
 }
 
-# TODO: Implement / Test
 <#
     .SYNOPSIS
-    Delete a business entity
+    Remove a business entity
     .DESCRIPTION
-    Delete a business entity
+    Remove a business entity
     .PARAMETER id
-    Id of business entity to delete
+    Id of business entity to remove
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Delete-OciBusinessEntity {
+function Global:Remove-OciBusinessEntity {
     [CmdletBinding()]
  
     PARAM (
