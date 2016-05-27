@@ -119,10 +119,10 @@ function New-OciRelease {
 
     Remove-Item $dst\.wix.json
 
-    Write-Host "Publishing Module to PowerShell Gallery"
-    Publish-Module -Name OnCommand-Insight -NuGetApiKey $NuGetApiKey
-
     if ($Release) { 
+        Write-Host "Publishing Module to PowerShell Gallery"
+        Publish-Module -Name OnCommand-Insight -NuGetApiKey $NuGetApiKey
+
         git pull
         git tag $ModuleVersion
         if ($Major) { 
