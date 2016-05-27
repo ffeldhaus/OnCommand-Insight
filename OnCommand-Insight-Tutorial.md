@@ -217,43 +217,41 @@ $Storages = Get-OciStorages
 
 Specify filename and worksheet name for the Excel file. Then export to Excel
 ```powershell
-$FileName = "$HOME\Documents\OCItest.xlsx"
+$FileName = "$HOME\Documents\Ocitest.xlsx"
 $WorksheetName = 'Storage Arrays'
-$Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
+$Storages | Export-XLSX -Path $FileName -WorksheetName $WorksheetName -Table -TableStyle Light1 -AutoFit
 ```
 
 You can easily add another worksheet to an existing Excel file with
 ```powershell
-$FileName = "$HOME\Documents\OCItest.xlsx"
 $WorksheetName = 'Additional worksheet'
-$Password = 'password'
-$Storages | Export-Excel -FileName $FileName -WorksheetName $WorksheetName -Password $Password
+$Storages | Export-XLSX -Path $FileName -WorksheetName $WorksheetName -Table -TableStyle Light1 -AutoFit
 ```
 
 To create a single Excel file with many OCI objects, run the following commands
 ```powershell
-$FileName = "$HOME\Documents\OCIOverview.xlsx"
-Get-OciAcquisitionUnits | Export-Excel -FileName $FileName -WorksheetName 'Acquisition Units'
-Get-OciAnnotations | Export-Excel -FileName $FileName -WorksheetName 'Annotations'
-Get-OciApplications | Export-Excel -FileName $FileName -WorksheetName 'Applications'
-Get-OciDatasources | Export-Excel -FileName $FileName -WorksheetName 'Datasources'
-Get-OciDatastores | Export-Excel -FileName $FileName -WorksheetName 'Datastores'
-Get-OciStorages | Get-OciDisksByStorage | Export-Excel -FileName $FileName -WorksheetName 'Disks'
-Get-OciFabrics | Export-Excel -FileName $FileName -WorksheetName 'Fabrics'
-Get-OciHosts | Get-OciFileSystemsByHost | Export-Excel -FileName $FileName -WorksheetName 'Filesystems'
-Get-OciHealth | Export-Excel -FileName $FileName -WorksheetName 'Health'
-Get-OciHosts | Export-Excel -FileName $FileName -WorksheetName 'Hosts'
-Get-OciStorages | Get-OciInternalVolumesByStorage | Export-Excel -FileName $FileName -WorksheetName 'Internal Volumes'
-Get-OciLicenses | Export-Excel -FileName $FileName -WorksheetName 'Licenses'
-Get-OciPatches | Export-Excel -FileName $FileName -WorksheetName 'Patches'
-Get-OciStorages | Get-OciStorageNodesByStorage | Export-Excel -FileName $FileName -WorksheetName 'Storage Nodes'
-Get-OciStorages | Get-OciStoragePoolsByStorage | Export-Excel -FileName $FileName -WorksheetName 'Storage Pools'
-Get-OciStorages | Export-Excel -FileName $FileName -WorksheetName 'Storages'
-Get-OciSwitches | Export-Excel -FileName $FileName -WorksheetName 'Switches'
-Get-OciUsers | Export-Excel -FileName $FileName -WorksheetName 'Users'
-Get-OciVirtualMachines | Export-Excel -FileName $FileName -WorksheetName 'Virtual Machines'
-Get-OciVirtualMachines | Get-OciVmdksByVirtualMachine | Export-Excel -FileName $FileName -WorksheetName 'VMDKs'
-Get-OciStorages | Get-OciVolumesByStorage | Export-Excel -FileName $FileName -WorksheetName 'Volumes'
+$FileName = "$HOME\Documents\OciOverview.xlsx"
+Get-OciAcquisitionUnits | Export-XLSX -Path $FileName -WorksheetName 'Acquisition Units' -Table -TableStyle Light1 -AutoFit
+Get-OciAnnotations | Export-XLSX -Path $FileName -WorksheetName 'Annotations' -Table -TableStyle Light1 -AutoFit
+Get-OciApplications | Export-XLSX -Path $FileName -WorksheetName 'Applications' -Table -TableStyle Light1 -AutoFit
+Get-OciDatasources | Export-XLSX -Path $FileName -WorksheetName 'Datasources' -Table -TableStyle Light1 -AutoFit
+Get-OciDatastores | Export-XLSX -Path $FileName -WorksheetName 'Datastores' -Table -TableStyle Light1 -AutoFit
+Get-OciStorages | Get-OciDisksByStorage | Export-XLSX -Path $FileName -WorksheetName 'Disks' -Table -TableStyle Light1 -AutoFit
+Get-OciFabrics | Export-XLSX -Path $FileName -WorksheetName 'Fabrics' -Table -TableStyle Light1 -AutoFit
+Get-OciHosts | Get-OciFileSystemsByHost | Export-XLSX -Path $FileName -WorksheetName 'Filesystems' -Table -TableStyle Light1 -AutoFit
+Get-OciHealth | Export-XLSX -Path $FileName -WorksheetName 'Health' -Table -TableStyle Light1 -AutoFit
+Get-OciHosts | Export-XLSX -Path $FileName -WorksheetName 'Hosts' -Table -TableStyle Light1 -AutoFit
+Get-OciStorages | Get-OciInternalVolumesByStorage | Export-XLSX -Path $FileName -WorksheetName 'Internal Volumes' -Table -TableStyle Light1 -AutoFit
+Get-OciLicenses | Export-XLSX -Path $FileName -WorksheetName 'Licenses' -Table -TableStyle Light1 -AutoFit
+Get-OciPatches | Export-XLSX -Path $FileName -WorksheetName 'Patches' -Table -TableStyle Light1 -AutoFit
+Get-OciStorages | Get-OciStorageNodesByStorage | Export-XLSX -Path $FileName -WorksheetName 'Storage Nodes' -Table -TableStyle Light1 -AutoFit
+Get-OciStorages | Get-OciStoragePoolsByStorage | Export-XLSX -Path $FileName -WorksheetName 'Storage Pools' -Table -TableStyle Light1 -AutoFit
+Get-OciStorages | Export-XLSX -Path $FileName -WorksheetName 'Storages' -Table -TableStyle Light1 -AutoFit
+Get-OciSwitches | Export-XLSX -Path $FileName -WorksheetName 'Switches' -Table -TableStyle Light1 -AutoFit
+Get-OciUsers | Export-XLSX -Path $FileName -WorksheetName 'Users' -Table -TableStyle Light1 -AutoFit
+Get-OciVirtualMachines | Export-XLSX -Path $FileName -WorksheetName 'Virtual Machines' -Table -TableStyle Light1 -AutoFit
+Get-OciVirtualMachines | Get-OciVmdksByVirtualMachine | Export-XLSX -Path $FileName -WorksheetName 'VMDKs' -Table -TableStyle Light1 -AutoFit
+Get-OciStorages | Get-OciVolumesByStorage | Export-XLSX -Path $FileName -WorksheetName 'Volumes' -Table -TableStyle Light1 -AutoFit
 ```
 
 The output created above is helpful, but the capacity values are not properly displayed in Excel and relations between objects are not shown. The following section will show how to create Excel views similar to the views available in the OnCommand Insight Java GUI.
@@ -287,7 +285,7 @@ $Storages = foreach ($Storage in Get-OciStorages) {
 	}
 	[PSCustomObject]$StorageData
 } 
-$Storages | Sort-Object -Property @{Expression={$_.psobject.properties | Measure-Object | Select-Object -ExpandProperty Count};Descending=$true} | Export-Excel -FileName $FileName -WorksheetName 'Storages'
+$Storages | Sort-Object -Property @{Expression={$_.psobject.properties | Measure-Object | Select-Object -ExpandProperty Count};Descending=$true} | Export-XLSX -Path $FileName -WorksheetName 'Storages'
 ```
 
 To format the Internal Volumes, the following commands can be used
@@ -343,17 +341,18 @@ $InternalVolumes = foreach ($Storage in Get-OciStorages) {
 		[PSCustomObject]$InternalVolumeData
 	}
 } 
-$InternalVolumes | Sort-Object -Property @{Expression={$_.psobject.properties | Measure-Object | Select-Object -ExpandProperty Count};Descending=$true} |  Export-Excel -FileName $FileName -WorksheetName 'Internal Volumes'
+$InternalVolumes | Sort-Object -Property @{Expression={$_.psobject.properties | Measure-Object | Select-Object -ExpandProperty Count};Descending=$true} |  Export-XLSX -Path $FileName -WorksheetName 'Internal Volumes'
 ```
 
 ### List devices discovered via multiple datasources
 
+```powershell
 $Datasources = Get-OciDatasources -devices
 $DuplicateDevices = $Datasources.devices.Name | Group-Object | ? { $_.Count -gt 1 } | Select -ExpandProperty Name
-
 foreach ($Device in $DuplicateDevices) {
     "$Device," + (($Datasources | ? { $_.Devices.name -match $Device } | select -ExpandProperty Name) -join ',')
 }
+```powershell
 
 ### Manage Datasource Configuration
 
@@ -377,7 +376,7 @@ $Datasource.config.packages
 # select foundation package and list it's attributes
 $Datasource.config.packages | ? { $_.id -eq "foundation" } | Select -ExpandProperty Attributes
 # modify password attribute
-($Datasource.config.packages | ? { $_.id -eq "foundation" } | Select -ExpandProperty Attributes | ? { $_.Name -eq "password" }).Value = "test"
+($Datasource.config.packages | ? { $_.id -eq "foundation" } | Select -ExpandProperty Attributes | Add-Member -MemberType NoteProperty -Name password -Value "test" -Force
 # update datasource
 $Datasource | Update-OciDatasource
 ```
@@ -411,6 +410,38 @@ Restore-OciBackup -FilePath $BackupLocation
 The latest Backup available on the OCI Server can be restored with
 ```powershell
 Get-OciBackups | Sort -Property Date -Descending | select -first 1 | Restore-OciBackup
+```
+
+## Manage Applications and Business Entities
+
+You can create a Business Entity with
+```powershell
+$BusinessUnity = Add-OciBusinessEntity -Tenant "tenant" -LineOfBusiness "lof" -BusinessUnit "bu" -Project "project"
+```
+
+You can get all Business Entities with
+```powershell
+Get-OciBusinessEntities
+```
+
+You can remove all Business Entities with
+```powershell
+Get-OciBusinessEntities | Remove-OciBusinessEntities
+```
+
+You can create a Application with
+```powershell
+$Application = Add-OciApplication -name "application" -priority Critical -businessEntity $BusinessEntity.id -ignoreShareViolations
+```
+
+You can update an application with 
+```powershell
+$Application | Update-OciApplication -priority Low
+```
+
+Remove all applications
+```powershell
+Get-OciApplications | Remove-OciApplication
 ```
 
 ## Troubleshooting
