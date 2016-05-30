@@ -88,6 +88,9 @@ function New-OciRelease {
     Copy-Item -Path "$scriptPath\..\README.md" `
               -Destination "$dst\README.txt"
 
+    Copy-Item -Path "$scriptPath\..\LICENSE" `
+              -Destination "$dst\LICENSE"
+
     Write-Host "Signing PowerShell files..."
 
     # Code Signing

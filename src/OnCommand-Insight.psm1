@@ -1539,6 +1539,96 @@ function ParseStoragePools($StoragePools) {
     }
 }
 
+function ParseStorages($Storages) {
+    $Storages = @($Storages)
+    foreach ($Storage in $Storages) {
+        if ($Storage.createTime) {
+            $Storage.createTime = $Storage.createTime | Get-Date
+        }
+        if ($Storage.storageNodes) {
+            $Storage.storageNodes = ParseStorageNodes($Storage.storageNodes)
+        }
+        if ($Storage.storagePools) {
+            $Storage.storagePools = ParseStoragePools($Storage.storagePools)
+        }
+        if ($Storage.storageResources) {
+            $Storage.storageResources = ParseStorageResources($Storage.storageResources)
+        }
+        if ($Storage.internalVolumes) {
+            $Storage.internalVolumes = ParseInternalVolumes($Storage.internalVolumes)
+        }
+        if ($Storage.volumes) {
+            $Storage.volumes = ParseVolumes($Storage.volumes)
+        }
+        if ($Storage.disks) {
+            $Storage.disks = ParseDisks($Storage.disks)
+        }
+        if ($Storage.datasources) {
+            $Storage.datasources = ParseDatasources($Storage.datasources)
+        }
+        if ($Storage.ports) {
+            $Storage.ports = ParsePorts($Storage.ports)
+        }
+        if ($Storage.annotations) {
+            $Storage.annotations = ParseAnnotations($Storage.annotations)
+        }
+        if ($Storage.qtrees) {
+            $Storage.qtrees = ParseQtrees($Storage.qtrees)
+        }
+        if ($Storage.shares) {
+            $Storage.shares = ParseShares($Storage.shares)
+        }
+        if ($Storage.applications) {
+            $Storage.applications = ParseApplications($Storage.applications)
+        }
+        if ($Storage.performance) {
+            $Storage.performance = ParsePerformance($Storage.performance)
+        }
+
+        Write-Output $Storage
+    }
+}
+
+function ParseDisks($Disks) {
+    $Disks = @($Disks)
+    foreach ($Disk in $Disks) {
+        if ($Disk.performance) {
+            $Disk.performance = ParsePerformance($Disk.performance)
+        }
+        if ($Disk.storage) {
+            $Disk.storage = ParseStorages($Disk.storage)
+        }
+        if ($Disk.storageResources) {
+            $Disk.storageResources = ParseStorageResources($Disk.storageResources)
+        }
+        if ($Disk.backendVolumes) {
+            $Disk.backendVolumes = ParseVolumes($Disk.backendVolumes)
+        }
+        if ($Disk.datasources) {
+            $Disk.datasources = ParseDatasources($Disk.datasources)
+        }
+        if ($Disk.annotations) {
+            $Disk.annotations = ParseAnnotations($Disk.annotations)
+        }
+
+        Write-Output $Disk
+    }
+}
+
+function ParseFabrics($Fabrics) {
+    $Fabrics = @($Fabrics)
+    foreach ($Fabric in $Fabrics) {
+        if ($Fabric.datasources) {
+            $Fabric.datasources = ParseDatasources($Fabric.datasources)
+        }
+        if ($Fabric.switches) {
+            $Fabric.switches = ParseDatasources($Fabric.switches)
+        }
+
+        Write-Output $Fabric
+    }
+}
+
 <#
 .EXAMPLE
 Connect-OciServer -Name ociserver.example.com -Credential (Get-Credential)
@@ -7966,7 +8056,6 @@ function Global:Get-OciDatastore {
 }
 
 # TODO: Implement / Test
-
 <#
     .SYNOPSIS
     Delete annotations from object
@@ -8075,9 +8164,9 @@ function Global:Remove-OciAnnotationsByDatastore {
 
 <#
     .SYNOPSIS
-    Retrieve annotations for object
+    Retrieve annotations by datastore
     .DESCRIPTION
-    
+    Retrieve annotations by datastore
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -8154,6 +8243,7 @@ function Global:Get-OciAnnotationsByDatastore {
     }
 }
 
+# TODO: Implement / Test
 <#
     .SYNOPSIS
     Update annotations for object
@@ -8253,7 +8343,7 @@ function Global:Update-OciAnnotationsByDatastore {
     .SYNOPSIS
     Retrieve datasources of a datastore.
     .DESCRIPTION
-    
+    Retrieve datasources of a datastore.
     .PARAMETER id
     Id of datastore to retrieve datasources for.
     .PARAMETER fromTime
@@ -8278,6 +8368,8 @@ function Global:Update-OciAnnotationsByDatastore {
     Return list of related Devices
     .PARAMETER config
     Return related Config
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciDatasourcesByDataStore {
     [CmdletBinding()]
@@ -8389,7 +8481,7 @@ function Global:Get-OciDatasourcesByDataStore {
     .SYNOPSIS
     Retrieve all hosts mapped to a datastore.
     .DESCRIPTION
-    
+    Retrieve all hosts mapped to a datastore.
     .PARAMETER id
     Id of the datastore to retrieve the hosts
     .PARAMETER fromTime
@@ -8420,6 +8512,8 @@ function Global:Get-OciDatasourcesByDataStore {
     Return list of related Datasources
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciHostsByDatastore {
     [CmdletBinding()]
@@ -8473,7 +8567,7 @@ function Global:Get-OciHostsByDatastore {
                     Position=14,
                     HelpMessage="Return related Performance History")][Switch]$performancehistory,
         [parameter(Mandatory=$False,
-                   Position=12,
+                   Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -8538,9 +8632,9 @@ function Global:Get-OciHostsByDatastore {
 
 <#
     .SYNOPSIS
-    Retrieve one datastore performance
+    Retrieve datastore performance data
     .DESCRIPTION
-    
+    Retrieve datastore performance data
     .PARAMETER id
     Id of datastore to retrieve
     .PARAMETER fromTime
@@ -8643,7 +8737,7 @@ function Global:Get-OciDatastorePerformance {
     .SYNOPSIS
     Retrieve all storage resources mapped to a datastore.
     .DESCRIPTION
-    
+    Retrieve all storage resources mapped to a datastore.
     .PARAMETER id
     Id of the datastore to retrieve the storage resources for
     .PARAMETER fromTime
@@ -8765,7 +8859,8 @@ function Global:Get-OciStorageResourcesByDatastore {
                 $Result = ParseJsonString($Result.Trim())
             }
        
-            Write-Output $Result
+            $StorageResources = ParseStorageResources($Result)
+            Write-Output $StorageResources
         }
     }
 }
@@ -8774,7 +8869,7 @@ function Global:Get-OciStorageResourcesByDatastore {
     .SYNOPSIS
     Retrieve all Vmdks belonging to a datastore.
     .DESCRIPTION
-    
+    Retrieve all Vmdks belonging to a datastore.
     .PARAMETER id
     Id of the datastore to retrieve the Vmdks
     .PARAMETER fromTime
@@ -8797,6 +8892,8 @@ function Global:Get-OciStorageResourcesByDatastore {
     Return list of related Datasources
     .PARAMETER performancehistory
     Return related Performance History
+    .PARAMETER server
+    OCI Server to connect to
 #>
 function Global:Get-OciVmdksByDatastore {
     [CmdletBinding()]
@@ -8838,7 +8935,7 @@ function Global:Get-OciVmdksByDatastore {
                     Position=10,
                     HelpMessage="Return related Performance History")][Switch]$performancehistory,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -8903,9 +9000,9 @@ function Global:Get-OciVmdksByDatastore {
 
 <#
     .SYNOPSIS
-    Retrieve one storage pool disk
+    Retrieve storage pool disks
     .DESCRIPTION
-    
+    Retrieve storage pool disks
     .PARAMETER id
     Id of storage pool disk to retrieve
     .PARAMETER fromTime
@@ -9032,11 +9129,13 @@ function Global:Get-OciDisk {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Disks = ParseDisks($Result)
+            Write-Output $Disks
         }
     }
 }
 
+# TODO: Test / Implement
 <#
     .SYNOPSIS
     Delete annotations from object
@@ -9138,9 +9237,9 @@ function Global:Remove-OciAnnotationsByDisk {
 
 <#
     .SYNOPSIS
-    Retrieve annotations for object
+    Retrieve annotations of disk
     .DESCRIPTION
-    
+    Retrieve annotations of disk
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -9222,11 +9321,13 @@ function Global:Get-OciAnnotationsByDisk {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Annotations = ParseAnnotations($Result)
+            Write-Output $Annotations
         }
     }
 }
 
+# TODO: Test / Implement
 <#
     .SYNOPSIS
     Update annotations for object
@@ -9332,7 +9433,7 @@ function Global:Update-OciAnnotationsByDisk {
     .SYNOPSIS
     Retrieve backend volumes of a virtual disk.
     .DESCRIPTION
-    
+    Retrieve backend volumes of a virtual disk.
     .PARAMETER id
     Id of the virtual disk to retrieve backend volumes for.
     .PARAMETER fromTime
@@ -9504,7 +9605,8 @@ function Global:Get-OciBackendVolumesByDisk {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Volumes = ParseVolumes($Result)
+            Write-Output $Volumes
         }
     }
 }
@@ -9513,7 +9615,7 @@ function Global:Get-OciBackendVolumesByDisk {
     .SYNOPSIS
     Retrieve datasources of a disk.
     .DESCRIPTION
-    
+    Retrieve datasources of a disk.
     .PARAMETER id
     Id of disk to retrieve datasources for.
     .PARAMETER fromTime
@@ -9651,7 +9753,7 @@ function Global:Get-OciDatasourcesByDisk {
     .SYNOPSIS
     Retrieve one disk performance
     .DESCRIPTION
-    
+    Retrieve one disk performance
     .PARAMETER id
     Id of disk to retrieve
     .PARAMETER fromTime
@@ -9754,7 +9856,7 @@ function Global:Get-OciDiskPerformance {
     .SYNOPSIS
     Retrieve storage pools for disk
     .DESCRIPTION
-    
+    Retrieve storage pools for disk
     .PARAMETER id
     Id of disk to retrieve storage pools for
     .PARAMETER fromTime
@@ -9835,7 +9937,7 @@ function Global:Get-OciStoragePoolsByDisk {
                     Position=13,
                     HelpMessage="Return related Performance History")][Switch]$performancehistory,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=14,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -9891,7 +9993,8 @@ function Global:Get-OciStoragePoolsByDisk {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $StoragePools = ParseStoragePools($Result)
+            Write-Output $StoragePools
         }
     }
 }
@@ -9900,7 +10003,7 @@ function Global:Get-OciStoragePoolsByDisk {
     .SYNOPSIS
     Retrieve storage resources for disk
     .DESCRIPTION
-    
+    Retrieve storage resources for disk
     .PARAMETER id
     Id of disk to retrieve resources for
     .PARAMETER fromTime
@@ -10022,7 +10125,8 @@ function Global:Get-OciStorageResourcesByDisk {
                 $Result = ParseJsonString($Result.Trim())
             }
        
-            Write-Output $Result
+            $StorageResources = ParseStorageResources($Result)
+            Write-Output $StorageResources
         }
     }
 }
@@ -10031,7 +10135,7 @@ function Global:Get-OciStorageResourcesByDisk {
     .SYNOPSIS
     Retrieve all fabrics
     .DESCRIPTION
-    
+    Retrieve all fabrics
     .PARAMETER fromTime
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
@@ -10130,8 +10234,9 @@ function Global:Get-OciFabrics {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+
+            $Fabrics = ParseFabrics($Result)
+            Write-Output $Fabrics
         }
     }
 }
@@ -10140,7 +10245,7 @@ function Global:Get-OciFabrics {
     .SYNOPSIS
     Retrieve total count of fabrics.
     .DESCRIPTION
-    
+    Retrieve total count of fabrics.
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -10183,7 +10288,7 @@ function Global:Get-OciFabricCount {
     .SYNOPSIS
     Retrieve one fabric
     .DESCRIPTION
-    
+    Retrieve one fabric
     .PARAMETER id
     Id of fabric to retrieve
     .PARAMETER fromTime
@@ -10280,7 +10385,8 @@ function Global:Get-OciFabric {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Fabric = ParseFabrics($Result)
+            Write-Output $Fabric
         }
     }
 }
@@ -10289,7 +10395,7 @@ function Global:Get-OciFabric {
     .SYNOPSIS
     Retrieve Datasources for one fabric
     .DESCRIPTION
-    
+    Retrieve Datasources for one fabric
     .PARAMETER id
     Id of fabric to retrieve datasources for
     .PARAMETER fromTime
@@ -10416,7 +10522,8 @@ function Global:Get-OciDatasourcesByFabric {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
         }
     }
 }
@@ -10425,7 +10532,7 @@ function Global:Get-OciDatasourcesByFabric {
     .SYNOPSIS
     Retrieve Ports for one fabric
     .DESCRIPTION
-    
+    Retrieve Ports for one fabric
     .PARAMETER id
     Id of fabric to retrieve ports for
     .PARAMETER fromTime
