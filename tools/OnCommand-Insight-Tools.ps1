@@ -126,16 +126,16 @@ function New-OciRelease {
         Write-Host "Publishing Module to PowerShell Gallery"
         Publish-Module -Name OnCommand-Insight -NuGetApiKey $NuGetApiKey
 
-        git pull
-        git tag $ModuleVersion
+        & git pull
+        & git tag $ModuleVersion
         if ($Major) { 
-            git branch $ModuleVersion
+            & git branch $ModuleVersion
             Write-Host "New Git Branch $ModuleVersion created"
         }
         try {
-            git push 2> $null
-            git push --all 2> $null
-            git push --tags 2> $null
+            & git push 2> $null
+            & git push --all 2> $null
+            & git push --tags 2> $null
         }
         catch {
         }
