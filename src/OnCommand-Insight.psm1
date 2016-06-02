@@ -1275,7 +1275,7 @@ function ParsePerformance($Performance) {
 function ParsePerformanceHistory($PerformanceHistory) {
     if ($PerformanceHistory[0].count -eq 2) {
         $PerformanceHistory = foreach ($entry in $PerformanceHistory) {
-            if ($entry[1]) {
+            if ($entry[1] -replace ' ','') {
                 $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone) -PassThru
             }
         }
@@ -1391,11 +1391,14 @@ function ParseHosts($Hosts) {
 function ParsePorts($Ports) {
     $Ports = @($Ports)
     foreach ($Port in $Ports) {
+        if ($Port.connectedPorts) {
+            $Port.connectedPorts = ParsePorts($Port.connectedPorts)
+        }
         if ($Port.performance) {
             $Port.performance = ParsePerformance($Port.performance)
         }
         if ($Port.device) {
-            $Port.device = ParseDevice($Port.device)
+            $Port.device = ParseDevices($Port.device)
         }
         if ($Port.fabrics) {
             $Port.fabrics = ParseFabrics($Port.fabrics)
@@ -1411,6 +1414,32 @@ function ParsePorts($Ports) {
         }
 
         Write-Output $Port
+    }
+}
+
+function ParseDevices($Device) {
+    $Devices = @($Devices)
+    foreach ($Device in $Devices) {
+        if ($Device.performance) {
+            $Device.performance = ParsePerformance($Device.performance)
+        }
+        if ($Device.device) {
+            $Device.device = ParseDevice($Device.device)
+        }
+        if ($Device.fabrics) {
+            $Device.fabrics = ParseFabrics($Device.fabrics)
+        }
+        if ($Device.annotations) {
+            $Device.annotations = ParseAnnotations($Device.annotations)
+        }
+        if ($Device.datasources) {
+            $Device.datasources = ParseDatasources($Device.datasources)
+        }
+        if ($Device.application) {
+            $Device.application = ParseApplication($Device.application)
+        }
+
+        Write-Output $Device
     }
 }
 
@@ -1504,6 +1533,47 @@ function ParseStorageResources($StorageResources) {
     }
 }
 
+function ParseInternalVolumes($InternalVolumes) {
+    $InternalVolumes = @($InternalVolumes)
+    foreach ($InternalVolume in $InternalVolumes) {
+        if ($InternalVolume.storage) {
+            $InternalVolume.storage = ParseStorages($InternalVolume.storage)
+        }
+        if ($InternalVolume.computeResources) {
+            $InternalVolume.computeResources = ParseComputeResources($InternalVolume.computeResources)
+        }
+        if ($InternalVolume.storagePool) {
+            $InternalVolume.storagePool = ParseStoragePools($InternalVolume.storagePool)
+        }
+        if ($InternalVolume.performance) {
+            $InternalVolume.performance = ParsePerformance($InternalVolume.performance)
+        }
+        if ($InternalVolume.volumes) {
+            $InternalVolume.volumes = ParseVolumes($InternalVolume.volumes)
+        }
+        if ($InternalVolume.storageNodes) {
+            $InternalVolume.storageNodes = ParseStorageNodes($InternalVolume.storageNodes)
+        }
+        if ($InternalVolume.datasources) {
+            $InternalVolume.datasources = ParseDatasources($InternalVolume.datasources)
+        }
+        if ($InternalVolume.datastores) {
+            $InternalVolume.datastores = ParseDatastores($InternalVolume.datastores)
+        }
+        if ($InternalVolume.applications) {
+            $InternalVolume.applications = ParseApplications($InternalVolume.applications)
+        }
+        if ($InternalVolume.annotations) {
+            $InternalVolume.annotations = ParseAnnotations($InternalVolume.annotations)
+        }
+        if ($InternalVolume.qtrees) {
+            $InternalVolume.qtrees = ParseAnnotations($InternalVolume.qtrees)
+        }
+
+        Write-Output $InternalVolume
+    }
+}
+
 function ParseStoragePools($StoragePools) {
     $StoragePools = @($StoragePools)
     foreach ($StoragePool in $StoragePools) {
@@ -1586,6 +1656,17 @@ function ParseStorages($Storages) {
         }
 
         Write-Output $Storage
+    }
+}
+
+function ParseStorageNodes($StorageNodes) {
+    $StorageNodes = @($StorageNodes)
+    foreach ($StorageNode in $StorageNodes) {
+        if ($StorageNode.performance) {
+            $StorageNode.performance = ParsePerformance($StorageNode.performance)
+        }
+
+        Write-Output $StorageNode
     }
 }
 
@@ -7728,14 +7809,14 @@ function Global:Get-OciBusinessEntity {
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
     Filter for time range, to time in milliseconds
-    .PARAMETER sort
-    Filter for sorting by performance metric/s (Default iops.total)
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER limit
     Number of datastores per page (range: 0-50, default: 0)
     .PARAMETER offset
     Offset to be used with limit
+    .PARAMETER sort
+    Performance metric for sorting (Default iops.total)
     .PARAMETER performance
     Return related Performance
     .PARAMETER hosts
@@ -7770,14 +7851,14 @@ function Global:Get-OciDatastores {
                     Position=3,
                     HelpMessage="Return related Performance")][Switch]$performance,
         [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Filter for sorting by performance metric/s (Default iops.total)")][String]$sort="iops.total",
-        [parameter(Mandatory=$False,
                     Position=5,
                     HelpMessage="Number of datastores per page (range: 0-50, default: 0)")][Long]$limit=0,
         [parameter(Mandatory=$False,
-                    Position=6,
+                    Position=5,
                     HelpMessage="Offset to be used with limit")][Long]$offset=0,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Performance metric for sorting (Default iops.total)")][String]$sort="iops.total",
         [parameter(Mandatory=$False,
                     Position=7,
                     HelpMessage="Return list of related Hosts")][Switch]$hosts,
@@ -7809,7 +7890,7 @@ function Global:Get-OciDatastores {
         $id = @($id)
         foreach ($id in $id) {
             # OCI allows to only fetch maximum 50 items when performance data is requested, thus we need to repeat the command if no limit is specified to fetch all items
-            if ($Performance -and $Limit -eq 0) {
+            if ($Limit -eq 0) {
                 $FetchAll = $true
                 $Limit = 50
             }
@@ -7828,32 +7909,30 @@ function Global:Get-OciDatastores {
                 }
             }
             
-            if ($fromTime -or $toTime -or $expand -or $sort -or $limit -or $offset) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($performance -and $sort) {
-                    $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
-                    $Separator = '&'
-                }
-                if ($limit) {
-                    $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
-                    $Separator = '&'
-                }
-                if ($limit -and $offset) {
-                    $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($sort) {
+                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Separator = '&'
+            }
+            if ($limit) {
+                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Separator = '&'
+            }
+            if ($limit -and $offset) {
+                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
  
             try {
@@ -7874,7 +7953,7 @@ function Global:Get-OciDatastores {
 
             if ($FetchAll -and $Datastores.Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciDatastores -fromTime $fromTime -to $toTime -performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
+                Get-OciDatastores -fromTime $fromTime -toTime $toTime -performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
             }
         }
     }
@@ -10542,11 +10621,11 @@ function Global:Get-OciDatasourcesByFabric {
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER limit
-    Limit for number of ports in fabric to retrieve
-    .PARAMETER sort
-    sort will specify the field name on which sorting to be applied
+    Number of ports in fabric to retrieve (range: 0-50, default: 0)
     .PARAMETER offset
     Offset to be used with limit
+    .PARAMETER sort
+    Performance metric used for sorting (Default iops.total)
     .PARAMETER device
     Return related Device Object
     .PARAMETER fabrics
@@ -10584,15 +10663,15 @@ function Global:Get-OciPortsByFabric {
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
-        [parameter(Mandatory=$True,
+        [parameter(Mandatory=$False,
                     Position=4,
-                    HelpMessage="Limit for number of ports in fabric to retrieve")][Long]$limit,
-        [parameter(Mandatory=$True,
+                    HelpMessage="Limit for number of ports in fabric to retrieve")][Long]$limit=0,
+        [parameter(Mandatory=$False,
                     Position=5,
-                    HelpMessage="sort will specify the field name on which sorting to be applied")][String]$sort,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
         [parameter(Mandatory=$False,
                     Position=6,
-                    HelpMessage="Offset to be used with limit")][Long]$offset,
+                    HelpMessage="sort will specify the field name on which sorting to be applied")][String]$sort="trafficRate.total",
         [parameter(Mandatory=$False,
                     Position=7,
                     HelpMessage="Return related Device Object")][Switch]$device,
@@ -10632,6 +10711,12 @@ function Global:Get-OciPortsByFabric {
     Process {
         $id = @($id)
         foreach ($id in $id) {
+            # OCI allows to only fetch maximum 50 items when performance data is requested, thus we need to repeat the command if no limit is specified to fetch all items
+            if ($Limit -eq 0) {
+                $FetchAll = $true
+                $Limit = 50
+            }
+
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports"
            
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
@@ -10645,21 +10730,31 @@ function Global:Get-OciPortsByFabric {
                     }
                 }
             }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($sort) {
+                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Separator = '&'
+            }
+            if ($limit) {
+                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Separator = '&'
+            }
+            if ($limit -and $offset) {
+                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
  
             try {
@@ -10674,7 +10769,13 @@ function Global:Get-OciPortsByFabric {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Ports = ParsePorts($Result)
+            Write-Output $Ports
+
+            if ($FetchAll -and $Ports.Count -eq $Limit) {
+                $Offset += $Limit
+                Get-OciPortsByFabric -id $id -fromTime $fromTime -toTime $toTime -performance -sort $sort -limit $limit -offset $offset -device:$device -fabrics:$fabrics -connectedPorts:$connectedPorts -annotations:$annotations -datasources:$datasources -applications:$applications -performancehistory:$performancehistory -Server $Server
+            }
         }
     }
 }
@@ -10683,7 +10784,7 @@ function Global:Get-OciPortsByFabric {
     .SYNOPSIS
     Retrieve total count of ports by fabric with performance.
     .DESCRIPTION
-    
+    Retrieve total count of ports by fabric with performance.
     .PARAMETER id
     Id of fabric to retrieve ports for
     .PARAMETER fromTime
@@ -10765,7 +10866,7 @@ function Global:Get-OciPortsByFabricCount {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            Write-Output $Result.Value
         }
     }
 }
@@ -10774,7 +10875,7 @@ function Global:Get-OciPortsByFabricCount {
     .SYNOPSIS
     Retrieve switches for one fabric
     .DESCRIPTION
-    
+    Retrieve switches for one fabric
     .PARAMETER id
     Id of fabric to retrieve switches for
     .PARAMETER fromTime
@@ -13639,7 +13740,7 @@ function Global:Get-OciInternalVolume {
                     Position=16,
                     HelpMessage="Return related Performance History")][Switch]$performancehistory,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -13695,7 +13796,8 @@ function Global:Get-OciInternalVolume {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $InternalVolume = ParseInternalVolumes($Result)
+            Write-Output $InternalVolume
         }
     }
 }
@@ -26247,7 +26349,7 @@ function Global:Get-OciPortsBySwitch {
     .SYNOPSIS
     Retrieve all Virtual Machines
     .DESCRIPTION
-    
+    Retrieve all Virtual Machines
     .PARAMETER fromTime
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
@@ -26255,7 +26357,7 @@ function Global:Get-OciPortsBySwitch {
     .PARAMETER sort
     Filter for sorting by metric/s
     .PARAMETER limit
-    Number of virtual machines per page.
+    Number of virtual machines per page (range: 0-50, default: 0)
     .PARAMETER offset
     Offset to be used with limit
     .PARAMETER expand
