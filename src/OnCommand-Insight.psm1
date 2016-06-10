@@ -1894,6 +1894,7 @@ function Global:Get-OciAcquisitionUnits {
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits"
   
+        $expand=$null
         $switchparameters=@("datasources")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -1974,6 +1975,7 @@ function Global:Get-OciAcquisitionUnit {
             $Uri = $($Server.BaseUri) + "/rest/v1/admin/acquisitionUnits/$id"
  
            
+            $expand=$null
             $switchparameters=@("datasources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2089,6 +2091,7 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
 
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2284,6 +2287,7 @@ function Global:Add-OciCertificate {
             $Uri = $Server.BaseUri + "/rest/v1/admin/certificates"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2505,6 +2509,7 @@ function Global:Get-OciDatasources {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
 
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2618,6 +2623,9 @@ function Global:Add-OciDatasource {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -2626,6 +2634,7 @@ function Global:Add-OciDatasource {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
  
            
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2828,6 +2837,7 @@ function Global:Get-OciDatasource {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -2960,6 +2970,7 @@ function Global:Update-OciDataSource {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
 
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3053,6 +3064,7 @@ function Global:Get-OciAcquisitionUnitByDatasource {
         foreach ($id in $id) {
             $Uri = $($Server.BaseUri) + "/rest/v1/admin/datasources/$id/acquisitionUnit"
 
+            $expand=$null
             $switchparameters=@("datasources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3134,6 +3146,7 @@ function Global:Get-OciActivePatchByDatasource {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/activePatch"
  
+            $expand=$null
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3214,6 +3227,7 @@ function Global:Get-OciDatasourceChanges {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/changes"
  
+            $expand=$null
             $switchparameters=@("details")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3396,6 +3410,7 @@ function Global:Get-OciDatasourceEvents {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/events"
  
+            $expand=$null
             $switchparameters=@("details")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3579,6 +3594,7 @@ function Global:Update-OciDatasourceNote {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/note"
  
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3715,6 +3731,7 @@ function Global:Poll-OciDatasource {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/poll"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3803,6 +3820,7 @@ function Global:Suspend-OciDatasource {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/postpone"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3884,6 +3902,7 @@ function Global:Resume-OciDatasource {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/resume"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -3967,6 +3986,7 @@ function Global:Test-OciDatasource {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4108,6 +4128,9 @@ function Global:Update-OciLdapConfiguration {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -4116,6 +4139,7 @@ function Global:Update-OciLdapConfiguration {
             $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4193,6 +4217,9 @@ function Global:Test-OciLdapConfiguration {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -4201,6 +4228,7 @@ function Global:Test-OciLdapConfiguration {
             $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4322,6 +4350,9 @@ function Global:Update-OciLicenses {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -4330,6 +4361,7 @@ function Global:Update-OciLicenses {
             $Uri = $Server.BaseUri + "/rest/v1/admin/license"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4406,6 +4438,9 @@ function Global:Replace-OciLicense {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -4414,6 +4449,7 @@ function Global:Replace-OciLicense {
             $Uri = $Server.BaseUri + "/rest/v1/admin/license"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4502,6 +4538,7 @@ function Global:Get-OciPatches {
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
 
+        $expand=$null
         $switchparameters=@("datasourceConclusions")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -4562,6 +4599,7 @@ function Global:Add-OciPatches {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
  
            
+            $expand=$null
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4659,6 +4697,7 @@ function Global:Get-OciPatch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
  
+            $expand=$null
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4729,6 +4768,7 @@ function Global:Update-OciPatch {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
  
            
+            $expand=$null
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4812,6 +4852,7 @@ function Global:Approve-OciPatch {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -4964,6 +5005,7 @@ function Global:Update-OciPatchNote {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/note"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5047,6 +5089,7 @@ function Global:Rollback-OciPatch {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/rollback"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5178,6 +5221,7 @@ function Global:Add-OciUsers {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5308,6 +5352,7 @@ function Global:Delete-OciUser {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5455,6 +5500,7 @@ function Global:Update-OciUser {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5592,6 +5638,7 @@ function Global:Create-OciAnnotationDefinition {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5675,6 +5722,7 @@ function Global:Remove-OciDefinition {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5834,6 +5882,7 @@ function Global:Update-OciDefinition {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -5931,6 +5980,7 @@ function Global:Remove-OciDefinitionValues {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6245,6 +6295,7 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/{objectType}/{value}"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6350,6 +6401,7 @@ function Global:Get-OciApplications {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6451,6 +6503,7 @@ function Global:Add-OciApplication {
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/applications"
 
+        $expand=$null
         $switchparameters=@("computeResources","storageResources")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -6573,6 +6626,7 @@ function Global:Remove-OciApplicationsFromAssets {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
  
            
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6693,6 +6747,7 @@ function Global:Add-OciApplicationsToAssets {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
  
            
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6790,6 +6845,7 @@ function Global:Remove-OciApplication {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6897,6 +6953,7 @@ function Global:Get-OciApplication {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
            
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -6999,6 +7056,7 @@ function Global:Update-OciApplication {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7104,6 +7162,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7289,6 +7348,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
  
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7416,6 +7476,7 @@ function Global:Get-OciComputeResourcesByApplication {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/computeResources"
            
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7548,6 +7609,7 @@ function Global:Get-OciStorageResourcesByApplication {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/storageResources"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -7897,6 +7959,7 @@ function Global:Get-OciDatastores {
 
             $Uri = $($Server.BaseUri) + "/rest/v1/assets/dataStores"
  
+            $expand=$null
             $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8088,6 +8151,7 @@ function Global:Get-OciDatastore {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id"
  
+            $expand=$null
             $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8194,6 +8258,7 @@ function Global:Remove-OciAnnotationsByDatastore {
         foreach ($id in $id) {
             $Uri = $CurrentOciServer.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
            
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8287,6 +8352,7 @@ function Global:Get-OciAnnotationsByDatastore {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8383,6 +8449,7 @@ function Global:Update-OciAnnotationsByDatastore {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8509,6 +8576,7 @@ function Global:Get-OciDatasourcesByDataStore {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8662,6 +8730,7 @@ function Global:Get-OciHostsByDatastore {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"
  
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8765,6 +8834,7 @@ function Global:Get-OciDatastorePerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/performance"
  
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -8898,6 +8968,7 @@ function Global:Get-OciStorageResourcesByDatastore {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/storageResources"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9030,6 +9101,7 @@ function Global:Get-OciVmdksByDatastore {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/vmdks"
 
+            $expand=$null
             $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9168,6 +9240,7 @@ function Global:Get-OciDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id"
  
+            $expand=$null
             $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9269,6 +9342,7 @@ function Global:Remove-OciAnnotationsByDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9360,6 +9434,7 @@ function Global:Get-OciAnnotationsByDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9461,6 +9536,7 @@ function Global:Update-OciAnnotationsByDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9644,6 +9720,7 @@ function Global:Get-OciBackendVolumesByDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/backendVolumes"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9781,6 +9858,7 @@ function Global:Get-OciDatasourcesByDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -9884,6 +9962,7 @@ function Global:Get-OciDiskPerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/performance"
 
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10032,6 +10111,7 @@ function Global:Get-OciStoragePoolsByDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storagePools"
  
+            $expand=$null
             $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10164,6 +10244,7 @@ function Global:Get-OciStorageResourcesByDisk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storageResources"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10274,6 +10355,7 @@ function Global:Get-OciFabrics {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics"
            
+            $expand=$null
             $switchparameters=@("switches","datasources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10424,6 +10506,7 @@ function Global:Get-OciFabric {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id"
 
+            $expand=$null
             $switchparameters=@("switches","datasources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10561,6 +10644,7 @@ function Global:Get-OciDatasourcesByFabric {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10719,6 +10803,7 @@ function Global:Get-OciPortsByFabric {
 
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports"
            
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10826,6 +10911,7 @@ function Global:Get-OciPortsByFabricCount {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports/count"
 
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -10957,6 +11043,7 @@ function Global:Get-OciSwitchesByFabric {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/switches"
 
+            $expand=$null
             $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -11068,6 +11155,7 @@ function Global:Get-OciFilesystem {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id"
  
+            $expand=$null
             $switchparameters=@("storageResources","vmdks","computeResource")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -11189,6 +11277,7 @@ function Global:Get-OciComputeResourceByFileSystem {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/computeResource"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -11320,6 +11409,7 @@ function Global:Get-OciStorageResorcesByFileSystem {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/storageResources"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -11451,6 +11541,7 @@ function Global:Get-OciVmdksByFileSystem {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/vmdks"
 
+            $expand=$null
             $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -11610,6 +11701,7 @@ function Global:Get-OciHosts {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts"
            
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -11806,6 +11898,7 @@ function Global:Get-OciHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id"
  
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -11907,6 +12000,7 @@ function Global:Remove-OciAnnotationsByHosts {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
            
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12000,6 +12094,7 @@ function Global:Get-OciAnnotationsByHosts {
         foreach ($id in $id) {
             $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12097,6 +12192,7 @@ function Global:Update-OciAnnotationsByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12200,6 +12296,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12305,6 +12402,7 @@ function Global:Get-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12406,6 +12504,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12504,6 +12603,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12600,6 +12700,7 @@ function Global:Remove-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id$/applications/$appId"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12749,6 +12850,7 @@ function Global:Get-OciClusterHostsByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/clusterHosts"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12843,6 +12945,7 @@ function Global:Get-OciDataCenterByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/dataCenter"
            
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -12977,6 +13080,7 @@ function Global:Get-OciDatasourcesByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/datasources"
            
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13086,6 +13190,7 @@ function Global:Get-OciFileSystemsByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/fileSystems"
 
+            $expand=$null
             $switchparameters=@("storageResources","vmdks","computeResource")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13185,6 +13290,7 @@ function Global:Get-OciHostPerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/performance"
            
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13319,6 +13425,7 @@ function Global:Get-OciPortsByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/ports"
  
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13448,6 +13555,7 @@ function Global:Get-OciStorageResourcesByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/storageResources"
            
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13597,6 +13705,7 @@ function Global:Get-OciVirtualMachinesByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/virtualMachines"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13756,6 +13865,7 @@ function Global:Get-OciInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13854,6 +13964,7 @@ function Global:Remove-OciAnnotationsByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -13945,6 +14056,7 @@ function Global:Get-OciAnnotationsByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14042,6 +14154,7 @@ function Global:Update-OciAnnotationsByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14138,6 +14251,7 @@ function Global:Remove-OciApplicationsFromInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14232,6 +14346,7 @@ function Global:Get-OciApplicationsByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14329,6 +14444,7 @@ function Global:Add-OciApplicationsToInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14420,6 +14536,7 @@ function Global:Update-OciApplicationsByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14516,6 +14633,7 @@ function Global:Remove-OciApplicationsByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications/$appId"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14623,6 +14741,7 @@ function Global:Get-OciComputeResourcesByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/computeResources"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14752,6 +14871,7 @@ function Global:Get-OciDataStoresByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/dataStores"
  
+            $expand=$null
             $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14886,6 +15006,7 @@ function Global:Get-OciDatasourcesByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -14985,6 +15106,7 @@ function Global:Get-OciInternalVolumePerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/performance"
  
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -15109,6 +15231,7 @@ function Global:Get-OciQtreesByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/qtrees"
 
+            $expand=$null
             $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -15268,6 +15391,7 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/replicaSources"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -15402,6 +15526,7 @@ function Global:Get-OciStorageNodesByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/storageNodes"
 
+            $expand=$null
             $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -15581,6 +15706,7 @@ function Global:Get-OciVolumesByInternalVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/volumes"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -15715,6 +15841,7 @@ function Global:Get-OciPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id"
 
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -15812,6 +15939,7 @@ function Global:Remove-OciAnnotationsByPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -15903,6 +16031,7 @@ function Global:Get-OciAnnotationsByPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16000,6 +16129,7 @@ function Global:Update-OciAnnotationsByPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
            
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16103,6 +16233,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16208,6 +16339,7 @@ function Global:Get-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16309,6 +16441,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16407,6 +16540,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16543,6 +16677,7 @@ function Global:Get-OciConnectedPortsByPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/connectedPorts"
   
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16677,6 +16812,7 @@ function Global:Get-OciDatasourcesByPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16771,6 +16907,7 @@ function Global:Get-OciDeviceByPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/device"
  
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16875,6 +17012,7 @@ function Global:Get-OciFabricsByPort {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/fabrics"
  
+            $expand=$null
             $switchparameters=@("switches","datasources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -16974,6 +17112,7 @@ function Global:Get-OciPortPerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/performance"
  
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17098,6 +17237,7 @@ function Global:Get-OciQtree {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id"
 
+            $expand=$null
             $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17195,6 +17335,7 @@ function Global:Remove-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17286,6 +17427,7 @@ function Global:Get-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17383,6 +17525,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17486,6 +17629,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17593,6 +17737,7 @@ function Global:Get-OciByTypeAndId {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
  
            
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17694,6 +17839,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17792,6 +17938,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
            
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -17888,6 +18035,7 @@ function Global:Remove-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications/$appId"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18047,6 +18195,7 @@ function Global:Get-OciInternalVolumeByQtree {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/internalVolume"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18155,6 +18304,7 @@ function Global:Get-OciSharesByQtree {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/shares"
 
+            $expand=$null
             $switchparameters=@("storage","qtree","annotations","applications")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18324,6 +18474,7 @@ function Global:Get-OciStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/storage"
  
+            $expand=$null
             $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18503,6 +18654,7 @@ function Global:Get-OciVolumesByQtree {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/volumes"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18617,6 +18769,7 @@ function Global:Get-OciShare {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id"
 
+            $expand=$null
             $switchparameters=@("storage","qtree","annotations","applications")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18708,6 +18861,7 @@ function Global:Remove-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18799,6 +18953,7 @@ function Global:Get-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
            
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18896,6 +19051,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -18999,6 +19155,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19105,6 +19262,7 @@ function Global:Get-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19206,6 +19364,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19304,6 +19463,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19400,6 +19560,7 @@ function Global:Remove-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications/{appId}"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19524,6 +19685,7 @@ function Global:Get-OciQtree {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/qtree"
            
+            $expand=$null
             $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19693,6 +19855,7 @@ function Global:Get-OciStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/storage"
 
+            $expand=$null
             $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19827,6 +19990,7 @@ function Global:Get-OciStorageNode {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id"
  
+            $expand=$null
             $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -19924,6 +20088,7 @@ function Global:Remove-OciAnnotationsByStorageNode {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20015,6 +20180,7 @@ function Global:Get-OciAnnotationsByStorageNode {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20112,6 +20278,7 @@ function Global:Update-OciAnnotationsByStorageNode {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20248,6 +20415,7 @@ function Global:Get-OciDatasourcesByStorageNode {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20347,6 +20515,7 @@ function Global:Get-OciStorageNodePerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/performance"
 
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20481,6 +20650,7 @@ function Global:Get-OciPortsByStorageNode {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/ports"
  
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20625,6 +20795,7 @@ function Global:Get-OciStoragePoolsByNode {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/storagePools"
  
+            $expand=$null
             $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20769,6 +20940,7 @@ function Global:Get-OciStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id"
  
+            $expand=$null
             $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20866,6 +21038,7 @@ function Global:Remove-OciAnnotationsByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
             
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -20957,6 +21130,7 @@ function Global:Get-OciAnnotationsByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -21054,6 +21228,7 @@ function Global:Update-OciAnnotationsByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -21190,6 +21365,7 @@ function Global:Get-OciDatasourcesByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -21324,6 +21500,7 @@ function Global:Get-OciDisksByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/disks"
  
+            $expand=$null
             $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -21483,6 +21660,7 @@ function Global:Get-OciInternalVolumesByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/internalVolumes"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -21582,6 +21760,7 @@ function Global:Get-OciStoragePoolPerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/performance"
  
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -21751,6 +21930,7 @@ function Global:Get-OciStorageByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storage"
  
+            $expand=$null
             $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -21885,6 +22065,7 @@ function Global:Get-OciStorageNodesByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageNodes"
  
+            $expand=$null
             $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -22014,6 +22195,7 @@ function Global:Get-OciStorageResourcesByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageResources"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -22193,6 +22375,7 @@ function Global:Get-OciVolumesByStoragePool {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/volumes"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -22368,6 +22551,7 @@ function Global:Get-OciStorages {
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/storages"
            
+        $expand=$null
         $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -22581,6 +22765,7 @@ function Global:Get-OciStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"
  
+            $expand=$null
             $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -22679,6 +22864,7 @@ function Global:Remove-OciAnnotationsByStorage {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
  
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -22770,6 +22956,7 @@ function Global:Get-OciAnnotationsByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -22867,6 +23054,7 @@ function Global:Update-OciAnnotationsByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -22970,6 +23158,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23076,6 +23265,7 @@ function Global:Get-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23177,6 +23367,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23275,6 +23466,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23411,6 +23603,7 @@ function Global:Get-OciDatasourcesByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23545,6 +23738,7 @@ function Global:Get-OciDisksByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/disks"
  
+            $expand=$null
             $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23704,6 +23898,7 @@ function Global:Get-OciInternalVolumesByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/internalVolumes"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23804,6 +23999,7 @@ function Global:Get-OciStoragePerformance {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/performance"
  
            
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -23939,6 +24135,7 @@ function Global:Get-OciPortsByStorage {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/ports"
  
            
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24018,6 +24215,7 @@ function Global:Get-OciProtocolsByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/protocols"
  
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24142,6 +24340,7 @@ function Global:Get-OciQtreesByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/qtrees"
  
+            $expand=$null
             $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24256,6 +24455,7 @@ function Global:Get-OciSharesByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/shares"
  
+            $expand=$null
             $switchparameters=@("storage","qtree","annotations","applications")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24391,6 +24591,7 @@ function Global:Get-OciStorageNodesByStorage {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageNodes"
  
            
+            $expand=$null
             $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24535,6 +24736,7 @@ function Global:Get-OciStoragePoolsByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storagePools"
  
+            $expand=$null
             $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24664,6 +24866,7 @@ function Global:Get-OciStorageResourcesByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageResources"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24843,6 +25046,7 @@ function Global:Get-OciVolumesByStorage {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/volumes"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -24975,6 +25179,7 @@ function Global:Get-OciSwitches {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches"
 
+            $expand=$null
             $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25146,6 +25351,7 @@ function Global:Get-OciSwitch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id"
 
+            $expand=$null
             $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25237,6 +25443,7 @@ function Global:Remove-OciAnnotationsBySwitch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25328,6 +25535,7 @@ function Global:Get-OciAnnotationsBySwitch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25425,6 +25633,7 @@ function Global:Update-OciAnnotationsBySwitch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25528,6 +25737,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25634,6 +25844,7 @@ function Global:Get-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25735,6 +25946,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25827,6 +26039,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -25963,6 +26176,7 @@ function Global:Get-OciDatasourcesBySwitch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26067,6 +26281,7 @@ function Global:Get-OciFabricBySwitch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/fabric"
 
+            $expand=$null
             $switchparameters=@("switches","datasources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26166,6 +26381,7 @@ function Global:Get-OciSwitchPerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/performance"
 
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26300,6 +26516,7 @@ function Global:Get-OciPortsBySwitch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/ports"
  
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26457,6 +26674,7 @@ function Global:Get-OciVirtualMachines {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26649,6 +26867,7 @@ function Global:Get-OciVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26747,6 +26966,7 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26839,6 +27059,7 @@ function Global:Get-OciAnnotationsByVirtualMachine {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
  
            
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -26936,6 +27157,7 @@ function Global:Update-OciAnnotationsByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27039,6 +27261,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27145,6 +27368,7 @@ function Global:Get-OciApplicationsByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27246,6 +27470,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27344,6 +27569,7 @@ function Global:Update-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27440,6 +27666,7 @@ function Global:Remove-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications/$appId"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27569,6 +27796,7 @@ function Global:Get-OciDataStoreByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/dataStore"
 
+            $expand=$null
             $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27703,6 +27931,7 @@ function Global:Get-OciDatasourcesByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/datasources"
  
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27812,6 +28041,7 @@ function Global:Get-OciFileSystemsByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/fileSystems"
  
+            $expand=$null
             $switchparameters=@("storageResources","vmdks","computeResource")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -27961,6 +28191,7 @@ function Global:Get-OciHostByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/host"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28060,6 +28291,7 @@ function Global:Get-OciVirtualMachinePerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/performance"
  
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28195,6 +28427,7 @@ function Global:Get-OciPortsByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/ports"
  
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28324,6 +28557,7 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/storageResources"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28453,6 +28687,7 @@ function Global:Get-OciVmdksByVirtualMachine {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/vmdks"
 
+            $expand=$null
             $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28582,6 +28817,7 @@ function Global:Get-OciVmdk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id"
 
+            $expand=$null
             $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28679,6 +28915,7 @@ function Global:Remove-OciAnnotationsByVmdk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28770,6 +29007,7 @@ function Global:Get-OciAnnotationsByVmdk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -28867,6 +29105,7 @@ function Global:Update-OciAnnotationsByVmdk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
  
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29004,6 +29243,7 @@ function Global:Get-OciDatasourcesByVmdk {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/datasources"
  
            
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29104,6 +29344,7 @@ function Global:Get-OciVmdkPerformance {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/performance"
  
            
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29234,6 +29475,7 @@ function Global:Get-OciStorageResourcesByVmdk {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/storageResources"
  
            
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29383,6 +29625,7 @@ function Global:Get-OciVirtualMachineByVmdk {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/virtualMachine"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29562,6 +29805,7 @@ function Global:Get-OciVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29659,6 +29903,7 @@ function Global:Remove-OciAnnotationsByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29750,6 +29995,7 @@ function Global:Get-OciAnnotationsByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29847,6 +30093,7 @@ function Global:Update-OciAnnotationsByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
 
+            $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -29955,6 +30202,7 @@ function Global:Remove-OciApplicationsFromVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30061,6 +30309,7 @@ function Global:Get-OciApplicationsByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
 
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30167,6 +30416,7 @@ function Global:Add-OciApplicationsToVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30270,6 +30520,7 @@ function Global:Update-OciApplicationsByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
            
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30366,6 +30617,7 @@ function Global:Remove-OciByTypeAndId {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications/$appId"
  
+            $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30445,6 +30697,7 @@ function Global:Get-OciAutoTierPolicyByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/autoTierPolicy"
 
+            $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30564,6 +30817,7 @@ function Global:Get-OciComputeResourcesByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/computeResources"
 
+            $expand=$null
             $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30693,6 +30947,7 @@ function Global:Get-OciDatastoresByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/dataStores"
 
+            $expand=$null
             $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30827,6 +31082,7 @@ function Global:Get-OciDatasourcesByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/datasources"
 
+            $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -30986,6 +31242,7 @@ function Global:Get-OciInternalVolumeByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/internalVolume"
  
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -31085,6 +31342,7 @@ function Global:Get-OciVolumePerformance {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/performance"
  
+            $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -31219,6 +31477,7 @@ function Global:Get-OciPortsByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/ports"
 
+            $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -31343,6 +31602,7 @@ function Global:Get-OciQtree {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/qtree"
  
+            $expand=$null
             $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -31522,6 +31782,7 @@ function Global:Get-OciSourceVolumesByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/replicaSources"
 
+            $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -31691,6 +31952,7 @@ function Global:Get-OciStorageByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storage"
 
+            $expand=$null
             $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -31825,6 +32087,7 @@ function Global:Get-OciStorageNodesByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storageNodes"
 
+            $expand=$null
             $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -31969,6 +32232,7 @@ function Global:Get-OciStoragePoolsByVolume {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storagePools"
 
+            $expand=$null
             $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -32113,6 +32377,7 @@ function Global:Get-OciVirtualStoragePools {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualStoragePools"
 
+            $expand=$null
             $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
@@ -32282,6 +32547,7 @@ function Global:Get-OciVirtualizer {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualizer"
 
+            $expand=$null
             $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
                 if ((Get-Variable $parameter).Value) {
