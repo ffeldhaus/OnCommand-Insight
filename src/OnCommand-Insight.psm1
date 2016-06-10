@@ -742,7 +742,6 @@ function Add-WindowsCredential
 	return $Results
 }
 
-
 # Workaround to allow Powershell to accept untrusted certificates
 add-type @"
     using System.Net;
@@ -1973,8 +1972,7 @@ function Global:Get-OciAcquisitionUnit {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $($Server.BaseUri) + "/rest/v1/admin/acquisitionUnits/$id"
- 
-           
+
             $expand=$null
             $switchparameters=@("datasources")
             foreach ($parameter in $switchparameters) {
@@ -2226,7 +2224,6 @@ function Global:Get-OciCertificates {
     }
 }
 
-
 # TODO: Check and implement uploading of certificates
 <#
     .SYNOPSIS
@@ -2285,8 +2282,7 @@ function Global:Add-OciCertificate {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/certificates"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -2632,8 +2628,7 @@ function Global:Add-OciDatasource {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
- 
-           
+
             $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
@@ -3729,8 +3724,7 @@ function Global:Poll-OciDatasource {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/poll"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -3818,8 +3812,7 @@ function Global:Suspend-OciDatasource {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/postpone"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -3900,8 +3893,7 @@ function Global:Resume-OciDatasource {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/resume"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -3984,8 +3976,7 @@ function Global:Test-OciDatasource {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -4137,8 +4128,7 @@ function Global:Update-OciLdapConfiguration {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -4226,8 +4216,7 @@ function Global:Test-OciLdapConfiguration {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -4359,8 +4348,7 @@ function Global:Update-OciLicenses {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/license"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -4447,8 +4435,7 @@ function Global:Replace-OciLicense {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/license"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -4597,8 +4584,7 @@ function Global:Add-OciPatches {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
- 
-           
+
             $expand=$null
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
@@ -4766,8 +4752,7 @@ function Global:Update-OciPatch {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
- 
-           
+
             $expand=$null
             $switchparameters=@("datasourceConclusions")
             foreach ($parameter in $switchparameters) {
@@ -4850,8 +4835,7 @@ function Global:Approve-OciPatch {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5003,8 +4987,7 @@ function Global:Update-OciPatchNote {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/note"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5087,8 +5070,7 @@ function Global:Rollback-OciPatch {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/rollback"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5219,8 +5201,7 @@ function Global:Add-OciUsers {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5350,8 +5331,7 @@ function Global:Delete-OciUser {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5498,8 +5478,7 @@ function Global:Update-OciUser {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5636,8 +5615,7 @@ function Global:Create-OciAnnotationDefinition {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5720,8 +5698,7 @@ function Global:Remove-OciDefinition {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5880,8 +5857,7 @@ function Global:Update-OciDefinition {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -5978,8 +5954,7 @@ function Global:Remove-OciDefinitionValues {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -6293,8 +6268,7 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/{objectType}/{value}"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -6624,8 +6598,7 @@ function Global:Remove-OciApplicationsFromAssets {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
- 
-           
+
             $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
@@ -6745,8 +6718,7 @@ function Global:Add-OciApplicationsToAssets {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
- 
-           
+
             $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
@@ -7160,8 +7132,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -7346,8 +7317,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
- 
-           
+
             $expand=$null
             $switchparameters=@("")
             foreach ($parameter in $switchparameters) {
@@ -17735,8 +17705,7 @@ function Global:Get-OciByTypeAndId {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
- 
-           
+
             $expand=$null
             $switchparameters=@("computeResources","storageResources")
             foreach ($parameter in $switchparameters) {
@@ -23997,8 +23966,7 @@ function Global:Get-OciStoragePerformance {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/performance"
- 
-           
+
             $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
@@ -24133,8 +24101,7 @@ function Global:Get-OciPortsByStorage {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/ports"
- 
-           
+
             $expand=$null
             $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
             foreach ($parameter in $switchparameters) {
@@ -24589,8 +24556,7 @@ function Global:Get-OciStorageNodesByStorage {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageNodes"
- 
-           
+
             $expand=$null
             $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
             foreach ($parameter in $switchparameters) {
@@ -27057,8 +27023,7 @@ function Global:Get-OciAnnotationsByVirtualMachine {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
- 
-           
+
             $expand=$null
             $switchparameters=@("definition")
             foreach ($parameter in $switchparameters) {
@@ -29241,8 +29206,7 @@ function Global:Get-OciDatasourcesByVmdk {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/datasources"
- 
-           
+
             $expand=$null
             $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
             foreach ($parameter in $switchparameters) {
@@ -29342,8 +29306,7 @@ function Global:Get-OciVmdkPerformance {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/performance"
- 
-           
+
             $expand=$null
             $switchparameters=@("history")
             foreach ($parameter in $switchparameters) {
@@ -29473,8 +29436,7 @@ function Global:Get-OciStorageResourcesByVmdk {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/storageResources"
- 
-           
+
             $expand=$null
             $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
             foreach ($parameter in $switchparameters) {
