@@ -7988,7 +7988,7 @@ function Global:Get-OciDatastores {
 
             if ($FetchAll -and @($Datastores).Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciDatastores -fromTime $fromTime -toTime $toTime -performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
+                Get-OciDatastores -fromTime $fromTime -toTime $toTime -performance:$performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
             }
         }
     }
@@ -10848,7 +10848,7 @@ function Global:Get-OciPortsByFabric {
 
             if ($FetchAll -and @($Ports).Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciPortsByFabric -id $id -fromTime $fromTime -toTime $toTime -performance -sort $sort -limit $limit -offset $offset -device:$device -fabrics:$fabrics -connectedPorts:$connectedPorts -annotations:$annotations -datasources:$datasources -applications:$applications -performancehistory:$performancehistory -Server $Server
+                Get-OciPortsByFabric -id $id -fromTime $fromTime -toTime $toTime -performance:$performance -sort $sort -limit $limit -offset $offset -device:$device -fabrics:$fabrics -connectedPorts:$connectedPorts -annotations:$annotations -datasources:$datasources -applications:$applications -performancehistory:$performancehistory -Server $Server
             }
         }
     }
@@ -22489,64 +22489,64 @@ function Global:Get-OciStorages {
                     Position=1,
                     HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
         [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Filter for sorting by metric/s")][String]$sort,
-        [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=4,
-                    HelpMessage="Number of storages per page.")][Long]$limit,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Offset to be used with limit")][Long]$offset,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="Return list of related Storage nodes")][Switch]$storageNodes,
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
-        [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return list of related Storage pools")][Switch]$storagePools,
-        [parameter(Mandatory=$False,
-                    Position=9,
-                    HelpMessage="Return list of related Internal volumes")][Switch]$internalVolumes,
-        [parameter(Mandatory=$False,
-                    Position=10,
-                    HelpMessage="Return list of related Volumes")][Switch]$volumes,
-        [parameter(Mandatory=$False,
-                    Position=11,
-                    HelpMessage="Return list of related Qtrees")][Switch]$qtrees,
-        [parameter(Mandatory=$False,
-                    Position=12,
-                    HelpMessage="Return list of related Shares")][Switch]$shares,
-        [parameter(Mandatory=$False,
-                    Position=13,
-                    HelpMessage="Return list of related Ports")][Switch]$ports,
-        [parameter(Mandatory=$False,
-                    Position=14,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
-        [parameter(Mandatory=$False,
-                    Position=15,
-                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
-        [parameter(Mandatory=$False,
-                    Position=16,
-                    HelpMessage="Return list of related Disks")][Switch]$disks,
-        [parameter(Mandatory=$False,
-                    Position=17,
                     HelpMessage="Return related Performance")][Switch]$performance,
         [parameter(Mandatory=$False,
-                    Position=18,
-                    HelpMessage="Return list of related Protocols")][Switch]$protocols,
-        [parameter(Mandatory=$False,
-                    Position=19,
-                    HelpMessage="Return list of related Applications")][Switch]$applications,
-        [parameter(Mandatory=$False,
-                    Position=20,
+                    Position=5,
                     HelpMessage="Return related Performance History")][Switch]$performancehistory,
         [parameter(Mandatory=$False,
-                   Position=21,
+                    Position=6,
+                    HelpMessage="Number of storages per page.")][Long]$limit=0,
+        [parameter(Mandatory=$False,
+                    Position=7,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
+        [parameter(Mandatory=$False,
+                    Position=8,
+                    HelpMessage="Filter for sorting by metric/s")][String]$sort="iops.total",
+        [parameter(Mandatory=$False,
+                    Position=9,
+                    HelpMessage="Return list of related Storage nodes")][Switch]$storageNodes,
+        [parameter(Mandatory=$False,
+                    Position=10,
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                    Position=11,
+                    HelpMessage="Return list of related Storage pools")][Switch]$storagePools,
+        [parameter(Mandatory=$False,
+                    Position=12,
+                    HelpMessage="Return list of related Internal volumes")][Switch]$internalVolumes,
+        [parameter(Mandatory=$False,
+                    Position=13,
+                    HelpMessage="Return list of related Volumes")][Switch]$volumes,
+        [parameter(Mandatory=$False,
+                    Position=14,
+                    HelpMessage="Return list of related Qtrees")][Switch]$qtrees,
+        [parameter(Mandatory=$False,
+                    Position=15,
+                    HelpMessage="Return list of related Shares")][Switch]$shares,
+        [parameter(Mandatory=$False,
+                    Position=16,
+                    HelpMessage="Return list of related Ports")][Switch]$ports,
+        [parameter(Mandatory=$False,
+                    Position=17,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+        [parameter(Mandatory=$False,
+                    Position=18,
+                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
+        [parameter(Mandatory=$False,
+                    Position=19,
+                    HelpMessage="Return list of related Disks")][Switch]$disks,
+        [parameter(Mandatory=$False,
+                    Position=20,
+                    HelpMessage="Return list of related Protocols")][Switch]$protocols,
+        [parameter(Mandatory=$False,
+                    Position=21,
+                    HelpMessage="Return list of related Applications")][Switch]$applications,
+        [parameter(Mandatory=$False,
+                   Position=22,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -22558,6 +22558,12 @@ function Global:Get-OciStorages {
     }
    
     Process {
+        # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
+        if ($Limit -eq 0) {
+            $FetchAll = $true
+            $Limit = 50
+        }
+
         $Uri = $Server.BaseUri + "/rest/v1/assets/storages"
            
         $expand=$null
@@ -22573,20 +22579,30 @@ function Global:Get-OciStorages {
             }
         }
  
-        if ($fromTime -or $toTime -or $expand) {
-            $Uri += '?'
-            $Separator = ''
-            if ($fromTime) {
-                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                $Separator = '&'
-            }
-            if ($toTime) {
-                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                $Separator = '&'
-            }
-            if ($expand) {
-                $Uri += "$($Separator)expand=$expand"
-            }
+        $Uri += '?'
+        $Separator = ''
+        if ($fromTime) {
+            $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($toTime) {
+            $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($sort) {
+            $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+            $Separator = '&'
+        }
+        if ($limit) {
+            $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+            $Separator = '&'
+        }
+        if ($limit -and $offset) {
+            $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+            $Separator = '&'
+        }
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
         }
  
         try {
@@ -22601,7 +22617,13 @@ function Global:Get-OciStorages {
             $Result = ParseJsonString($Result.Trim())
         }
        
-        Write-Output $Result
+        $Storages = ParseStorages($Result)
+        if ($Storages) { Write-Output $Storages }
+
+        if ($FetchAll -and @($Storages).Count -eq $Limit) {
+            $Offset += $Limit
+            Get-OciStorages -fromTime $fromTime -toTime $toTime -sort $sort -limit $limit -offset $offset -performance:$performance -performancehistory:$performancehistory -storageNodes:$storageNodes -storageResources:$storageResources -storagePools:$storagePools -internalVolumes:$internalVolumes -volumes:$volumes -qtrees:$qtrees -shares:$shares -ports:$ports -datasources:$datasources -annotations:$annotations -disks:$disks -protocols:$protocols -applications:$applications -Server $Server
+        }
     }
 }
 
