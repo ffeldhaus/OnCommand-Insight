@@ -1209,6 +1209,8 @@ function ParseDatastores($Datastores) {
             $Datastore.performance = ParsePerformance($Datastore.performance)
         }
 
+        $i+=1
+        Write-Host $i
         Write-Output $Datastore
     }
 }
@@ -7921,7 +7923,7 @@ function Global:Get-OciDatastores {
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            # OCI allows to only fetch maximum 50 items when performance data is requested, thus we need to repeat the command if no limit is specified to fetch all items
+            # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
             if ($Limit -eq 0) {
                 $FetchAll = $true
                 $Limit = 50
@@ -7981,10 +7983,10 @@ function Global:Get-OciDatastores {
             }
             
             $Datastores = ParseDatastores($Result)
-                        
-            Write-Output $Datastores
+                  
+            if ($Datastores) { Write-Output $Datastores }
 
-            if ($FetchAll -and $Datastores.Count -eq $Limit) {
+            if ($FetchAll -and @($Datastores).Count -eq $Limit) {
                 $Offset += $Limit
                 Get-OciDatastores -fromTime $fromTime -toTime $toTime -performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
             }
@@ -10298,10 +10300,10 @@ function Global:Get-OciFabrics {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Number of fabrics per page.")][Long]$limit,
+                    HelpMessage="Number of fabrics per page (range: 0-50, default: 0)")][Long]$limit=0,
         [parameter(Mandatory=$False,
                     Position=4,
-                    HelpMessage="Offset to be used with limit")][Long]$offset,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
         [parameter(Mandatory=$False,
                     Position=5,
                     HelpMessage="Return list of related Switches")][Switch]$switches,
@@ -10323,6 +10325,12 @@ function Global:Get-OciFabrics {
     Process {
         $id = @($id)
         foreach ($id in $id) {
+            # OCI allows to only fetch maximum 50 items thus we need to repeat the command if no limit is specified to fetch all items
+            if ($Limit -eq 0) {
+                $FetchAll = $true
+                $Limit = 50
+            }
+
             $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics"
            
             $expand=$null
@@ -10338,20 +10346,26 @@ function Global:Get-OciFabrics {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($limit) {
+                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Separator = '&'
+            }
+            if ($limit -and $offset) {
+                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
  
             try {
@@ -10367,7 +10381,12 @@ function Global:Get-OciFabrics {
             }
 
             $Fabrics = ParseFabrics($Result)
-            Write-Output $Fabrics
+            if ($Fabrics)  { Write-Output $Fabrics }
+
+            if ($FetchAll -and @($Fabrics).Count -eq $Limit) {
+                $Offset += $Limit
+                Get-OciFabrics -fromTime $fromTime -toTime $toTime -limit $limit -offset $offset -switches:$switches -datasources:$datasources -Server $Server
+            }
         }
     }
 }
@@ -10825,9 +10844,9 @@ function Global:Get-OciPortsByFabric {
             }
 
             $Ports = ParsePorts($Result)
-            Write-Output $Ports
+            if ($Ports) { Write-Output $Ports }
 
-            if ($FetchAll -and $Ports.Count -eq $Limit) {
+            if ($FetchAll -and @($Ports).Count -eq $Limit) {
                 $Offset += $Limit
                 Get-OciPortsByFabric -id $id -fromTime $fromTime -toTime $toTime -performance -sort $sort -limit $limit -offset $offset -device:$device -fabrics:$fabrics -connectedPorts:$connectedPorts -annotations:$annotations -datasources:$datasources -applications:$applications -performancehistory:$performancehistory -Server $Server
             }
@@ -11611,49 +11630,49 @@ function Global:Get-OciHosts {
                     HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for sorting by metric/s")][String]$sort,
-        [parameter(Mandatory=$False,
-                    Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Number of hosts per page.")][Long]$limit,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Offset to be used with limit")][Long]$offset,
-        [parameter(Mandatory=$False,
-                    Position=6,
+                    Position=3,
                     HelpMessage="Return related Performance")][Switch]$performance,
         [parameter(Mandatory=$False,
+                    Position=4,
+                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+        [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Number of hosts per page.")][Long]$limit=0,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
+        [parameter(Mandatory=$False,
                     Position=7,
-                    HelpMessage="Return list of related Ports")][Switch]$ports,
+                    HelpMessage="Filter for sorting by metric/s")][String]$sort="diskIops.total",
         [parameter(Mandatory=$False,
                     Position=8,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+                    HelpMessage="Return list of related Ports")][Switch]$ports,
         [parameter(Mandatory=$False,
                     Position=9,
-                    HelpMessage="Return list of related File systems")][Switch]$fileSystems,
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
         [parameter(Mandatory=$False,
                     Position=10,
-                    HelpMessage="Return list of related Applications")][Switch]$applications,
+                    HelpMessage="Return list of related File systems")][Switch]$fileSystems,
         [parameter(Mandatory=$False,
                     Position=11,
-                    HelpMessage="Return list of related Virtual machines")][Switch]$virtualMachines,
+                    HelpMessage="Return list of related Applications")][Switch]$applications,
         [parameter(Mandatory=$False,
                     Position=12,
-                    HelpMessage="Return related Data center")][Switch]$dataCenter,
+                    HelpMessage="Return list of related Virtual machines")][Switch]$virtualMachines,
         [parameter(Mandatory=$False,
                     Position=13,
-                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
+                    HelpMessage="Return related Data center")][Switch]$dataCenter,
         [parameter(Mandatory=$False,
                     Position=14,
-                    HelpMessage="Return list of related Cluster hosts")][Switch]$clusterHosts,
+                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
         [parameter(Mandatory=$False,
                     Position=15,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+                    HelpMessage="Return list of related Cluster hosts")][Switch]$clusterHosts,
         [parameter(Mandatory=$False,
                     Position=16,
-                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
         [parameter(Mandatory=$False,
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -11669,6 +11688,12 @@ function Global:Get-OciHosts {
     Process {
         $id = @($id)
         foreach ($id in $id) {
+            # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
+            if ($Limit -eq 0) {
+                $FetchAll = $true
+                $Limit = 50
+            }
+
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts"
            
             $expand=$null
@@ -11684,20 +11709,30 @@ function Global:Get-OciHosts {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($sort) {
+                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Separator = '&'
+            }
+            if ($limit) {
+                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Separator = '&'
+            }
+            if ($limit -and $offset) {
+                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
  
             try {
@@ -11714,7 +11749,12 @@ function Global:Get-OciHosts {
 
             $Hosts = ParseHosts($Result)
 
-            Write-Output $Hosts
+            if ($Hosts) { Write-Output $Hosts }
+
+            if ($FetchAll -and @($Hosts).Count -eq $Limit) {
+                $Offset += $Limit
+                Get-OciHosts -fromTime $fromTime -toTime $toTime -performance:$performance -performancehistory:$performancehistory -sort $sort -limit $limit -offset $offset -ports:$ports -storageResources:$storageResources -fileSystems:$fileSystems -applications:$applications -virtualMachines:$virtualMachines -dataCenter:$dataCenter -annotations:$annotations -clusterHosts:$clusterHosts -datasources:$datasources -Server $Server
+            }
         }
     }
 }
@@ -11723,7 +11763,7 @@ function Global:Get-OciHosts {
     .SYNOPSIS
     Retrieve total count of hosts.
     .DESCRIPTION
-    
+    Retrieve total count of hosts.
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -11758,7 +11798,7 @@ function Global:Get-OciHostCount {
             $Result = ParseJsonString($Result.Trim())
         }
 
-        Write-Output $Result
+        Write-Output $Result.Value
     }
 }
 
@@ -11766,7 +11806,7 @@ function Global:Get-OciHostCount {
     .SYNOPSIS
     Retrieve one host
     .DESCRIPTION
-    
+    Retrieve one host
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
