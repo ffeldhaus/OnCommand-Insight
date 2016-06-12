@@ -2,11 +2,12 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][String]$Version,
+        [Parameter(Mandatory = $true)][String]$Name,
         [Parameter(Mandatory = $true)][String]$ReleaseNotes,
         [Parameter(Mandatory = $true)][String]$OutputDirectory,
-        [Parameter(Mandatory = $true)][switch]$FileName,
-        [Parameter(Mandatory = $false)][switch]$GitHubUsername="ffeldhaus",
-        [Parameter(Mandatory = $false)][switch]$GitHubRepository="OnCommand-Insight",
+        [Parameter(Mandatory = $true)][String]$FileName,
+        [Parameter(Mandatory = $false)][String]$GitHubUsername="ffeldhaus",
+        [Parameter(Mandatory = $false)][String]$GitHubRepository="OnCommand-Insight",
         [Parameter(Mandatory = $false)][switch]$Draft=$false,
         [Parameter(Mandatory = $false)][switch]$PreRelease=$false
 
@@ -20,7 +21,7 @@
     $ReleaseData = @{
        tag_name = [string]::Format("v{0}", $Version);
        target_commitish = $CommitId;
-       name = [string]::Format("v{0}", $Version);
+       name = $Name;
        body = $ReleaseNotes;
        draft = $Draft;
        prerelease = $PreRelease;
@@ -37,17 +38,26 @@
        Body = (ConvertTo-Json $releaseData -Compress)
      }
 
+    $ReleaseParams = @{
+       Uri = "https://api.github.com/repos/$GitHubUsername/$GitHubRepository/releases";
+       Method = 'POST';
+       Headers = @{
+         Authorization = 'token ' + $GitHubApiKey;
+       }
+       ContentType = 'application/json';
+       Body = (ConvertTo-Json $releaseData -Compress)
+     }
+
      $Result = Invoke-RestMethod @ReleaseParams 
      $UploadUri = $Result | Select -ExpandProperty upload_url
-     $UploadUri = $UploadUri -replace '\{\?name\}', "?name=$FileName"
+     $UploadUri = $UploadUri -replace '\{\?name,label\}',"?name=$FileName"
      $UploadFile = Join-Path -path $OutputDirectory -childpath $FileName
 
      $uploadParams = @{
        Uri = $UploadUri;
        Method = 'POST';
        Headers = @{
-         Authorization = 'Basic ' + [Convert]::ToBase64String(
-         [Text.Encoding]::ASCII.GetBytes($GitHubApiKey + ":x-oauth-basic"));
+         Authorization = 'token ' + $GitHubApiKey;
        }
        ContentType = 'application/zip';
        InFile = $UploadFile
