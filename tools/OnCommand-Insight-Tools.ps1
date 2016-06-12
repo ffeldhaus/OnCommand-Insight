@@ -1,4 +1,63 @@
-﻿<#
+﻿function New-GithubRelease {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][String]$Version,
+        [Parameter(Mandatory = $true)][String]$ReleaseNotes,
+        [Parameter(Mandatory = $true)][String]$OutputDirectory,
+        [Parameter(Mandatory = $true)][switch]$FileName,
+        [Parameter(Mandatory = $false)][switch]$GitHubUsername="ffeldhaus",
+        [Parameter(Mandatory = $false)][switch]$GitHubRepository="OnCommand-Insight",
+        [Parameter(Mandatory = $false)][switch]$Draft=$false,
+        [Parameter(Mandatory = $false)][switch]$PreRelease=$false
+
+    )
+
+    # The github API key (https://github.com/blog/1509-personal-api-tokens)
+    $GitHubApiKey = $Env:GitHubApiKey
+    # The Commit SHA for corresponding to this release
+    $CommitId = git rev-list -n 1 $Version
+
+    $ReleaseData = @{
+       tag_name = [string]::Format("v{0}", $Version);
+       target_commitish = $CommitId;
+       name = [string]::Format("v{0}", $Version);
+       body = $ReleaseNotes;
+       draft = $Draft;
+       prerelease = $PreRelease;
+     }
+
+     $ReleaseParams = @{
+       Uri = "https://api.github.com/repos/$GitHubUsername/$GitHubRepository/releases";
+       Method = 'POST';
+       Headers = @{
+         Authorization = 'Basic ' + [Convert]::ToBase64String(
+         [Text.Encoding]::ASCII.GetBytes($GitHubApiKey + ":x-oauth-basic"));
+       }
+       ContentType = 'application/json';
+       Body = (ConvertTo-Json $releaseData -Compress)
+     }
+
+     $Result = Invoke-RestMethod @ReleaseParams 
+     $UploadUri = $Result | Select -ExpandProperty upload_url
+     $UploadUri = $UploadUri -replace '\{\?name\}', "?name=$FileName"
+     $UploadFile = Join-Path -path $OutputDirectory -childpath $FileName
+
+     $uploadParams = @{
+       Uri = $UploadUri;
+       Method = 'POST';
+       Headers = @{
+         Authorization = 'Basic ' + [Convert]::ToBase64String(
+         [Text.Encoding]::ASCII.GetBytes($GitHubApiKey + ":x-oauth-basic"));
+       }
+       ContentType = 'application/zip';
+       InFile = $UploadFile
+     }
+
+    $Result = Invoke-RestMethod @UploadParams
+}
+
+
+<#
 .SYNOPSIS
 Generates a manifest for the module and bundles all of the module source files and manifest into a distributable ZIP file.
 .DESCRIPTION 
