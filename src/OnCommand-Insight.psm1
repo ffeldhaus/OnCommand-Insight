@@ -1209,9 +1209,36 @@ function ParseDatastores($Datastores) {
             $Datastore.performance = ParsePerformance($Datastore.performance)
         }
 
-        $i+=1
-        Write-Host $i
         Write-Output $Datastore
+    }
+}
+
+function ParseSwitches($Switches) {
+    $Switches = @($Switches)
+    foreach ($Switch in $Switches) {
+        if ($Switch.createTime) {
+            $Switch.createTime = $Switch.createTime | Get-Date
+        }
+        if ($Switch.performance) {
+            $Switch.performance = ParsePerformance($Switch.performance)
+        }
+        if ($Switch.fabric) {
+            $Switch.fabric = ParseFabrics($Switch.fabric)
+        }
+        if ($Switch.ports) {
+            $Switch.ports = ParsePorts($Switch.ports)
+        }
+        if ($Switch.annotations) {
+            $Switch.annotations = ParseAnnotations($Switch.annotations)
+        }
+        if ($Switch.datasources) {
+            $Switch.datasources = ParseDatasources($Switch.datasources)
+        }
+        if ($Switch.applications) {
+            $Switch.applications = ParseApplications($Switch.applications)
+        }
+
+        Write-Output $Switch
     }
 }
 
@@ -1531,6 +1558,56 @@ function ParseStorageResources($StorageResources) {
         }
 
         Write-Output $StorageResource
+    }
+}
+
+function ParseVolumes($Volumes) {
+    $Volumes = @($Volumes)
+    foreach ($Volume in $Volumes) {
+        if ($Volume.storage) {
+            $Volume.storage = ParseStorages($Volume.storage)
+        }
+        if ($Volume.computeResources) {
+            $Volume.computeResources = ParseComputeResources($Volume.computeResources)
+        }
+        if ($Volume.storagePool) {
+            $Volume.storagePool = ParseStoragePools($Volume.storagePool)
+        }
+        if ($Volume.virtualStoragePool) {
+            $Volume.virtualStoragePool = ParseStoragePools($Volume.virtualStoragePool)
+        }
+        if ($Volume.qtrees) {
+            $Volume.qtrees = ParseAnnotations($Volume.qtrees)
+        }
+        if ($Volume.internalVolume) {
+            $Volume.internalVolume = ParseInternalVolumes($Volume.internalVolume)
+        }
+        if ($Volume.dataStores) {
+            $Volume.dataStores = ParseDatastores($Volume.dataStores)
+        }
+        if ($Volume.annotations) {
+            $Volume.annotations = ParseAnnotations($Volume.annotations)
+        }
+        if ($Volume.performance) {
+            $Volume.performance = ParsePerformance($Volume.performance)
+        }
+        if ($Volume.ports) {
+            $Volume.ports = ParsePorts($Volume.ports)
+        }
+        if ($Volume.storageNodes) {
+            $Volume.storageNodes = ParseStorageNodes($Volume.storageNodes)
+        }
+        if ($Volume.replicaSources) {
+            $Volume.replicaSources = ParseVolumes($Volume.replicaSources)
+        }
+        if ($Volume.applications) {
+            $Volume.applications = ParseApplications($Volume.applications)
+        }
+        if ($Volume.datasources) {
+            $Volume.datasources = ParseDatasources($Volume.datasources)
+        }
+
+        Write-Output $Volume
     }
 }
 
@@ -10738,37 +10815,37 @@ function Global:Get-OciPortsByFabric {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=4,
-                    HelpMessage="Limit for number of ports in fabric to retrieve")][Long]$limit=0,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="sort will specify the field name on which sorting to be applied")][String]$sort="trafficRate.total",
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return related Device Object")][Switch]$device,
-        [parameter(Mandatory=$False,
-                    Position=8,
-                    HelpMessage="Return list of related Fabrics")][Switch]$fabrics,
-        [parameter(Mandatory=$False,
-                    Position=9,
                     HelpMessage="Return related Performance")][Switch]$performance,
         [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Limit for number of ports in fabric to retrieve")][Long]$limit=0,
+        [parameter(Mandatory=$False,
+                    Position=7,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
+        [parameter(Mandatory=$False,
+                    Position=8,
+                    HelpMessage="sort will specify the field name on which sorting to be applied")][String]$sort="trafficRate.total",
+        [parameter(Mandatory=$False,
+                    Position=9,
+                    HelpMessage="Return related Device Object")][Switch]$device,
+        [parameter(Mandatory=$False,
                     Position=10,
-                    HelpMessage="Return list of related Connected ports")][Switch]$connectedPorts,
+                    HelpMessage="Return list of related Fabrics")][Switch]$fabrics,
         [parameter(Mandatory=$False,
                     Position=11,
-                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
+                    HelpMessage="Return list of related Connected ports")][Switch]$connectedPorts,
         [parameter(Mandatory=$False,
                     Position=12,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
         [parameter(Mandatory=$False,
                     Position=13,
-                    HelpMessage="Return list of related Applications")][Switch]$applications,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
         [parameter(Mandatory=$False,
                     Position=14,
-                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+                    HelpMessage="Return list of related Applications")][Switch]$applications,
         [parameter(Mandatory=$False,
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -10848,7 +10925,7 @@ function Global:Get-OciPortsByFabric {
 
             if ($FetchAll -and @($Ports).Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciPortsByFabric -id $id -fromTime $fromTime -toTime $toTime -performance:$performance -sort $sort -limit $limit -offset $offset -device:$device -fabrics:$fabrics -connectedPorts:$connectedPorts -annotations:$annotations -datasources:$datasources -applications:$applications -performancehistory:$performancehistory -Server $Server
+                Get-OciPortsByFabric -id $id -fromTime $fromTime -toTime $toTime -performance:$performance -performancehistory:$performancehistory -sort $sort -limit $limit -offset $offset -device:$device -fabrics:$fabrics -connectedPorts:$connectedPorts -annotations:$annotations -datasources:$datasources -applications:$applications -Server $Server
             }
         }
     }
@@ -11073,7 +11150,8 @@ function Global:Get-OciSwitchesByFabric {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Switches = ParseSwitches($Result)
+            Write-Output $Switches
         }
     }
 }
@@ -11585,16 +11663,18 @@ function Global:Get-OciVmdksByFileSystem {
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
     Filter for time range, to time in milliseconds
-    .PARAMETER sort
-    Filter for sorting by metric/s
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
-    .PARAMETER limit
-    Number of hosts per page.
-    .PARAMETER offset
-    Offset to be used with limit
     .PARAMETER performance
     Return related Performance
+    .PARAMETER performancehistory
+    Return related Performance History
+    .PARAMETER limit
+    Number of hosts per page (range: 0-50, default: 0)
+    .PARAMETER offset
+    Offset to be used with limit
+    .PARAMETER sort
+    Performance metric for sorting (Default diskIops.total)
     .PARAMETER ports
     Return list of related Ports
     .PARAMETER storageResources
@@ -11613,8 +11693,6 @@ function Global:Get-OciVmdksByFileSystem {
     Return list of related Cluster hosts
     .PARAMETER datasources
     Return list of related Datasources
-    .PARAMETER performancehistory
-    Return related Performance History
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -11639,13 +11717,13 @@ function Global:Get-OciHosts {
                     HelpMessage="Return related Performance History")][Switch]$performancehistory,
         [parameter(Mandatory=$False,
                     Position=5,
-                    HelpMessage="Number of hosts per page.")][Long]$limit=0,
+                    HelpMessage="Number of hosts per page  (range: 0-50, default: 0)")][Long]$limit=0,
         [parameter(Mandatory=$False,
                     Position=6,
                     HelpMessage="Offset to be used with limit")][Long]$offset=0,
         [parameter(Mandatory=$False,
                     Position=7,
-                    HelpMessage="Filter for sorting by metric/s")][String]$sort="diskIops.total",
+                    HelpMessage="Performance metric for sorting (Default diskIops.total)")][String]$sort="diskIops.total",
         [parameter(Mandatory=$False,
                     Position=8,
                     HelpMessage="Return list of related Ports")][Switch]$ports,
@@ -22434,7 +22512,7 @@ function Global:Get-OciVolumesByStoragePool {
     .SYNOPSIS
     Retrieve all storages
     .DESCRIPTION
-    
+    Retrieve all storages
     .PARAMETER fromTime
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
@@ -25124,7 +25202,7 @@ function Global:Get-OciVolumesByStorage {
     .SYNOPSIS
     Retrieve all Switches
     .DESCRIPTION
-    
+    Retrieve all Switches
     .PARAMETER fromTime
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
@@ -25165,31 +25243,31 @@ function Global:Get-OciSwitches {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Number of switches per page.")][Long]$limit,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Offset to be used with limit")][Long]$offset,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Return related Fabric")][Switch]$fabric,
-        [parameter(Mandatory=$False,
-                    Position=6,
                     HelpMessage="Return related Performance")][Switch]$performance,
         [parameter(Mandatory=$False,
+                    Position=4,
+                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+        [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Number of switches per page (range: 0-50, default: 0)")][Long]$limit=0,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
+        [parameter(Mandatory=$False,
                     Position=7,
-                    HelpMessage="Return list of related Ports")][Switch]$ports,
+                    HelpMessage="Return related Fabric")][Switch]$fabric,
         [parameter(Mandatory=$False,
                     Position=8,
-                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
+                    HelpMessage="Return list of related Ports")][Switch]$ports,
         [parameter(Mandatory=$False,
                     Position=9,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
         [parameter(Mandatory=$False,
                     Position=10,
-                    HelpMessage="Return list of related Applications")][Switch]$applications,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
         [parameter(Mandatory=$False,
                     Position=11,
-                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+                    HelpMessage="Return list of related Applications")][Switch]$applications,
         [parameter(Mandatory=$False,
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -25205,6 +25283,12 @@ function Global:Get-OciSwitches {
     Process {
         $id = @($id)
         foreach ($id in $id) {
+            # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
+            if ($Limit -eq 0) {
+                $FetchAll = $true
+                $Limit = 50
+            }
+
             $Uri = $Server.BaseUri + "/rest/v1/assets/switches"
 
             $expand=$null
@@ -25220,20 +25304,30 @@ function Global:Get-OciSwitches {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($sort) {
+                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Separator = '&'
+            }
+            if ($limit) {
+                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Separator = '&'
+            }
+            if ($limit -and $offset) {
+                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
  
             try {
@@ -25248,7 +25342,13 @@ function Global:Get-OciSwitches {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Switches = ParseSwitches($Result)
+            if ($Switches) { Write-Output $Switches }
+
+            if ($FetchAll -and @($Switches).Count -eq $Limit) {
+                $Offset += $Limit
+                Get-OciSwitches -fromTime $fromTime -toTime $toTime -performance:$performance -performancehistory:$performancehistory -limit $limit -offset $offset -fabric:$fabric -ports:$ports -annotations:$annotations -datasources:$datasources -applications:$appliactions -Server $Server
+            }
         }
     }
 }
@@ -25291,7 +25391,7 @@ function Global:Get-OciSwitchCount {
             $Result = ParseJsonString($Result.Trim())
         }
 
-        Write-Output $Result
+        Write-Output $Result.Value
     }
 }
 
@@ -25299,7 +25399,7 @@ function Global:Get-OciSwitchCount {
     .SYNOPSIS
     Retrieve one switch
     .DESCRIPTION
-    
+    Retrieve one switch
     .PARAMETER id
     Id of switch to retrieve
     .PARAMETER fromTime
@@ -25420,7 +25520,8 @@ function Global:Get-OciSwitch {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Switch = ParseSwitches($Result)
+            Write-Output $Switch
         }
     }
 }
@@ -25523,13 +25624,13 @@ function Global:Remove-OciAnnotationsBySwitch {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+    Retrieve annotations for object
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=definition)
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
 #>
 function Global:Get-OciAnnotationsBySwitch {
     [CmdletBinding()]
@@ -25817,7 +25918,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+    Retrieve the applications of object
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -25831,7 +25932,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER storageResources
     Return list of related Storage resources
 #>
-function Global:Get-OciByTypeAndId {
+function Global:Get-OciApplicationsBySwitch {
     [CmdletBinding()]
  
     PARAM (
@@ -26117,9 +26218,9 @@ function Global:Update-OciByTypeAndId {
 
 <#
     .SYNOPSIS
-    Retrieve datasources of a switch.
+    Retrieve datasources of a switch
     .DESCRIPTION
-    
+    Retrieve datasources of a switch
     .PARAMETER id
     Id of switch to retrieve datasources for.
     .PARAMETER fromTime
@@ -26245,7 +26346,8 @@ function Global:Get-OciDatasourcesBySwitch {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
         }
     }
 }
@@ -26599,16 +26701,18 @@ function Global:Get-OciPortsBySwitch {
     Filter for time range, from time in milliseconds
     .PARAMETER toTime
     Filter for time range, to time in milliseconds
-    .PARAMETER sort
-    Filter for sorting by metric/s
-    .PARAMETER limit
-    Number of virtual machines per page (range: 0-50, default: 0)
-    .PARAMETER offset
-    Offset to be used with limit
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
     Return related Performance
+    .PARAMETER performancehistory
+    Return related Performance History
+    .PARAMETER limit
+    Number of virtual machines per page (range: 0-50, default: 0)
+    .PARAMETER offset
+    Offset to be used with limit
+    .PARAMETER sort
+    Performance metric for sorting (Default diskIops.total)
     .PARAMETER ports
     Return list of related Ports
     .PARAMETER storageResources
@@ -26627,8 +26731,6 @@ function Global:Get-OciPortsBySwitch {
     Return list of related Annotations
     .PARAMETER datasources
     Return list of related Datasources
-    .PARAMETER performancehistory
-    Return related Performance History
 #>
 function Global:Get-OciVirtualMachines {
     [CmdletBinding()]
@@ -26642,49 +26744,49 @@ function Global:Get-OciVirtualMachines {
                     HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for sorting by metric/s")][String]$sort,
-        [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Number of virtual machines per page.")][Long]$limit,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Offset to be used with limit")][Long]$offset,
-        [parameter(Mandatory=$False,
-                    Position=5,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
-                    Position=6,
+                    Position=3,
                     HelpMessage="Return related Performance")][Switch]$performance,
         [parameter(Mandatory=$False,
+                    Position=4,
+                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+        [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Number of virtual machines per page (range: 0-50, default: 0)")][Long]$limit=0,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Offset to be used with limit")][Long]$offset=0,
+        [parameter(Mandatory=$False,
                     Position=7,
-                    HelpMessage="Return list of related Ports")][Switch]$ports,
+                    HelpMessage="Performance metric for sorting (Default diskIops.total)")][String]$sort="diskIops.total",
         [parameter(Mandatory=$False,
                     Position=8,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+                    HelpMessage="Return list of related Ports")][Switch]$ports,
         [parameter(Mandatory=$False,
                     Position=9,
-                    HelpMessage="Return list of related File systems")][Switch]$fileSystems,
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
         [parameter(Mandatory=$False,
                     Position=10,
-                    HelpMessage="Return related Datastore")][Switch]$dataStore,
+                    HelpMessage="Return list of related File systems")][Switch]$fileSystems,
         [parameter(Mandatory=$False,
                     Position=11,
-                    HelpMessage="Return related Host")][Switch]$host,
+                    HelpMessage="Return related Datastore")][Switch]$dataStore,
         [parameter(Mandatory=$False,
                     Position=12,
-                    HelpMessage="Return list of related Vmdks")][Switch]$vmdks,
+                    HelpMessage="Return related Host")][Switch]$host,
         [parameter(Mandatory=$False,
                     Position=13,
-                    HelpMessage="Return list of related Applications")][Switch]$applications,
+                    HelpMessage="Return list of related Vmdks")][Switch]$vmdks,
         [parameter(Mandatory=$False,
                     Position=14,
-                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
+                    HelpMessage="Return list of related Applications")][Switch]$applications,
         [parameter(Mandatory=$False,
                     Position=15,
-                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
         [parameter(Mandatory=$False,
                     Position=16,
-                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
         [parameter(Mandatory=$False,
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -26700,6 +26802,12 @@ function Global:Get-OciVirtualMachines {
     Process {
         $id = @($id)
         foreach ($id in $id) {
+            # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
+            if ($Limit -eq 0) {
+                $FetchAll = $true
+                $Limit = 50
+            }
+
             $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines"
 
             $expand=$null
@@ -26715,20 +26823,30 @@ function Global:Get-OciVirtualMachines {
                 }
             }
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($sort) {
+                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Separator = '&'
+            }
+            if ($limit) {
+                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Separator = '&'
+            }
+            if ($limit -and $offset) {
+                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
  
             try {
@@ -26745,6 +26863,11 @@ function Global:Get-OciVirtualMachines {
 
             $VirtualMachines = ParseVirtualMachines($Result)
             Write-Output $VirtualMachines
+
+            if ($FetchAll -and @($VirtualMachines).Count -eq $Limit) {
+                $Offset += $Limit
+                Get-OciVirtualMachines -fromTime $fromTime -toTime $toTime -performance:$performance -performancehistory:$performancehistory -sort $sort -limit $limit -offset $offset -ports:$ports -storageResources:$storageResources -fileSystems:$fileSystems -dataStore:$dataStore -host:$host -vmdks:$vmdks -applications:$applications -annotations:$annotations -datasources:$datasources -Server $Server
+            }
         }
     }
 }
@@ -26753,8 +26876,7 @@ function Global:Get-OciVirtualMachines {
     .SYNOPSIS
     Retrieve total count of Virtual Machines
     .DESCRIPTION
-    
-
+    Retrieve total count of Virtual Machines
 #>
 function Global:Get-OciVirtualMachineCount {
     [CmdletBinding()]
@@ -26787,7 +26909,7 @@ function Global:Get-OciVirtualMachineCount {
             $Result = ParseJsonString($Result.Trim())
         }
            
-        Write-Output $Result
+        Write-Output $Result.Value
     }
 }
 
@@ -26795,7 +26917,7 @@ function Global:Get-OciVirtualMachineCount {
     .SYNOPSIS
     Retrieve one Virtual Machine
     .DESCRIPTION
-    
+    Retrieve one Virtual Machine
     .PARAMETER id
     Id of virtual machine to retrieve
     .PARAMETER fromTime
@@ -27046,13 +27168,13 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+    Retrieve annotations for object
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=definition)
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER definition
+    Return related Definition
 #>
 function Global:Get-OciAnnotationsByVirtualMachine {
     [CmdletBinding()]
@@ -27340,7 +27462,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+    Retrieve the applications of object
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -27648,7 +27770,7 @@ function Global:Update-OciByTypeAndId {
     .SYNOPSIS
     Delete application from object
     .DESCRIPTION
-    
+    Delete application from object
     .PARAMETER id
     Id of object to delete application from
     .PARAMETER appId
@@ -27743,7 +27865,7 @@ function Global:Remove-OciByTypeAndId {
     .SYNOPSIS
     Retrieve one data store for virtual machine
     .DESCRIPTION
-    
+    Retrieve one data store for virtual machine
     .PARAMETER id
     Id of virtual machine to retrieve data store for
     .PARAMETER fromTime
@@ -27864,7 +27986,8 @@ function Global:Get-OciDataStoreByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Datastore = ParseDatastores($Result)
+            Write-Output $Datastore
         }
     }
 }
@@ -27873,7 +27996,7 @@ function Global:Get-OciDataStoreByVirtualMachine {
     .SYNOPSIS
     Retrieve datasources of a virtual machine.
     .DESCRIPTION
-    
+    Retrieve datasources of a virtual machine.
     .PARAMETER id
     Id of virtual machine to retrieve datasources for.
     .PARAMETER fromTime
@@ -27999,7 +28122,8 @@ function Global:Get-OciDatasourcesByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
         }
     }
 }
@@ -28008,7 +28132,7 @@ function Global:Get-OciDatasourcesByVirtualMachine {
     .SYNOPSIS
     Retrieve all file systems by virtual machine
     .DESCRIPTION
-    
+    Retrieve all file systems by virtual machine
     .PARAMETER id
     Id of virtual machine to retrieve file systems for
     .PARAMETER fromTime
@@ -28118,7 +28242,7 @@ function Global:Get-OciFileSystemsByVirtualMachine {
     .SYNOPSIS
     Retrieve one virtual machine host
     .DESCRIPTION
-    
+    Retrieve one virtual machine host
     .PARAMETER id
     Id of virtual machine to retrieve host for
     .PARAMETER fromTime
@@ -28259,7 +28383,8 @@ function Global:Get-OciHostByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Host = ParseHosts($Result)
+            Write-Output $Host
         }
     }
 }
@@ -28268,7 +28393,7 @@ function Global:Get-OciHostByVirtualMachine {
     .SYNOPSIS
     Retrieve one Virtual Machine Performance
     .DESCRIPTION
-    
+    Retrieve one Virtual Machine Performance
     .PARAMETER id
     Id of virtual machine to retrieve
     .PARAMETER fromTime
@@ -28369,7 +28494,7 @@ function Global:Get-OciVirtualMachinePerformance {
     .SYNOPSIS
     Retrieve all ports by virtual machine
     .DESCRIPTION
-    
+    Retrieve all ports by virtual machine
     .PARAMETER id
     Id of virtual machine to retrieve ports for
     .PARAMETER fromTime
@@ -28495,7 +28620,8 @@ function Global:Get-OciPortsByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Ports = ParsePorts($Result)
+            Write-Output $Ports
         }
     }
 }
@@ -28504,7 +28630,7 @@ function Global:Get-OciPortsByVirtualMachine {
     .SYNOPSIS
     Retrieve all storage resources by virtual machine
     .DESCRIPTION
-    
+    Retrieve all storage resources by virtual machine
     .PARAMETER id
     Id of virtual machine to retrieve storage resources for
     .PARAMETER fromTime
@@ -28625,7 +28751,8 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $StorageResources = ParseStorageResources($Result)
+            Write-Output $StorageResources
         }
     }
 }
@@ -28634,7 +28761,7 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
     .SYNOPSIS
     Retrieve Vmdks for virtual machine
     .DESCRIPTION
-    
+    Retrieve Vmdks for virtual machine
     .PARAMETER id
     Id of virtual machine to retrieve disks for
     .PARAMETER fromTime
@@ -28755,7 +28882,8 @@ function Global:Get-OciVmdksByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Vmdks = ParseVmdks($Result)
+            Write-Output $Vmdks
         }
     }
 }
@@ -28764,7 +28892,7 @@ function Global:Get-OciVmdksByVirtualMachine {
     .SYNOPSIS
     Retrieve one virtual machine Vmdk
     .DESCRIPTION
-    
+    Retrieve one virtual machine Vmdk
     .PARAMETER id
     Id of virtual machine disk to retrieve
     .PARAMETER fromTime
@@ -28885,7 +29013,8 @@ function Global:Get-OciVmdk {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Vmdk = ParseVmdks($Result)
+            Write-Output $Vmdk
         }
     }
 }
@@ -28994,7 +29123,7 @@ function Global:Remove-OciAnnotationsByVmdk {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+    Retrieve annotations for object
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -29184,7 +29313,7 @@ function Global:Update-OciAnnotationsByVmdk {
     .SYNOPSIS
     Retrieve datasources of a vmdk.
     .DESCRIPTION
-    
+    Retrieve datasources of a vmdk.
     .PARAMETER id
     Id of vmdk to retrieve datasources for.
     .PARAMETER fromTime
@@ -29310,7 +29439,8 @@ function Global:Get-OciDatasourcesByVmdk {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
         }
     }
 }
@@ -29319,7 +29449,7 @@ function Global:Get-OciDatasourcesByVmdk {
     .SYNOPSIS
     Retrieve one Vmdk performance
     .DESCRIPTION
-    
+    Retrieve one Vmdk performance
     .PARAMETER id
     Id of virtual machine disk to retrieve
     .PARAMETER fromTime
@@ -29410,7 +29540,8 @@ function Global:Get-OciVmdkPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
@@ -29419,7 +29550,7 @@ function Global:Get-OciVmdkPerformance {
     .SYNOPSIS
     Retrieve storage resources for virtual machine disk
     .DESCRIPTION
-    
+    Retrieve storage resources for virtual machine disk
     .PARAMETER id
     Id of virtual machine disk to retrieve storage resources for
     .PARAMETER fromTime
@@ -29540,7 +29671,8 @@ function Global:Get-OciStorageResourcesByVmdk {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $StorageResources = ParseStorageResources($Result)
+            Write-Output $StorageResources
         }
     }
 }
@@ -29549,7 +29681,7 @@ function Global:Get-OciStorageResourcesByVmdk {
     .SYNOPSIS
     Retrieve virtual machine for virtual machine disk
     .DESCRIPTION
-    
+    Retrieve virtual machine for virtual machine disk
     .PARAMETER id
     Id of virtual machine disk to retrieve virtual machine for
     .PARAMETER fromTime
@@ -29690,7 +29822,8 @@ function Global:Get-OciVirtualMachineByVmdk {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $VirtualMachine = ParseVirtualMachines($Result)
+            Write-Output $VirtualMachine
         }
     }
 }
@@ -29699,7 +29832,7 @@ function Global:Get-OciVirtualMachineByVmdk {
     .SYNOPSIS
     Retrieve one volume
     .DESCRIPTION
-    
+    Retrieve one volume
     .PARAMETER id
     Id of volume to retrieve
     .PARAMETER fromTime
@@ -29870,7 +30003,8 @@ function Global:Get-OciVolume {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Volume = ParseVolumes($Result)
+            Write-Output $Volume
         }
     }
 }
@@ -29977,9 +30111,9 @@ function Global:Remove-OciAnnotationsByVolume {
 
 <#
     .SYNOPSIS
-    Retrieve annotations for object
+    Retrieve annotations by volume
     .DESCRIPTION
-    
+    Retrieve annotations by volume
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -30278,7 +30412,7 @@ function Global:Remove-OciApplicationsFromVolume {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+    Retrieve the applications of object
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -30596,7 +30730,7 @@ function Global:Update-OciApplicationsByVolume {
     .SYNOPSIS
     Delete application from object
     .DESCRIPTION
-    
+    Delete application from object
     .PARAMETER id
     Id of object to delete application from
     .PARAMETER appId
@@ -30691,7 +30825,7 @@ function Global:Remove-OciByTypeAndId {
     .SYNOPSIS
     Retrieve the auto tier policy name of a volume.
     .DESCRIPTION
-    
+    Retrieve the auto tier policy name of a volume.
     .PARAMETER id
     Id of the volume to retrieve the auto tier policy name.
 #>
@@ -30771,7 +30905,7 @@ function Global:Get-OciAutoTierPolicyByVolume {
     .SYNOPSIS
     Retrieve all compute resources for a volume
     .DESCRIPTION
-    
+    Retrieve all compute resources for a volume
     .PARAMETER id
     Id of volume to retrieve compute resources for
     .PARAMETER fromTime
@@ -30891,7 +31025,7 @@ function Global:Get-OciComputeResourcesByVolume {
     .SYNOPSIS
     Retrieve all data stores for a given target volume.
     .DESCRIPTION
-    
+    Retrieve all data stores for a given target volume.
     .PARAMETER id
     Id of target volume to retrieve the data stores for.
     .PARAMETER fromTime
@@ -31021,7 +31155,7 @@ function Global:Get-OciDatastoresByVolume {
     .SYNOPSIS
     Retrieve datasources of a volume.
     .DESCRIPTION
-    
+    Retrieve datasources of a volume.
     .PARAMETER id
     Id of volume to retrieve datasources for.
     .PARAMETER fromTime
@@ -31156,7 +31290,7 @@ function Global:Get-OciDatasourcesByVolume {
     .SYNOPSIS
     Retrieve internal volume for a given volume.
     .DESCRIPTION
-    
+    Retrieve internal volume for a given volume.
     .PARAMETER id
     Id of volume to retrieve the internal volume.
     .PARAMETER fromTime
