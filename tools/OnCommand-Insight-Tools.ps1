@@ -13,18 +13,18 @@
 
     )
 
-    # The github API key (https://github.com/blog/1509-personal-api-tokens)
-    $GitHubApiKey = $Env:GitHubApiKey
+    # The github API key must be available in $GitHubApiKey (https://github.com/blog/1509-personal-api-tokens)
+
     # The Commit SHA for corresponding to this release
     $CommitId = git rev-list -n 1 $Version
 
     $ReleaseData = @{
-       tag_name = [string]::Format("v{0}", $Version);
+       tag_name = $Version;
        target_commitish = $CommitId;
        name = $Name;
        body = $ReleaseNotes;
-       draft = $Draft;
-       prerelease = $PreRelease;
+       draft = $Draft.IsPresent;
+       prerelease = $PreRelease.IsPresent;
      }
 
      $ReleaseParams = @{
@@ -80,11 +80,12 @@ function New-OciRelease {
     param(
         [Parameter(Mandatory = $false)][String]$Author='Florian Feldhaus',
         [Parameter(Mandatory = $false)][String]$Company='NetApp Deutschland GmbH',
+        [Parameter(Mandatory = $true)][String]$Name,
+        [Parameter(Mandatory = $true)][String]$ReleaseNotes,
         [Parameter(Mandatory = $false)][switch]$Major,
         [Parameter(Mandatory = $false)][switch]$Minor,
         [Parameter(Mandatory = $false)][switch]$Build,
         [Parameter(Mandatory = $false)][switch]$Release
-
     )
 
     $ErrorActionPreference = "Stop"
@@ -193,11 +194,13 @@ function New-OciRelease {
 
     if ($Release) { 
         Write-Host "Publishing Module to PowerShell Gallery"
-        Publish-Module -Name OnCommand-Insight -NuGetApiKey $NuGetApiKey
+        Publish-Module -Name "OnCommand-Insight" -NuGetApiKey $NuGetApiKey
 
+        Write-Host "Creating git tag"
         & git pull
         & git tag $ModuleVersion
         if ($Major) { 
+            Write-Host "Creating new git branch"
             & git branch $ModuleVersion
             Write-Host "New Git Branch $ModuleVersion created"
         }
@@ -208,7 +211,9 @@ function New-OciRelease {
         }
         catch {
         }
-        Write-Host "New Git tag $ModuleVersion created"
+        
+        Write-Host "Creating GitHub release"
+        New-GithubRelease -Version $Version -Name $Name -ReleaseNotes $ReleaseNotes -FileName "OnCommand-Insight.zip" -OutputDirectory $out
     }
 }
 
