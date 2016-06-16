@@ -648,11 +648,8 @@ function Add-WindowsCredential
   Specifies the URI for which the credentials are associated
   If not provided, the username is used as the target
   
-.PARAMETER UserName
-  Specifies the name of credential to be read
-  
-.PARAMETER Password
-  Specifies the password of credential to be read
+.PARAMETER Credential
+  Specifies the credential to be added
   
 .PARAMETER Comment
   Allows the caller to specify the comment associated with 
@@ -670,8 +667,7 @@ function Add-WindowsCredential
 	Param
 	(
 		[Parameter(Mandatory=$false)][ValidateLength(0,32676)][String] $Target,
-		[Parameter(Mandatory=$true)][ValidateLength(1,512)][String] $UserName,
-		[Parameter(Mandatory=$true)][ValidateLength(1,512)][String] $Password,
+		[Parameter(Mandatory=$true)][PSCredential] $Credential,
 		[Parameter(Mandatory=$false)][ValidateLength(0,256)][String] $Comment = [String]::Empty,
 		[Parameter(Mandatory=$false)][ValidateSet("GENERIC",
 												  "DOMAIN_PASSWORD",
@@ -685,6 +681,9 @@ function Add-WindowsCredential
 												  "LOCAL_MACHINE",
 												  "ENTERPRISE")][String] $CredPersist = "ENTERPRISE"
 	)
+
+    $UserName = $Credential.UserName
+    $Password = $Credential.Password | ConvertFrom-SecureString
 
 	if([String]::IsNullOrEmpty($Target))
 	{
@@ -792,7 +791,7 @@ function Add-OciCredential {
 
     Process {
         foreach ($Target in $Name) {
-            $null = Add-WindowsCredential -Target $Target -UserName $Credential.UserName -Password ($Credential.Password | ConvertFrom-SecureString) -Comment 'OnCommand-Insight'
+            $null = Add-WindowsCredential -Target $Target -Credential $Credential -Comment 'OnCommand-Insight'
         }
     }
 }
