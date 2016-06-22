@@ -5657,82 +5657,61 @@ function Global:Get-OciAnnotations {
 # TODO: Implement / Test creation of annotation definitions
 <#
     .SYNOPSIS
-    Create annotation definition
+    Add annotation
     .DESCRIPTION
-    Request body should include required name, type, optional description and enumValues (if enum type). Enums should contain name and label. Example: <br/>
-<pre>
-{
-    "name": "StorageLocation",
-    "type": "FIXED_ENUM",
-    "description": "Storage Location",
-    "enumValues": [
-        {
-          "name": "PT_LISBON",
-          "label": "Lisbon (Portugal)"
-        },
-        {
-          "name": "US_WALTHAM",
-          "label": "Waltham (USA)"
-        }
-    ]
-}
-</pre>
+    Add annotation
+    .PARAMETER name
+    Annotation name
+    .PARAMETER type
+    Annotation type. Must be either DATE, TEXT, FIXED_ENUM, FLEXIBLE_ENUM, BOOLEAN or NUMBER
+    .PARAMETER description
+    Annotation description
+    .PARAMETER enumValues
+    List of name, label pairs for enum types (e.g. @(@{name='name',label='label'}) )
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Create-OciAnnotationDefinition {
+function Global:Add-OciAnnotation {
     [CmdletBinding()]
  
     PARAM (
-
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   HelpMessage="Annotation name")][String]$Name,
+        [parameter(Mandatory=$True,
+                   Position=2,
+                   HelpMessage="Annotation type. Must be either DATE, TEXT, FIXED_ENUM, FLEXIBLE_ENUM, BOOLEAN or NUMBER")][ValidateSet("DATE","TEXT","FIXED_ENUM","FLEXIBLE_ENUM","BOOLEAN","NUMBER")][String]$Type,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="Annotation description.")][String]$Description,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   HelpMessage="List of name, label pairs for enum types (e.g. @(@{name='name',label='label'}) )")][PSCustomObject[]]$enumValues,
+        [parameter(Mandatory=$False,
+                   Position=5,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations"
+ 
+            if ($type -match "ENUM" -and -not $enumValues) {
+                throw "$type specified, but no enumValues provided"
+            }
 
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
             try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
+                $Body = ConvertTo-Json @{name=$name;type=$type;description=$description;enumValues=$enumValues} -Compress -Depth 4
+                Write-Verbose "Body: $Body"
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5759,7 +5738,7 @@ function Global:Create-OciAnnotationDefinition {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Remove-OciDefinition {
+function Global:Remove-OciAnnotation {
     [CmdletBinding()]
  
     PARAM (
@@ -5767,55 +5746,27 @@ function Global:Remove-OciDefinition {
                     Position=0,
                     HelpMessage="Id or name of annotation definition to delete",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][String[]]$id
+                    ValueFromPipelineByPropertyName=$True)][String[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
  
             try {
-                if ('DELETE' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
-                }
+                Write-Verbose "Body: "
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5918,7 +5869,7 @@ function Global:Get-OciAnnotation {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Update-OciDefinition {
+function Global:Update-OciAnnotation {
     [CmdletBinding()]
  
     PARAM (
@@ -5926,46 +5877,23 @@ function Global:Update-OciDefinition {
                     Position=0,
                     HelpMessage="Id or name of annotation definition to update",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][String[]]$id
+                    ValueFromPipelineByPropertyName=$True)][String[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
  
             try {
                 if ('PATCH' -match 'PUT|POST') {
@@ -5990,44 +5918,45 @@ function Global:Update-OciDefinition {
     }
 }
 
-# TODO: Implement / Test removing of annotation definitions
 <#
     .SYNOPSIS
-    Remove object annotations in bulk by annotation definition
+    Remove object annotation values in bulk by annotation
     .DESCRIPTION
-    'targets' in response contains target object IDs. Request body should be like JSON below: <br/>
-
-<pre>
-[
-  {
-    "objectType": "StoragePool",
-    "targets": [
-       "2052",
-       "8739",
-       "5926"
-    ]
-  }
-]
-</pre>
-            
+    Remove object annotation values in bulk by annotation    
     .PARAMETER id
-    Id or name of annotation definition to update
+    Id or name of annotation to remove values from
+    .PARAMETER objectType
+    Object type of objects where annotations should be deleted (e.g. StoragePool or InternalVolume)
+    .PARAMETER targets
+    IDs of object where annotation should be deleted
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Remove-OciDefinitionValues {
+function Global:Remove-OciAnnotationValues {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id or name of annotation definition to update",
+                    HelpMessage="Id or name of annotation to remove values from",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][String[]]$id
+                    ValueFromPipelineByPropertyName=$True)][String[]]$id,
+        [parameter(Mandatory=$False,
+                    Position=1,
+                    HelpMessage="Object type of objects where annotations should be deleted (e.g. StoragePool or InternalVolume)")][String]$objectType,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="IDs of object where annotation should be deleted")][PSObject[]]$targets,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
     }
    
     Process {
@@ -6035,42 +5964,23 @@ function Global:Remove-OciDefinitionValues {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values"
 
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
+            if ($targets -and $objectType) {
+                $items = @(@{objectType=$objectType;values=@{targets=$targets}})
             }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+            else {
+                Write-Verbose "Deleting all values from annotation with ID $id"
+                $items = Get-OciAnnotationValues -id $id -server $server
             }
- 
+
             try {
-                if ('DELETE' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                foreach ($item in $items) {
+                    $objectType = $item.objectType
+                    $targets = $item.values.targets | % { $_ -split '/' | select -last 1 }
+                    if ($targets) {
+                        $Body = ConvertTo-Json @(@{objectType=$objectType;targets=$targets}) -Compress -Depth 4
+                        Write-Verbose "Body: $Body"
+                        $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                    }
                 }
             }
             catch {
@@ -6140,51 +6050,11 @@ function Global:Get-OciAnnotationValues {
     }
 }
 
-# TODO: Implement / Test updating of annotation definition
 <#
     .SYNOPSIS
-    Update object annotations in bulk by annotation definition
+    Update object annotations in bulk by annotation
     .DESCRIPTION
-    'values.targets' in response contains target object IDs. Request body should be like JSON below: <br/>
-
-<pre>
-[
-  {
-    "objectType": "StoragePool",
-    "values": [
-      {
-        "rawValue": "Bronze",
-        "targets": [
-          "11299",
-          "11305"
-        ]
-      },
-      {
-        "rawValue": "Gold",
-        "targets": [
-          "16398",
-          "8721"
-        ]
-      },
-      {
-        "rawValue": "Silver",
-        "targets": [
-          "26644"
-        ]
-      },
-      {
-        "rawValue": "Gold-Fast",
-        "targets": [
-          "2052",
-          "8739",
-          "5926"
-        ]
-      }
-    ]
-  }
-]
-</pre>
-            
+    Update object annotations in bulk by annotation     
     .PARAMETER id
     Id or name of annotation definition to update
     .PARAMETER objectType
@@ -6215,7 +6085,7 @@ function Global:Update-OciAnnotationValues {
                     Position=3,
                     HelpMessage="IDs of object where annotation should be added")][String[]]$targets,
         [parameter(Mandatory=$False,
-                   Position=1,
+                   Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
