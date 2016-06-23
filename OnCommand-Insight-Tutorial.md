@@ -156,7 +156,30 @@ To retrieve all related objects for e.g. internal volumes use
 Get-OciStorages | Get-OciInternalVolumesByStorage | Select -first 1 | Get-OciInternalVolume -storage -performance -dataStores -computeResources -storagePool -volumes -storageNodes -applications -annotations -replicaSources -performancehistory -datasources -qtrees
 ```
 
-### Update annotation
+### Annotations
+
+#### Add new annotation
+
+Applications can be of type DATE, TEXT, FIXED_ENUM, FLEXIBLE_ENUM, BOOLEAN or NUMBER. TEXT is the most flexible, but FLEXIBLE_ENUM may also be a good choice if the number of different values is low. FLEXIBLE_ENUM will automatically extend the list of values if a new value is added. FIXED_ENUM will only allow the predefined values and will give an error if an undefined value is added.
+
+Add an application of type FLEXIBLE_ENUM
+```powershell
+Add-OciAnnotation -Name "Enum test" -Type FLEXIBLE_ENUM -Description "Enum test description" -enumValues @{name="Item name";label="Item label"}
+```
+
+#### Get annotations
+
+Get all annotations
+```powershell
+Get-OciAnnotations
+```
+
+Get the previously added annotation
+```powershell
+$Annotation = Get-OciAnnotations | ? { $_.Name -eq "Enum test" }
+```
+
+#### Add an annotation value to an OCI object
 
 Retrieve a volume
 ```powershell
@@ -168,9 +191,31 @@ Show all annotations of the volume
 $Volume | Get-OciAnnotationsByVolume
 ```
 
-Get the _note_ annotation and update the annotation value associated with the volume
+Add the previously defined annotation to the volume with a new value
 ```powershell
-Get-OciAnnotations | ? { $_.name -eq "note" } | Update-OciAnnotationValues -objectType "Volume" -rawValue "Test" -targets $Volume.id
+$Annotation | Update-OciAnnotationValues -objectType "Volume" -rawValue "New item" -targets $Volume.id
+```
+
+Check the annotation values of the annotation
+```powershell
+$Annotation | Get-OciAnnotationValues
+```
+
+Get the annotation and check that it contains the new value "New item"
+```powershell
+$Annotation | Get-OciAnnotation | Select -expandProperty enumValues
+```
+
+#### Delete all values of an annotation
+
+OCI does not support deleting all annotation values out of the box, but the PowerShell Cmdlets do by first getting all values of an annotation and then removing them. Just run
+```powershell
+$Annotation | Remove-OciAnnotationValues
+```
+
+Check that the values have been deleted
+```powershell
+$Annotation | Get-OciAnnotationValues
 ```
 
 ### Retrieve OCI Server health status
