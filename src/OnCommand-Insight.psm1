@@ -1051,17 +1051,19 @@ function ConvertFrom-UnixTimestamp {
                     HelpMessage="Timestamp to be converted.")][String]$Timestamp,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Optional Timezone to be used as basis for Timestamp. Default is system Timezone.")][System.Timezone]$Timezone=[timezone]::CurrentTimeZone
+                    HelpMessage="Optional Timezone to be used as basis for Timestamp. Default is system Timezone.")][System.TimeZoneInfo]$Timezone=[System.TimeZoneInfo]::Local
     )
 
     PROCESS {
         $Timestamp = @($Timestamp)
         foreach ($Timestamp in $Timestamp) {
-            $Date = $Timezone.ToLocalTime(([datetime]'1/1/1970').AddMilliseconds($Timestamp))
+            $Date = [System.TimeZoneInfo]::ConvertTime(([datetime]'1/1/1970').AddMilliseconds($Timestamp),$Timezone)
             Write-Output $Date
         }
     }
 }
+
+### Parsing Functions
 
 function ParseExceptionBody($Response) {
     if ($Response) {
@@ -1093,6 +1095,7 @@ function ParseAcquisitionUnits($AcquisitionUnits) {
         if ($AcquisitionUnit.datasources) {
             $AcquisitionUnit.datasources = ParseDatasources($AcquisitionUnit.datasources)
         } 
+
         Write-Output $AcquisitionUnit
     }
 }
@@ -1795,8 +1798,8 @@ Name       : ociserver.example.com
 BaseURI    : https://ociserver.example.com
 Credential : System.Management.Automation.PSCredential
 Headers    : {Authorization}
-APIVersion : 1.2
-Timezone   : System.CurrentSystemTimeZone
+APIVersion : 1.3
+Timezone   : (UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna
 #>
 function global:Connect-OciServer {
     [CmdletBinding()]
@@ -1902,15 +1905,16 @@ function global:Connect-OciServer {
     }
 
     if (!$Timezone) {
-        $Timezone = [timezone]::CurrentTimeZone
+        $Timezone = [System.TimeZoneInfo]::Local
     }
     
-    if ($Timezone -isnot [Timezone]) {
+    if ($Timezone -isnot [System.TimeZoneInfo]) {
         if ([System.TimeZoneInfo]::GetSystemTimeZones().Id -contains $Timezone) {
             $Timezone = [System.TimeZoneInfo]::GetSystemTimeZones() | ? { $_.Id -contains $Timezone }
         }
         else {
-            $Timezone = [timezone]::CurrentTimeZone
+            Write-Warning "Timezone $Timezone is not supported by this system. Setting Timezone to $([System.TimeZoneInfo]::Local)"
+            $Timezone = [System.TimeZoneInfo]::Local
         }
     }
 
