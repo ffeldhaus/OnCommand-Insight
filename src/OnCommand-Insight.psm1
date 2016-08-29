@@ -1,24 +1,71 @@
-﻿# Workaround to allow Powershell to accept untrusted certificates
-add-type @"
-    using System.Net;
-    using System.Security.Cryptography.X509Certificates;
-    public class TrustAllCertsPolicy : ICertificatePolicy {
-       public bool CheckValidationResult(
-            ServicePoint srvPoint, X509Certificate certificate,
-            WebRequest request, int certificateProblem) {
-            return true;
+﻿# workarounds for PowerShell issues
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    Add-Type @"
+        using System.Net;
+        using System.Security.Cryptography.X509Certificates;
+        public class TrustAllCertsPolicy : ICertificatePolicy {
+           public bool CheckValidationResult(
+                ServicePoint srvPoint, X509Certificate certificate,
+                WebRequest request, int certificateProblem) {
+                return true;
+            }
         }
-    }
 "@
 
-# OCI 7.2 only supports TLS 1.2 and PowerShell does not auto negotiate it, thus enforcing TLS 1.2 which works for older OCI Versions as well
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    # OCI 7.2 only supports TLS 1.2 and PowerShell does not auto negotiate it, thus enforcing TLS 1.2 which works for older OCI Versions as well
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    # Using .NET JSON Serializer as JSON serialization included in Invoke-RestMethod has a length restriction for JSON content
+    Add-Type -AssemblyName System.Web.Extensions
+    $global:javaScriptSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+    $global:javaScriptSerializer.MaxJsonLength = [System.Int32]::MaxValue
+    $global:javaScriptSerializer.RecursionLimit = 99
+
+    # Functions necessary to parse JSON output from .NET serializer to PowerShell Objects
+    function ParseItem($jsonItem) {
+        if($jsonItem.PSObject.TypeNames -match "Array") {
+            return ParseJsonArray($jsonItem)
+        }
+        elseif($jsonItem.PSObject.TypeNames -match "Dictionary") {
+            return ParseJsonObject([HashTable]$jsonItem)
+        }
+        else {
+            return $jsonItem
+        }
+    }
  
-# Using .NET JSON Serializer as JSON serialization included in Invoke-RestMethod has a length restriction for JSON content
-Add-Type -AssemblyName System.Web.Extensions
-$global:javaScriptSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-$global:javaScriptSerializer.MaxJsonLength = [System.Int32]::MaxValue
-$global:javaScriptSerializer.RecursionLimit = 99
+    function ParseJsonObject($jsonObj) {
+        $result = New-Object -TypeName PSCustomObject
+        foreach ($key in $jsonObj.Keys) {
+            $item = $jsonObj[$key]
+            if ($item) {
+                $parsedItem = ParseItem $item
+            } else {
+                $parsedItem = $null
+            }
+            $result | Add-Member -MemberType NoteProperty -Name $key -Value $parsedItem
+        }
+        return $result
+    }
+ 
+    function ParseJsonArray($jsonArray) {
+        $result = @()
+        $jsonArray | ForEach-Object {
+            $result += ,(ParseItem $_)
+        }
+        return $result
+    }
+ 
+    function ParseJsonString($json) {
+        $config = $javaScriptSerializer.DeserializeObject($json)
+        if ($config -is [Array]) {
+            return ParseJsonArray($config)       
+        }
+        else {
+            return ParseJsonObject($config)
+        }
+    }
+}
 
 # Function for multipart upload (based on http://blog.majcica.com/2016/01/13/powershell-tips-and-tricks-multipartform-data-requests/)
 function global:Invoke-MultipartFormDataUpload
@@ -120,51 +167,6 @@ function global:Invoke-MultipartFormDataUpload
         }
     }
     END { }
-}
- 
-# Functions necessary to parse JSON output from .NET serializer to PowerShell Objects
-function ParseItem($jsonItem) {
-    if($jsonItem.PSObject.TypeNames -match "Array") {
-        return ParseJsonArray($jsonItem)
-    }
-    elseif($jsonItem.PSObject.TypeNames -match "Dictionary") {
-        return ParseJsonObject([HashTable]$jsonItem)
-    }
-    else {
-        return $jsonItem
-    }
-}
- 
-function ParseJsonObject($jsonObj) {
-    $result = New-Object -TypeName PSCustomObject
-    foreach ($key in $jsonObj.Keys) {
-        $item = $jsonObj[$key]
-        if ($item) {
-            $parsedItem = ParseItem $item
-        } else {
-            $parsedItem = $null
-        }
-        $result | Add-Member -MemberType NoteProperty -Name $key -Value $parsedItem
-    }
-    return $result
-}
- 
-function ParseJsonArray($jsonArray) {
-    $result = @()
-    $jsonArray | ForEach-Object {
-        $result += ,(ParseItem $_)
-    }
-    return $result
-}
- 
-function ParseJsonString($json) {
-    $config = $javaScriptSerializer.DeserializeObject($json)
-    if ($config -is [Array]) {
-        return ParseJsonArray($config)       
-    }
-    else {
-        return ParseJsonObject($config)
-    }
 }
 
 # helper function to convert datetime to unix timestamp
@@ -992,26 +994,29 @@ function global:Connect-OciServer {
         }
     }
  
-    # Issue with jBoss see http://alihamdar.com/2010/06/19/expect-100-continue/
-    [System.Net.ServicePointManager]::Expect100Continue = $false
- 
     $EncodedAuthorization = [System.Text.Encoding]::UTF8.GetBytes($Credential.UserName + ':' + $Credential.GetNetworkCredential().Password)
     $EncodedPassword = [System.Convert]::ToBase64String($EncodedAuthorization)
     $Headers = @{"Authorization"="Basic $($EncodedPassword)"}
  
     # check if untrusted SSL certificates should be ignored
     if ($Insecure) {
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+        if ($PSVersionTable.PSVersion.Major -lt 6) {
+            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+        }
+        else {
+            $PSDefaultParameterValues.Add("Invoke-RestMethod:SkipCertificateCheck",$true)
+        }
     }
 
-    # check if proxy is used
-    $ProxyRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    $ProxySettings = Get-ItemProperty -Path $ProxyRegistry
-    if ($ProxySettings.ProxyEnable) {
-        Write-Warning "Proxy Server $($ProxySettings.ProxyServer) configured in Internet Explorer may be used to connect to the OCI server!"
-    }
-    if ($ProxySettings.AutoConfigURL) {
-        Write-Warning "Proxy Server defined in automatic proxy configuration script $($ProxySettings.AutoConfigURL) configured in Internet Explorer may be used to connect to the OCI server!"
+        # check if proxy is used
+        $ProxyRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+        $ProxySettings = Get-ItemProperty -Path $ProxyRegistry
+        if ($ProxySettings.ProxyEnable) {
+            Write-Warning "Proxy Server $($ProxySettings.ProxyServer) configured in Internet Explorer may be used to connect to the OCI server!"
+        }
+        if ($ProxySettings.AutoConfigURL) {
+            Write-Warning "Proxy Server defined in automatic proxy configuration script $($ProxySettings.AutoConfigURL) configured in Internet Explorer may be used to connect to the OCI server!"
+        }
     }
  
     if ($HTTPS -or !$HTTP) {
@@ -14264,7 +14269,8 @@ function Global:Get-OciInternalVolumePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
