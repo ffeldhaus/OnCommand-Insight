@@ -1008,6 +1008,7 @@ function global:Connect-OciServer {
         }
     }
 
+    if ([environment]::OSVersion.Platform -match "Win") {
         # check if proxy is used
         $ProxyRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
         $ProxySettings = Get-ItemProperty -Path $ProxyRegistry
