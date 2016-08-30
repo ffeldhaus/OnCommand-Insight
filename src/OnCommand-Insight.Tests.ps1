@@ -12,10 +12,10 @@ function ValidateAcquisitionUnit {
     [CmdletBinding()]
         
     PARAM (
-    [parameter(Mandatory=$False,
+    [parameter(Mandatory=$True,
                 Position=0,
                 ValueFromPipeline=$True,
-                HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][PSObject]$AcquisitionUnit
+                HelpMessage="Acquisition unit to be verified")][PSObject]$AcquisitionUnit
     )
 
         Process {
@@ -31,6 +31,38 @@ function ValidateAcquisitionUnit {
     }
 }
 
+function ValidateAnnotation {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$True,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Annotation to be verified")][PSObject]$Annotation
+    )
+
+        Process {
+            $Annotation.id | Should BeGreaterThan 0
+            $Annotation.self | Should Be "/rest/v1/assets/annotations/$($Annotation.id)"
+            $Annotation.name | Should Match ".+"
+            $Annotation.type | Should Match "DATE|TEXT|FIXED_ENUM|FLEXIBLE_ENUM|BOOLEAN|NUMBER"
+            $Annotation.label | Should Match ".+"
+            if ($Annotation.description) {
+               $Annotation.description | Should Match ".+" 
+            }
+            $Annotation.isUserDefined | Should BeOfType Boolean
+            $Annotation.isCostBased | Should BeOfType Boolean
+            if ($Annotation.enumValues) {
+                $Annotation.enumValues.id | Should BeGreaterThan 0
+                $Annotation.enumValues.name | Should Match ".+"
+                $Annotation.enumValues.label | Should Match ".+"
+                $Annotation.enumValues.description | Should Match ".+"
+                $Annotation.enumValues.isUserDefined | Should Match ".+"
+            }
+            $Annotation.supportedObjectTypes | Should Match "StoragePool|Qtree|Port|Host|StorageNode|Storage|InternalVolume|Switch|Volume|Vmdk|DataStore|Disk|Share|VirtualMachine"
+    }
+}
+
 function ValidateDatasources {
     [CmdletBinding()]
         
@@ -38,7 +70,7 @@ function ValidateDatasources {
     [parameter(Mandatory=$False,
                 Position=0,
                 ValueFromPipeline=$True,
-                HelpMessage="Expand parameter for underlying JSON object (e.g. expand=datasources)")][PSObject]$Datasource
+                HelpMessage="Datasource to be verified")][PSObject]$Datasource
     )
 
         Process {
@@ -60,11 +92,6 @@ function ValidateDatasources {
 
 Describe "Connect-OciServer" {
     BeforeEach {
-        $OciServer = $null
-        $Global:CurrentOciServer = $null
-    }
-
-    AfterEach {
         $OciServer = $null
         $Global:CurrentOciServer = $null
     }
@@ -98,16 +125,83 @@ Describe "Connect-OciServer" {
     }
 }
 
+Describe "Add-OciAnnotation" {
+
+    BeforeEach {
+        $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+        $null = Get-OciAnnotations | ? { $_.Name -eq "OciCmdletTest" } | Remove-OciAnnotation
+        $OciServer = $null
+        $Global:CurrentOciServer = $null
+        $Annotation = $null
+    }
+
+    Context "adds annotation" {
+        it "succeeds for type BOOLEAN" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type DATE" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type DATE
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type FIXED_ENUM" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type FIXED_ENUM -enumValues @(@{name="key1";label="label of key 1"},@{name="key2";label="label of key 2"})
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type FIXED_ENUM" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type FLEXIBLE_ENUM -enumValues @(@{name="key1";label="label of key 1"},@{name="key2";label="label of key 2"})
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type FIXED_ENUM" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type NUMBER
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds with description" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN -Description "description"
+            $Annotation.description | Should Be "description"
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $CurrentOciServer | Should BeNullOrEmpty
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN -Server $OciServer
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation -Server $OciServer
+        }
+    }
+}
+
 Describe "Get-OciAcquisitionUnits" {
 
     BeforeEach {
-        $Global:CurrentOciServer = $null
-        $AcquisitionUnits = $null
-    }
-
-    AfterEach {
         $OciServer = $null
         $Global:CurrentOciServer = $null
+        $AcquisitionUnits = $null
     }
 
     Context "retrieves acquisition units" {
@@ -119,14 +213,6 @@ Describe "Get-OciAcquisitionUnits" {
             $AcquisitionUnits | ValidateAcquisitionUnit
         }
 
-        it "succeeds with transient OCI Server" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
-
-            $AcquisitionUnits = Get-OciAcquisitionUnits -Server $OciServer
-            $AcquisitionUnits | Should Not BeNullOrEmpty
-            $AcquisitionUnits | ValidateAcquisitionUnit
-        }
-
         it "succeeds with getting datasources" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
@@ -134,6 +220,15 @@ Describe "Get-OciAcquisitionUnits" {
             $AcquisitionUnits | Should Not BeNullOrEmpty
             $AcquisitionUnits | ValidateAcquisitionUnit
             $AcquisitionUnits.datasources | ValidateDatasources
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits -Server $OciServer
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $AcquisitionUnits | ValidateAcquisitionUnit
         }
     }
 }

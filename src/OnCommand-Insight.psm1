@@ -4818,7 +4818,6 @@ function Global:Get-OciAnnotations {
     }
 }
 
-# TODO: Implement / Test creation of annotation definitions
 <#
     .SYNOPSIS
     Add annotation
