@@ -27,17 +27,6 @@
        prerelease = $PreRelease.IsPresent;
      }
 
-     $ReleaseParams = @{
-       Uri = "https://api.github.com/repos/$GitHubUsername/$GitHubRepository/releases";
-       Method = 'POST';
-       Headers = @{
-         Authorization = 'Basic ' + [Convert]::ToBase64String(
-         [Text.Encoding]::ASCII.GetBytes($GitHubApiKey + ":x-oauth-basic"));
-       }
-       ContentType = 'application/json';
-       Body = (ConvertTo-Json $releaseData -Compress)
-     }
-
     $ReleaseParams = @{
        Uri = "https://api.github.com/repos/$GitHubUsername/$GitHubRepository/releases";
        Method = 'POST';
