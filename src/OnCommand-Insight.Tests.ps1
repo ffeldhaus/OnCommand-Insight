@@ -1,7 +1,11 @@
 ﻿Import-Module "$PSScriptRoot\OnCommand-Insight"
 
-$OciServerName = 'localhost'
-$OciCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
+if (!$OciServerName) {
+    $OciServerName = 'localhost'
+    $OciCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
+}
+
+Write-Host "Running tests against OCI Server $OciServerName"
 
 ### functions for validating OCI objects
 function ValidateAcquisitionUnit {

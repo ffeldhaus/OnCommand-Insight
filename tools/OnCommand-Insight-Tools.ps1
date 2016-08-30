@@ -99,6 +99,9 @@ function New-OciRelease {
     if ($Minor) { $ModuleVersion = New-Object System.Version($ModuleVersion.Major,($ModuleVersion.Minor+1),0) }
     if ($Build) { $ModuleVersion = New-Object System.Version($ModuleVersion.Major,$ModuleVersion.Minor,($ModuleVersion.Build+1)) }
 
+    Write-Host "Running Pester tests"
+    Invoke-OciTests
+
     Write-Host "Building release for version $ModuleVersion"
 
     $scriptPath = Split-Path -LiteralPath $(if ($PSVersionTable.PSVersion.Major -ge 3) { $PSCommandPath } else { & { $MyInvocation.ScriptName } })
@@ -218,14 +221,16 @@ function New-OciRelease {
 }
 
 function Invoke-OciTests {
-    $Server = 'ff-oc1.muccbc.hq.netapp.com'
-    $Version = '7.1.1'
-    $Record = $False
-    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
+    $OciServer = 'localhost'
+    $OciCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
 
     $VerbosePreference = "Continue"
 
-    Invoke-Pester -Script @{Path='./';Parameters=@{Server=$Server;Credential=$Credential;Version=$Version;Record=$Record}}
+    $Result = Invoke-Pester -Script @{Path='./';Parameters=@{Server=$Server;Credential=$Credential;Version=$Version;Record=$Record}} -PassThru
+
+    if ($Result.FailedCount -gt 0) {
+        Write-Error "Aborting due to test errors"
+    }
 }
 
 function Get-OciCmdlets {
