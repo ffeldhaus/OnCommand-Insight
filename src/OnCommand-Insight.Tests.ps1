@@ -63,6 +63,28 @@ function ValidateAnnotation {
     }
 }
 
+function ValidateApplication {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$True,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Application to be verified")][PSObject]$Application
+    )
+
+        Process {
+            $Application.id | Should BeGreaterThan 0
+            $Application.self | Should Be "/rest/v1/assets/applications/$($Application.id)"
+            $Application.name | Should Match ".+"
+            $Application.simpleName | Should Match ".+"
+            $Application.priority | Should Match "Low|Medium|High|Critical" 
+            $Application.isBusinessEntityDefault | Should BeOfType Boolean
+            $Application.isInherited | Should BeOfType Boolean
+            $Application.ignoreShareViolations | Should BeOfType Boolean
+    }
+}
+
 function ValidateDatasources {
     [CmdletBinding()]
         
@@ -90,7 +112,7 @@ function ValidateDatasources {
     }
 }
 
-Describe "Connect-OciServer" {
+Describe "Connecting to OCI server" {
     BeforeEach {
         $OciServer = $null
         $Global:CurrentOciServer = $null
@@ -109,7 +131,7 @@ Describe "Connect-OciServer" {
             $Global:CurrentOciServer | Should Be $OciServer
         }
 
-        it "succeeds and successfully sets timezone to UTC" {
+        it "succeeds when timezone is set to UTC" {
             $Timezone = [TimeZoneInfo]::UTC
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Timezone $Timezone
             $OciServer.Name | Should Be $OciServerName
@@ -117,10 +139,158 @@ Describe "Connect-OciServer" {
             $Global:CurrentOciServer | Should Be $OciServer
         }
 
-        it "succeeds and returns a transient OCI Server object" {
+        it "succeeds when transient OCI Server object is requested" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Transient -Insecure
             $OciServer.Name | Should Be $OciServerName
             $Global:CurrentOciServer | Should BeNullOrEmpty
+        }
+    }
+}
+
+Describe "Application management" {
+
+    BeforeEach {
+        $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+        $null = Get-OciApplications | ? { $_.Name -eq "OciCmdletTest" } | Remove-OciApplication
+        $null = Get-OciBusinessEntities | ? { $_.Tenant -eq "OciCmdletTest" } | Remove-OciBusinessEntity
+        $OciServer = $null
+        $Global:CurrentOciServer = $null
+        $Application = $null
+    }
+
+    Context "Add and remove application" {
+        it "succeeds using only name parameter" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest"
+            $Application | ValidateApplication
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds with priority" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -priority Critical
+            $Application | ValidateApplication
+            $Application.priority | Should Be "Critical"
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds when associating business entity" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $BusinessEntity = Add-OciBusinessEntity -Tenant "OciCmdletTest"
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -businessEntity $BusinessEntity.id
+            $Application | ValidateApplication
+            $Application.businessEntity.id | Should Be $BusinessEntity.id
+            $Application | Remove-OciApplication
+
+            $BusinessEntity | Remove-OciBusinessEntity
+        }
+
+        it "succeeds with ignoreShareViolations switch" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -ignoreShareViolations
+            $Application | ValidateApplication
+            $Application.ignoreShareViolations | Should Be $true
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds when list of compute resources is requested" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -ComputeResources
+            $Application | ValidateApplication
+            $Application.computeResources | Should BeNullOrEmpty
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds when list of storage resources is requested" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -StorageResources
+            $Application | ValidateApplication
+            $Application.computeResources | Should BeNullOrEmpty
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -Server $OciServer
+            $Application | ValidateApplication
+            $Application.computeResources | Should BeNullOrEmpty
+            $Application | Remove-OciApplication -Server $OciServer
+        }
+    }
+
+    Context "Adding, updating and deleting application" {
+        it "succeeds when updating priority" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest"
+            $Application = $Application | Update-OciApplication -priority Critical
+            $Application | ValidateApplication
+            $Application.priority | Should Be "Critical"
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds when associating business entity" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $BusinessEntity = Add-OciBusinessEntity -Tenant "OciCmdletTest"
+
+            $Application = Add-OciApplication -Name "OciCmdletTest"
+            $Application = $Application | Update-OciApplication -businessEntity $BusinessEntity.id
+            $Application | ValidateApplication
+            $Application.businessEntity.id | Should Be $BusinessEntity.id
+            $Application | Remove-OciApplication
+
+            $BusinessEntity | Remove-OciBusinessEntity
+        }
+
+        it "succeeds with ignoreShareViolations switch" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest"
+            $Application = $Application | Update-OciApplication -ignoreShareViolations
+            $Application | ValidateApplication
+            $Application.ignoreShareViolations | Should Be $true
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds when list of compute resources is requested" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest"
+            $Application = $Application | Update-OciApplication -ComputeResources
+            $Application | ValidateApplication
+            $Application.computeResources | Should BeNullOrEmpty
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds when list of storage resources is requested" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -StorageResources
+            $Application = $Application | Update-OciApplication -StorageResources
+            $Application | ValidateApplication
+            $Application.computeResources | Should BeNullOrEmpty
+            $Application | Remove-OciApplication
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $Application = Add-OciApplication -Name "OciCmdletTest" -Server $OciServer
+            $Application = $Application | Update-OciApplication -Server $OciServer
+            $Application | ValidateApplication
+            $Application.computeResources | Should BeNullOrEmpty
+            $Application | Remove-OciApplication -Server $OciServer
         }
     }
 }
