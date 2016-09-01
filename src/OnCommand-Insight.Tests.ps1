@@ -25,9 +25,15 @@ function ValidateAcquisitionUnit {
             $AcquisitionUnit.ip | Should Match "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"
             $AcquisitionUnit.status | Should Be "CONNECTED"
             $AcquisitionUnit.isActive | Should Be "True"
-            $AcquisitionUnit.leaseContract | Should Be 120000
-            $AcquisitionUnit.nextLeaseRenewal | Should BeGreaterThan (Get-Date)
-            $AcquisitionUnit.lastReported | Should BeLessThan (Get-Date)
+            if ($AcquisitionUnit.leaseContract) {
+                $AcquisitionUnit.leaseContract | Should Be 120000
+            }
+            if ($AcquisitionUnit.nextLeaseRenewal) {
+                $AcquisitionUnit.nextLeaseRenewal | Should BeGreaterThan (Get-Date)
+            }
+            if ($AcquisitionUnit.lastReported) {
+                $AcquisitionUnit.lastReported | Should BeLessThan (Get-Date)
+            }
     }
 }
 
@@ -85,7 +91,25 @@ function ValidateApplication {
     }
 }
 
-function ValidateDatasources {
+function ValidatePackage {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$Package
+    )
+
+        Process {
+            $Package.packageName | Should Match 'Inventory|Performance'
+            $Package.status | Should Match 'ACQUIRING|STANDBY|ERROR|SUCCESS'
+            $Package.statusText | Should Match ".+"
+            $Package.releaseStatus | Should Match "BETA|OFFICIAL"
+    }
+}
+
+function ValidateDatasource {
     [CmdletBinding()]
         
     PARAM (
@@ -112,38 +136,391 @@ function ValidateDatasources {
     }
 }
 
-Describe "Connecting to OCI server" {
+function ValidateDatasourceConfig {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource configuration to be verified")][PSObject]$DatasourceConfig
+    )
+
+        Process {
+            $DatasourceConfig.dsTypeId | Should BeGreaterThan 0
+            $DatasourceConfig.self | Should Match "/rest/v1/admin/datasources/[0-9]+/config"
+            $DatasourceConfig.vendor | Should Match ".+"
+            $DatasourceConfig.model | Should Match ".+"
+            $DatasourceConfig.packages | ValidateDatasourceConfigPackage
+    }
+}
+
+function ValidateDatasourceChange {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource to be verified")][PSObject]$DatasourceChange
+    )
+
+        Process {
+            $DatasourceChange.time | Should BeOfType DateTime
+            $DatasourceChange.time | Should BeLessThan (Get-Date)
+            $DatasourceChange.type | Should Match ".+"
+            $DatasourceChange.summary | Should Match ".+"
+    }
+}
+
+function ValidateDatasourceEvent {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource to be verified")][PSObject]$DatasourceEvent
+    )
+
+        Process {
+            $DatasourceEvent.id | Should BeGreaterThan 0
+            $DatasourceEvent.packageName | Should Match 'Performance|Inventory'
+            $DatasourceEvent.status | Should Match 'STANDBY|ERROR|SUCCESS'
+            $DatasourceEvent.statusText | Should Match '.+'
+            $DatasourceEvent.startTime | Should BeOfType DateTime
+            $DatasourceEvent.endTime | Should BeOfType DateTime
+            $DatasourceEvent.numberOfTimes | Should BeGreaterThan 0
+    }
+}
+
+function ValidateDatasourceTypePackage {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$DatasourcePackage
+    )
+
+        Process {
+            $DatasourcePackage.id | Should Match 'storageperformance|foundation'
+            $DatasourcePackage.displayName | Should Match '.+'
+            $DatasourcePackage.isMandatory | Should BeOfType Boolean
+            $DatasourcePackage.attributes | ValidateDatasourceTypePackageAttribute
+    }
+}
+
+function ValidateDatasourceTypePackageAttribute {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$DatasourcePackageAttribute
+    )
+
+        Process {
+            $DatasourcePackageAttribute.type | Should Match 'integer|string|boolean|enum|float'
+            $DatasourcePackageAttribute.name | Should Match '.+'
+            $DatasourcePackageAttribute.description | Should Match '.*'
+            $DatasourcePackageAttribute.label | Should Match '.*'
+            $DatasourcePackageAttribute.isEditable | Should BeOfType Boolean
+            $DatasourcePackageAttribute.defaultValue | Should Match '.*'
+            $DatasourcePackageAttribute.isEncrypted | Should BeOfType Boolean
+            $DatasourcePackageAttribute.guiorder | Should BeOfType int
+            $DatasourcePackageAttribute.isMandatory | Should BeOfType Boolean
+            $DatasourcePackageAttribute.isHidden | Should BeOfType Boolean
+            $DatasourcePackageAttribute.isCloneable | Should BeOfType Boolean
+            $DatasourcePackageAttribute.isAdvanced | Should BeOfType Boolean
+    }
+}
+
+function ValidateDatasourceConfigPackage {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$DatasourcePackage
+    )
+
+        Process {
+            $DatasourcePackage.id | Should Match 'cloud|performance|storageperformance|hostvirtualization|foundation'
+            $DatasourcePackage.displayName | Should Match '.+'
+            $DatasourcePackage.isMandatory | Should BeOfType Boolean
+            $DatasourcePackage.attributes | ValidateDatasourceConfigPackageAttribute
+    }
+}
+
+function ValidateDatasourceConfigPackageAttribute {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$DatasourceConfigPackageAttribute
+    )
+
+        Process {
+            $DatasourceConfigPackageAttribute.RELEASESTATUS | Should Match 'BETA|OFFICIAL'
+            # TODO: add parameters
+    }
+}
+
+function ValidateDatasourcePatch {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$DatasourcePatch
+    )
+
+        Process {
+            $DatasourcePatch.id | Should BeGreaterThan 0
+            $DatasourcePatch.self | Should Be "/rest/v1/admin/patches/$($DatasourcePatch.id)"
+            $DatasourcePatch.name | Should Match ".+"
+            $DatasourcePatch.description | Should Match ".+"
+            $DatasourcePatch.createTime | Should BeOfType DateTime
+            $DatasourcePatch.createTime | Should BeLessThan (Get-Date)
+            $DatasourcePatch.lastUpdateTime | Should BeOfType DateTime
+            $DatasourcePatch.lastUpdateTime | Should BeLessThan (Get-Date)
+            $DatasourcePatch.state | Should Match "ACTIVE"
+            $DatasourcePatch.recommendation | Should Match "VERIFYING"
+            $DatasourcePatch.recommendationText | Should Match ".+"
+            $DatasourcePatch.datasourceTypes | ValidateDatasourceType
+            $DatasourcePatch.numberOfAffectedDatasources | Should BeGreaterThan 0
+            $DatasourcePatch.type | Should Match 'PATCH'
+            if ($DatasourcePatch.note) {
+                $DatasourcePatch.note | Should Match '.+'
+            }
+    }
+}
+
+function ValidateDatasourceType {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$DatasourceType
+    )
+
+        Process {
+            $DatasourceType.id | Should BeGreaterThan 0
+            $DatasourceType.name | Should Match '.+'
+            $DatasourceType.description | Should Match '.+'
+            $DatasourceType.self | Should Be "/rest/v1/admin/datasourceTypes/$($DatasourceType.id)"
+            $DatasourceType.vendorModels | ValidateVendorModel
+            $DatasourceType.packages | ValidateDatasourceTypePackage
+    }
+}
+
+function ValidateVendorModel {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datasource package to be verified")][PSObject]$VendorModel
+    )
+
+        Process {
+            $VendorModel.modelName | Should Match '.+'
+            $VendorModel.modelDescription | Should Match '.+'
+            $VendorModel.vendorName | Should Match '.+'
+            $VendorModel.vendorDescription | Should Match '.+'
+    }
+}
+
+function ValidateDevice {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Device to be verified")][PSObject]$Device
+    )
+
+        Process {
+            $Device.id | Should BeGreaterThan 0
+            $Device.name | Should Match '.+'
+            $Device.simpleName | Should Match '.+'
+            $Device.ip | Should Match '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+,?)+'
+            $Device.type | Should Match 'SWITCH|STORAGE|HOST'
+            $Device.wwn | Should Match '.*'
+            $Device.description | Should Match '.+'
+            $Device.self | Should Match "/rest/v1/assets/$($Device.type.toLower())[es]*/$($Device.id)"
+    }
+}
+
+### Begin of tests ###
+
+Describe "Acquisition unit management" {
+
     BeforeEach {
         $OciServer = $null
         $Global:CurrentOciServer = $null
+        $AcquisitionUnits = $null
     }
 
-    Context "initiates a connection to an OnCommand Insight Server" {
-        it "succeeds with parameters Name, Credential, Insecure" {
+    Context "retrieving acquisition units" {
+        it "succeeds with no parameters" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-            $OciServer.Name | Should Be $OciServerName
-            $Global:CurrentOciServer | Should Be $OciServer
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $AcquisitionUnits | ValidateAcquisitionUnit
         }
 
-        it "succeeds when forcing HTTPS" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS
-            $OciServer.Name | Should Be $OciServerName
-            $Global:CurrentOciServer | Should Be $OciServer
+        it "succeeds with getting datasources" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits -datasources
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $AcquisitionUnits | ValidateAcquisitionUnit
+            $AcquisitionUnits.datasources | ValidateDatasource
         }
 
-        it "succeeds when timezone is set to UTC" {
-            $Timezone = [TimeZoneInfo]::UTC
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Timezone $Timezone
-            $OciServer.Name | Should Be $OciServerName
-            $OciServer.Timezone | Should Be $Timezone
-            $Global:CurrentOciServer | Should Be $OciServer
-        }
-
-        it "succeeds when transient OCI Server object is requested" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Transient -Insecure
-            $OciServer.Name | Should Be $OciServerName
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
             $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits -Server $OciServer
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $AcquisitionUnits | ValidateAcquisitionUnit
         }
+    }
+
+    Context "retrieving single acquisition unit" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $AcquisitionUnit = $AcquisitionUnits | Get-OciAcquisitionUnit
+            $AcquisitionUnit | ValidateAcquisitionUnit
+        }
+
+        it "succeeds with getting datasources" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits -datasources
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $AcquisitionUnit = $AcquisitionUnits | Get-OciAcquisitionUnit -datasources
+            $AcquisitionUnit | ValidateAcquisitionUnit
+            $AcquisitionUnit.datasources | ValidateDatasource
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits -Server $OciServer
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $AcquisitionUnit = $AcquisitionUnits | Get-OciAcquisitionUnit -Server $OciServer
+            $AcquisitionUnit | ValidateAcquisitionUnit
+        }
+    }
+
+    Context "retrieving datasources of single acquisition unit" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit
+            $Datasources | ValidateDatasource
+        }
+
+        it "succeeds when requesting related acquisition units" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -acquisitionUnit
+            $Datasources | ValidateDatasource
+            $Datasources.acquisitionUnit | ValidateAcquisitionUnit
+        }
+        
+        it "succeeds when requesting related notes" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -note
+            $Datasources | ValidateDatasource
+            $Datasources | % { [bool]($_.PSobject.Properties.name -match "note") | Should Be $true }
+        }
+
+        it "succeeds when requesting related changes" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -changes
+            $Datasources | ValidateDatasource
+            $Datasources.changes | ValidateDatasourceChange
+        }
+
+        it "succeeds when requesting related packages" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -packages
+            $Datasources | ValidateDatasource
+            $Datasources.packages | ValidatePackage
+        }
+
+        it "succeeds when requesting related events" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -events
+            $Datasources | ValidateDatasource
+            $Datasources.events | ? { $_ } | ValidateDatasourceEvent
+        }
+
+        it "succeeds when requesting related devices" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -devices
+            $Datasources | ValidateDatasource
+            $Datasources.devices | ? { $_ } | ValidateDevice
+        }
+
+        it "succeeds when requesting related devices" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -config
+            $Datasources | ValidateDatasource
+            $Datasources.config | ? { $_ } | ValidateDatasourceConfig
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $AcquisitionUnits = Get-OciAcquisitionUnits -Server $OciServer
+            $AcquisitionUnits | Should Not BeNullOrEmpty
+            $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -Server $OciServer
+            $Datasources | ValidateDatasource
+        }     
     }
 }
 
@@ -295,7 +672,7 @@ Describe "Application management" {
     }
 }
 
-Describe "Add-OciAnnotation" {
+Describe "Annotation management" {
 
     BeforeEach {
         $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
@@ -305,7 +682,7 @@ Describe "Add-OciAnnotation" {
         $Annotation = $null
     }
 
-    Context "adds annotation" {
+    Context "adding and removing annotations" {
         it "succeeds for type BOOLEAN" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
@@ -330,7 +707,7 @@ Describe "Add-OciAnnotation" {
             $Annotation | Remove-OciAnnotation
         }
 
-        it "succeeds for type FIXED_ENUM" {
+        it "succeeds for type FLEXIBLE_ENUM" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
             $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type FLEXIBLE_ENUM -enumValues @(@{name="key1";label="label of key 1"},@{name="key2";label="label of key 2"})
@@ -338,7 +715,7 @@ Describe "Add-OciAnnotation" {
             $Annotation | Remove-OciAnnotation
         }
 
-        it "succeeds for type FIXED_ENUM" {
+        it "succeeds for type NUMBER" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
             $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type NUMBER
@@ -366,39 +743,37 @@ Describe "Add-OciAnnotation" {
     }
 }
 
-Describe "Get-OciAcquisitionUnits" {
-
+Describe "OCI server connection management" {
     BeforeEach {
         $OciServer = $null
         $Global:CurrentOciServer = $null
-        $AcquisitionUnits = $null
     }
 
-    Context "retrieves acquisition units" {
-        it "succeeds with no parameters" {
+    Context "initiating a connection to an OnCommand Insight Server" {
+        it "succeeds with parameters Name, Credential, Insecure" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-
-            $AcquisitionUnits = Get-OciAcquisitionUnits
-            $AcquisitionUnits | Should Not BeNullOrEmpty
-            $AcquisitionUnits | ValidateAcquisitionUnit
+            $OciServer.Name | Should Be $OciServerName
+            $Global:CurrentOciServer | Should Be $OciServer
         }
 
-        it "succeeds with getting datasources" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-
-            $AcquisitionUnits = Get-OciAcquisitionUnits -datasources
-            $AcquisitionUnits | Should Not BeNullOrEmpty
-            $AcquisitionUnits | ValidateAcquisitionUnit
-            $AcquisitionUnits.datasources | ValidateDatasources
+        it "succeeds when forcing HTTPS" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS
+            $OciServer.Name | Should Be $OciServerName
+            $Global:CurrentOciServer | Should Be $OciServer
         }
 
-        it "succeeds with transient OCI Server" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+        it "succeeds when timezone is set to UTC" {
+            $Timezone = [TimeZoneInfo]::UTC
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Timezone $Timezone
+            $OciServer.Name | Should Be $OciServerName
+            $OciServer.Timezone | Should Be $Timezone
+            $Global:CurrentOciServer | Should Be $OciServer
+        }
+
+        it "succeeds when transient OCI Server object is requested" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Transient -Insecure
+            $OciServer.Name | Should Be $OciServerName
             $Global:CurrentOciServer | Should BeNullOrEmpty
-
-            $AcquisitionUnits = Get-OciAcquisitionUnits -Server $OciServer
-            $AcquisitionUnits | Should Not BeNullOrEmpty
-            $AcquisitionUnits | ValidateAcquisitionUnit
         }
     }
 }

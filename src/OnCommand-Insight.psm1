@@ -306,6 +306,14 @@ function ParseDatasourceConfig($DatasourceConfig) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "foundation" -Value { $this.packages | ? { $_.id -eq "foundation" } }
             $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
         }
+        if ($DatasourceConfig.packages | ? { $_.id -eq "storageperformance" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "foundation" -Value { $this.packages | ? { $_.id -eq "storageperformance" } }
+            $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
+        }
+        if ($DatasourceConfig.packages | ? { $_.id -eq "hostvirtualization" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "foundation" -Value { $this.packages | ? { $_.id -eq "hostvirtualization" } }
+            $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
+        }
         Write-Output $DatasourceConfig
     }
 }
