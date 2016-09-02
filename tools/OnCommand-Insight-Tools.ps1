@@ -205,7 +205,7 @@ function New-OciRelease {
         }
         
         Write-Host "Creating GitHub release"
-        New-GithubRelease -Version $CurrentVersion -Name $Name -ReleaseNotes $ReleaseNotes -FileName "OnCommand-Insight.zip" -OutputDirectory $out
+        New-GithubRelease -Version $ModuleVersion -Name $Name -ReleaseNotes $ReleaseNotes -FileName "OnCommand-Insight.zip" -OutputDirectory $out
     }
 }
 
