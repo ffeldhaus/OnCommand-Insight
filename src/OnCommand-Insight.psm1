@@ -308,11 +308,11 @@ function ParseDatasourceConfig($DatasourceConfig) {
         }
         if ($DatasourceConfig.packages | ? { $_.id -eq "storageperformance" }) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "storageperformance" -Value { $this.packages | ? { $_.id -eq "storageperformance" } }
-            $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
+            $DatasourceConfig.storageperformance.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
         }
         if ($DatasourceConfig.packages | ? { $_.id -eq "hostvirtualization" }) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "hostvirtualization" -Value { $this.packages | ? { $_.id -eq "hostvirtualization" } }
-            $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
+            $DatasourceConfig.hostvirtualization.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
         }
         Write-Output $DatasourceConfig
     }
