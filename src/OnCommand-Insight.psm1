@@ -4521,7 +4521,7 @@ function Global:Get-OciCurrentUser {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Delete-OciUser {
+function Global:Remove-OciUser {
     [CmdletBinding()]
  
     PARAM (
