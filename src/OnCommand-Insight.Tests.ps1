@@ -205,7 +205,7 @@ function ValidateDatasourceTypePackage {
     )
 
         Process {
-            $DatasourcePackage.id | Should Match 'storageperformance|foundation'
+            $DatasourcePackage.id | Should Match 'cloud|performance|hostvirtualization|storageperformance|foundation'
             $DatasourcePackage.displayName | Should Match '.+'
             $DatasourcePackage.isMandatory | Should BeOfType Boolean
             $DatasourcePackage.attributes | ValidateDatasourceTypePackageAttribute
@@ -223,7 +223,7 @@ function ValidateDatasourceTypePackageAttribute {
     )
 
         Process {
-            $DatasourcePackageAttribute.type | Should Match 'integer|string|boolean|enum|float'
+            $DatasourcePackageAttribute.type | Should Match 'list|integer|string|boolean|enum|float'
             $DatasourcePackageAttribute.name | Should Match '.+'
             $DatasourcePackageAttribute.description | Should Match '.*'
             $DatasourcePackageAttribute.label | Should Match '.*'
@@ -521,6 +521,69 @@ Describe "Acquisition unit management" {
             $Datasources = $AcquisitionUnits | Get-OciDatasourcesByAcquisitionUnit -Server $OciServer
             $Datasources | ValidateDatasource
         }     
+    }
+}
+
+Describe "Datasource management" {
+
+    BeforeEach {
+        $OciServer = $null
+        $Global:CurrentOciServer = $null
+        $Datasources = $null
+    }
+
+    Context "retrieving datasource types" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $DatasourceTypes = Get-OciDatasourceTypes
+            $DatasourceTypes | Should Not BeNullOrEmpty
+            $DatasourceTypes | ValidateDatasourceType
+        }
+
+        it "succeeds when retrieving one by one" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            Get-OciDatasourceTypes | Get-OciDatasourceType | ValidateDatasourceType
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $DatasourceTypes = Get-OciDatasourceTypes -Server $OciServer
+            $DatasourceTypes | Should Not BeNullOrEmpty
+            $DatasourceTypes = $DatasourceTypes | Get-OciDatasourceType -Server $OciServer
+            $DatasourceTypes | Should Not BeNullOrEmpty
+            $DatasourceTypes | ValidateDatasourceType
+        }
+    }
+
+    Context "retrieving datasources" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datasources = Get-OciDatasources
+            $Datasources | Should Not BeNullOrEmpty
+            $Datasources | ValidateDatasource
+        }
+
+        it "succeeds when retrieving one by one" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            Get-OciDatasources | Get-OciDatasource | ValidateDatasource
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $Datasources = Get-OciDatasources -Server $OciServer
+            $Datasources | Should Not BeNullOrEmpty
+            $Datasources = $Datasources | Get-OciDatasource -Server $OciServer
+            $Datasources | Should Not BeNullOrEmpty
+            $Datasources | ValidateDatasource
+        }
     }
 }
 
