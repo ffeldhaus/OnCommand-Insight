@@ -832,6 +832,49 @@ function ParseInternalVolumes($InternalVolumes) {
     }
 }
 
+function ParseQtrees($Qtrees) {
+    $Qtrees = @($Qtrees)
+    foreach ($Qtree in $Qtrees) {
+        if ($Qtree.quotaCapacity) {
+            $Qtree.quotaCapacity = ParseQuotaCapacities($Qtree.quotaCapacity)
+        }
+        if ($Qtree.storage) {
+            $Qtree.storage = ParseStorages($Qtree.storage)
+        }
+        if ($Qtree.internalVolume) {
+            $Qtree.internalVolume = ParseInternalVolumes($Qtree.internalVolume)
+        }
+        if ($Qtree.shares) {
+            $Qtree.shares = ParseShares($Qtree.shares)
+        }
+        if ($Qtree.annotations) {
+            $Qtree.annotations = ParseAnnotations($Qtree.annotations)
+        }
+        if ($Qtree.applications) {
+            $Qtree.applications = ParseApplications($Qtree.applications)
+        }
+        if ($Qtree.volumes) {
+            $Qtree.volumes = ParseVolumes($Qtree.volumes)
+        }
+
+        Write-Output $Qtree
+    }
+}
+
+function ParseQuotaCapacities($QuotaCapacities) {
+    $QuotaCapacities = @($QuotaCapacities)
+    foreach ($QuotaCapacity in $QuotaCapacities) {
+        Write-Output $QuotaCapacity
+    }
+}
+
+function ParseShares($Qtrees) {
+    $Shares = @($Shares)
+    foreach ($Share in $Shares) {
+        Write-Output $Share
+    }
+}
+
 function ParseStoragePools($StoragePools) {
     $StoragePools = @($StoragePools)
     foreach ($StoragePool in $StoragePools) {
@@ -7927,7 +7970,6 @@ function Global:Get-OciDatastorePerformance {
             }
 
             $Performance = ParsePerformance($Result)
-           
             Write-Output $Performance
         }
     }
@@ -9055,7 +9097,6 @@ function Global:Get-OciDiskPerformance {
             }
 
             $Performance = ParsePerformance($Result)
-
             Write-Output $Performance
         }
     }
@@ -12421,7 +12462,8 @@ function Global:Get-OciHostPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
@@ -14136,8 +14178,9 @@ function Global:Get-OciDatasourcesByInternalVolume {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+            
+            $Datasources = ParseDatasources($Result)
+            Write-Output $Datasources
         }
     }
 }
@@ -14363,7 +14406,8 @@ function Global:Get-OciQtreesByInternalVolume {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Qtrees = ParseQtrees($Result)
+            Write-Output $Qtrees
         }
     }
 }
@@ -16244,7 +16288,8 @@ function Global:Get-OciPortPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
@@ -19646,7 +19691,8 @@ function Global:Get-OciStorageNodePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
@@ -20891,7 +20937,8 @@ function Global:Get-OciStoragePoolPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
@@ -21506,7 +21553,8 @@ function Global:Get-OciVolumesByStoragePool {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Volumes = ParseVolumes($Result)
+            Write-Output $Volumes
         }
     }
 }
@@ -23151,7 +23199,8 @@ function Global:Get-OciStoragePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
@@ -25555,7 +25604,8 @@ function Global:Get-OciSwitchPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
@@ -30544,7 +30594,8 @@ function Global:Get-OciVolumePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Performance = ParsePerformance($Result)
+            Write-Output $Performance
         }
     }
 }
