@@ -304,7 +304,9 @@ function ParseDatasourceConfig($DatasourceConfig) {
     foreach ($DatasourceConfig in $DatasourceConfig) {
         if ($DatasourceConfig.packages | ? { $_.id -eq "foundation" }) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "foundation" -Value { $this.packages | ? { $_.id -eq "foundation" } }
-            $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
+            if (!$DatasourceConfig.foundation.attributes.password) {
+                $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value "" -force
+            }
         }
         if ($DatasourceConfig.packages | ? { $_.id -eq "storageperformance" }) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "storageperformance" -Value { $this.packages | ? { $_.id -eq "storageperformance" } }
@@ -1851,50 +1853,87 @@ function Global:Get-OciDatasources {
     }
 }
 
-# TODO: Implement and test adding of datasoure
+<#
+    .SYNOPSIS
+    New Data Source
+    .DESCRIPTION
+    Create new Data Source from type definition  
+    .PARAMETER type
+    Datasource type 
+    .PARAMETER name
+    Name of the datasource
+    .PARAMETER acquisitionUnit
+    Acquisition unit to associated datasource with
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:New-OciDatasource {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Datasource type",
+                    ValueFromPipelineByPropertyName=$True)][PSObject]$type,
+        [parameter(Mandatory=$True,
+                    Position=1,
+                    HelpMessage="Datasource name",
+                    ValueFromPipelineByPropertyName=$True)][String]$name,
+        [parameter(Mandatory=$True,
+                    Position=2,
+                    HelpMessage="Datasource acquisition unit",
+                    ValueFromPipelineByPropertyName=$True)][PSObject]$acquisitionUnit
+    )
+   
+    Process {
+        
+        $Datasource = [PSCustomObject]@{name=$Name;acquisitionUnit=[PSCustomObject]@{}}
+
+        $Datasource | Add-Member -MemberType NoteProperty -Name "config" -Value ([PSCustomObject]@{})
+        
+        if ($acquisitionUnit -is [int]) {
+            $Datasource.acquisitionUnit | Add-Member -MemberType NoteProperty -Name "id" -value $acquisitionUnit
+        }
+        elseif ($acquisitionUnit.id) {
+            $Datasource.acquisitionUnit = $acquisitionUnit | select -property id
+        }
+
+        $Datasource.config | Add-Member -MemberType NoteProperty -Name "dsTypeId" -Value $type.id
+        $Datasource.config | Add-Member -MemberType NoteProperty -Name "vendor" -Value $type.vendorModels.vendorDescription
+        $Datasource.config | Add-Member -MemberType NoteProperty -Name "model" -Value $type.vendorModels.modelDescription
+        $Datasource.config | Add-Member -MemberType NoteProperty -Name "packages" -Value @()
+
+        # if no packages are specified, enable all packages of specified type
+        if ($packages) {
+            $type.packages = $type.packages | ? { $packages -match $_.id }
+        }
+
+        foreach ($package in $type.packages) {
+            $attributes = $package.attributes
+            $package = [PSCustomObject]@{id=$package.id;displayName=$package.displayName;attributes=[PSCustomObject]@{}}
+            foreach ($attribute in $attributes) {
+                $package.attributes | Add-Member -MemberType NoteProperty -Name $attribute.name -Value $attribute.defaultValue
+            }
+            $Datasource.config.packages += $package
+        }
+
+        # parse datasource to make sure that script properties are created 
+        $Datasource = ParseDatasources($Datasource)
+        Write-Output $Datasource
+    }
+}
+
 <#
     .SYNOPSIS
     Add Data Source
     .DESCRIPTION
-    Request payload for new datasource should contain JSON in the format that is obtained by using following expands on GET one datasource: acquisitionUnit,config<br/>
-<pre>
-    {
-      "name": "datasource_name",
-      "acquisitionUnit": {
-        "id": "1"
-      },
-      "config": {
-        "vendor": "VMware",
-        "model": "vSphere (Web Services)",
-        "packages":
-        [
-          {
-            "id": "foundation",
-            "attributes":
-            {
-              "ip": "127.0.0.0"
-            }
-          }
-        ]
-      }
-    }
-</pre>           
+    Add Data Source    
+    .PARAMETER name
+    Datasource name
     .PARAMETER acquisitionUnit
-    Return related Acquisition unit
-    .PARAMETER note
-    Return related Note
-    .PARAMETER changes
-    Return list of related Changes
-    .PARAMETER packages
-    Return list of related Packages
-    .PARAMETER activePatch
-    Return related Active patch
-    .PARAMETER events
-    Return list of related Events
-    .PARAMETER devices
-    Return list of related Devices
+    Acquisition unit to associated datasource with
     .PARAMETER config
-    Return related Config
+    Configuration of datasource
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -1902,30 +1941,21 @@ function Global:Add-OciDatasource {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Return related Acquisition unit")][Switch]$acquisitionUnit,
-        [parameter(Mandatory=$False,
+                    HelpMessage="Datasource name",
+                    ValueFromPipelineByPropertyName=$True)][String]$name,
+        [parameter(Mandatory=$True,
                     Position=1,
-                    HelpMessage="Return related Note")][Switch]$note,
-        [parameter(Mandatory=$False,
+                    HelpMessage="Datasource acquisition unit",
+                    ValueFromPipelineByPropertyName=$True)][PSObject]$acquisitionUnit,
+        [parameter(Mandatory=$True,
                     Position=2,
-                    HelpMessage="Return list of related Changes")][Switch]$changes,
+                    HelpMessage="Datasource configuration",
+                    ValueFromPipelineByPropertyName=$True)][PSObject]$config,
         [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Return list of related Packages")][Switch]$packages,
-        [parameter(Mandatory=$False,
-                    Position=4,
-                    HelpMessage="Return related Active patch")][Switch]$activePatch,
-        [parameter(Mandatory=$False,
-                    Position=5,
-                    HelpMessage="Return list of related Events")][Switch]$events,
-        [parameter(Mandatory=$False,
-                    Position=6,
-                    HelpMessage="Return list of related Devices")][Switch]$devices,
-        [parameter(Mandatory=$False,
-                    Position=7,
-                    HelpMessage="Return related Config")][Switch]$config
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -1936,63 +1966,43 @@ function Global:Add-OciDatasource {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
-
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+        $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
+        try {
+            $Body = @{}
+            if ($Name) { 
+                $Body.name = $Name 
+            }
+            if ($acquisitionUnit) {
+                if ($acquisitionUnit -is [int]) {
+                    $Body.acquisitionUnit = @{id=$acquisitionUnit}
                 }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
+                elseif ($acquisitionUnit.id) {
+                    $Body.acquisitionUnit = $acquisitionUnit | select -property id
                 }
             }
- 
-            try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
+            if ($config) {
+                $ConfigScriptProperties = $config.PSObject.Members | ? { $_.MemberType -eq "ScriptProperty" } | % { $_.Name }
+                $Body.config = $config | Select -Property * -ExcludeProperty $ConfigScriptProperties
+                $Uri += "?expand=config"
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            $Body = $Body | ConvertTo-Json -Depth 10
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            if ($Result.toString().startsWith('{')) {
+                $Result = ParseJsonString($Result)
             }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+       
+        $Datasource = ParseDatasources($Result)
+        Write-Output $Datasource
     }
 }
 
-# TODO: Test deletion of datasoure
 <#
     .SYNOPSIS
     Remove a Datasource
@@ -2185,22 +2195,12 @@ function Global:Get-OciDatasource {
     Update OCI Datasource
     .PARAMETER id
     Id of data source to update
+    .PARAMETER name
+    New name for datasource
     .PARAMETER acquisitionUnit
-    Return related Acquisition unit
-    .PARAMETER note
-    Return related Note
-    .PARAMETER changes
-    Return list of related Changes
-    .PARAMETER packages
-    Return list of related Packages
-    .PARAMETER activePatch
-    Return related Active patch
-    .PARAMETER events
-    Return list of related Events
-    .PARAMETER devices
-    Return list of related Devices
+    New Acquisition unit to associated datasource with
     .PARAMETER config
-    Config to be changed
+    Updated configuration of datasources
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -2211,17 +2211,19 @@ function Global:Update-OciDataSource {
         [parameter(Mandatory=$True,
                     Position=0,
                     HelpMessage="Id of data source to update",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+                    ValueFromPipelineByPropertyName=$True)][Long]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Datasource name")][String]$name,
+                    HelpMessage="Datasource name",
+                    ValueFromPipelineByPropertyName=$True)][String]$name,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Datasource acquisition unit")][PSObject]$acquisitionUnit,
+                    HelpMessage="Datasource acquisition unit",
+                    ValueFromPipelineByPropertyName=$True)][PSObject]$acquisitionUnit,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Datasource configuration")][PSObject]$config,
+                    HelpMessage="Datasource configuration",
+                    ValueFromPipelineByPropertyName=$True)][PSObject]$config,
         [parameter(Mandatory=$False,
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -2235,39 +2237,35 @@ function Global:Update-OciDataSource {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
+        $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
  
-            try {
-                $Body = @{}
-                if ($Name) { 
-                    $Body.name = $Name 
-                }
-                if ($acquisitionUnit) { 
-                    $Body.acquisitionUnit = $acquisitionUnit | select -property id
-                    $Uri += "?expand=acquisitionUnit"
-                }
-                if ($config) {
-                    $ConfigScriptProperties = $config.PSObject.Members | ? { $_.MemberType -eq "ScriptProperty" } | % { $_.Name }
-                    $Body.config = $config | Select -ExcludeProperty $ConfigScriptProperties
-                    $Uri += "?expand=config"
-                }
-                $Body = $Body | ConvertTo-Json -Depth 10
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-                if ($Result.toString().startsWith('{')) {
-                    $Result = ParseJsonString($Result)
-                }
+        try {
+            $Body = @{}
+            if ($Name) { 
+                $Body.name = $Name 
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            if ($acquisitionUnit) { 
+                $Body.acquisitionUnit = $acquisitionUnit | select -property id
             }
-       
-            $Datasource = ParseDatasources($Result)
-            Write-Output $Datasource
+            if ($config) {
+                $ConfigScriptProperties = $config.PSObject.Members | ? { $_.MemberType -eq "ScriptProperty" } | % { $_.Name }
+                $Body.config = $config | Select -Property * -ExcludeProperty $ConfigScriptProperties
+                $Uri += "?expand=config"
+            }
+            $Body = $Body | ConvertTo-Json -Depth 10
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            if ($Result.toString().startsWith('{')) {
+                $Result = ParseJsonString($Result)
+            }
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+       
+        $Datasource = ParseDatasources($Result)
+        Write-Output $Datasource
     }
 }
 
