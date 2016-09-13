@@ -186,7 +186,7 @@ function ValidateDatasourceEvent {
         Process {
             $DatasourceEvent.id | Should BeGreaterThan 0
             $DatasourceEvent.packageName | Should Match 'Performance|Inventory'
-            $DatasourceEvent.status | Should Match 'STANDBY|ERROR|SUCCESS'
+            $DatasourceEvent.status | Should Match 'STANDBY|ERROR|SUCCESS|DISABLED'
             $DatasourceEvent.statusText | Should Match '.+'
             $DatasourceEvent.startTime | Should BeOfType DateTime
             $DatasourceEvent.endTime | Should BeOfType DateTime
