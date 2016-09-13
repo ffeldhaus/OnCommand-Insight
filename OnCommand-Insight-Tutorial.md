@@ -399,6 +399,68 @@ foreach ($Device in $DuplicateDevices) {
 }
 ```powershell
 
+### Create new Datasource`
+
+First get a list of all supported datasource types
+```powershell
+Get-OciDatasourceTypes
+```
+
+Select the datasource type you want to configure:
+```powershell
+$type = Get-OciDatasourceTypes | ? { $_.description -match "CMode" }
+```
+
+Select the acquisition unit to use for the datasource:
+```powershell
+$acquisitionUnit = Get-OciAcquisitionUnits | Select -first 1
+```
+
+Now create a new datasource from the type to work with locally (this does not create anything on the server yet!):
+```powershell
+$Datasource = New-OciDatasource -name "test" -acquisitionUnit $acquisitionUnit -type $type
+```
+
+Regardless of the datasource type, all datasources will have a foundation package. Other packages like storageperformance, cloud, hostvirtualization are datasource type specific. Check the available packages and their attributes with
+```powershell
+$Datasource.config.packages
+$Datasource.config.foundation.attributes
+$Datasource.config.storageperformance.attributes
+```
+
+The attributes are filled with the default values from the type definition. You may now change some of the attributes
+```powershell
+$Datasource.config.foundation.attributes.forceTLS = $true
+$Datasource.config.foundation.attributes.ip = "192.168.1.100"
+```
+
+To set username and password, it is recommended to use `Get-Credential`:
+```powershell
+$Credential = Get-Credential
+$Datasource.config.foundation.attributes.user = $Credential.UserName
+$Datasource.config.foundation.attributes.password = $Credential.GetNetworkCredential().password
+```
+
+Most additional packages like storageperformance are disabled by default and need to be enabled
+```powershell
+$Datasource.config.storageperformance.attributes.enabled = $true
+```
+
+Now the datasource can be added to the OCI server
+```powershell
+$Datasource = $Datasource | Add-OciDatasource
+```
+
+Check that the status of the datasource changes to success which indicates successfull collection of data
+```powershell
+$Datasource | Get-OciDatasource
+```
+
+To remove the datasource, use
+```powershell
+$Datasource | Remove-OciDatasource
+```
+
 ### Manage Datasource Configuration
 
 Get all datasources including its configuration
@@ -413,24 +475,22 @@ Get-OciDatasource -id 1 -config
 
 The configuration contains packages (e.g. foundation, performance, cloud) and each package has several attributes which can be modified. 
 
-Here's an example to change the password of a NetApp 7-Mode datasource:
+Here's an example to change the password of a single datasource:
 ```powershell
-$Datasource = Get-OciDatasource -id 1 -config
-# list packages
-$Datasource.config.packages
-# select foundation package and list it's attributes
-$Datasource.config.packages | ? { $_.id -eq "foundation" } | Select -ExpandProperty Attributes
+$Datasource = Get-OciDatasources | Select -first 1 | Get-OciDatasource -config
 # modify password attribute
-($Datasource.config.packages | ? { $_.id -eq "foundation" } | Select -ExpandProperty Attributes | Add-Member -MemberType NoteProperty -Name password -Value "test" -Force
+$Datasource.config.packages.foundation.attributes.password = "test"
 # update datasource
 $Datasource | Update-OciDatasource
 ```
 
-To simplify changing attributes, if possible, attributes have aliases in the config section (attributes with same name in several packages will not work and attributes with some reserved names will also not work). This is to simplify usage. For robust scripts, use the methods above!
+Here's an example to change the password of all datasources:
 ```powershell
-$Datasource = Get-OciDatasource -id 1 -config
-$Datasource.config.password = "test"
-$Datasource | Update-OciDatasource
+$Datasources = Get-OciDatasources -config
+# modify password attribute
+$Datasources | % { $_.config.packages.foundation.attributes.password = "test" }
+# update datasources
+$Datasources | Update-OciDatasource
 ```
 
 ### Creating and restoring OCI
