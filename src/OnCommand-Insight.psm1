@@ -308,11 +308,15 @@ function ParseDatasourceConfig($DatasourceConfig) {
         }
         if ($DatasourceConfig.packages | ? { $_.id -eq "storageperformance" }) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "storageperformance" -Value { $this.packages | ? { $_.id -eq "storageperformance" } }
-            $DatasourceConfig.storageperformance.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
         }
         if ($DatasourceConfig.packages | ? { $_.id -eq "hostvirtualization" }) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "hostvirtualization" -Value { $this.packages | ? { $_.id -eq "hostvirtualization" } }
-            $DatasourceConfig.hostvirtualization.attributes | Add-Member -MemberType NoteProperty -Name password -Value ""
+        }
+        if ($DatasourceConfig.packages | ? { $_.id -eq "performance" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "performance" -Value { $this.packages | ? { $_.id -eq "performance" } }
+        }
+        if ($DatasourceConfig.packages | ? { $_.id -eq "cloud" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "cloud" -Value { $this.packages | ? { $_.id -eq "cloud" } }
         }
         Write-Output $DatasourceConfig
     }
@@ -2238,16 +2242,16 @@ function Global:Update-OciDataSource {
             try {
                 $Body = @{}
                 if ($Name) { 
-                    $Body.Name = $Name 
+                    $Body.name = $Name 
                 }
                 if ($acquisitionUnit) { 
-                    $Body.acquisitionUnit = $acquisitionUnit | select -property id 
+                    $Body.acquisitionUnit = $acquisitionUnit | select -property id
+                    $Uri += "?expand=acquisitionUnit"
                 }
                 if ($config) {
-                    Write-Host "Config"
-                    $config
                     $ConfigScriptProperties = $config.PSObject.Members | ? { $_.MemberType -eq "ScriptProperty" } | % { $_.Name }
                     $Body.config = $config | Select -ExcludeProperty $ConfigScriptProperties
+                    $Uri += "?expand=config"
                 }
                 $Body = $Body | ConvertTo-Json -Depth 10
                 Write-Verbose "Body: $Body"
@@ -2261,7 +2265,8 @@ function Global:Update-OciDataSource {
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
        
-            Write-Output $Result
+            $Datasource = ParseDatasources($Result)
+            Write-Output $Datasource
         }
     }
 }
