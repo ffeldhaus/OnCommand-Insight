@@ -125,7 +125,7 @@ function ValidateDatasource {
             $Datasource.impactIndex | Should Match "-?[0-9]+"
             $Datasource.name | Should Match ".+"
             $Datasource.status | Should Match "[A-Z]+"
-            $Datasource.statusText | Should Match ".+"
+            $Datasource.statusText | Should Match ".*"
             $Datasource.pollStatus | Should Match "[A-Z]+"
             $Datasource.vendor | Should Match ".+"
             $Datasource.foundationIp | Should Match "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"
@@ -572,6 +572,80 @@ Describe "Datasource management" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
             Get-OciDatasources | Get-OciDatasource | ValidateDatasource
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+
+            $Datasources = Get-OciDatasources -Server $OciServer
+            $Datasources | Should Not BeNullOrEmpty
+            $Datasources = $Datasources | Get-OciDatasource -Server $OciServer
+            $Datasources | Should Not BeNullOrEmpty
+            $Datasources | ValidateDatasource
+        }
+    }
+
+    Context "modifying datasources" {
+        it "succeeds when modifying name" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datasources = Get-OciDatasources
+            $Datasources | Should Not BeNullOrEmpty
+            
+            foreach ($Datasource in $Datasources) {
+                $CurrentName = $Datasource.name
+                $NewName = $Datasource.name + "test"
+                $Datasource = $Datasource | Update-OciDataSource -name $NewName
+
+                $Datasource | ValidateDatasource
+                $Datasource.Name | Should Be $NewName
+
+                sleep 1
+
+                $Datasource = $Datasource | Update-OciDataSource -name $CurrentName
+
+                $Datasource | ValidateDatasource
+                $Datasource.Name | Should Be $CurrentName
+            }
+        }
+
+        it "succeeds when modifying acquisition unit" {
+            Write-Warning "Checking modification of acquisition unit not implemented"
+        }
+
+        it "succeeds when modifying poll interval in configuration" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datasources = Get-OciDatasources -config
+            $Datasources | Should Not BeNullOrEmpty
+
+            foreach ($Datasource in $Datasources) {
+                $CurrentPollInterval = $Datasource.config.foundation.attributes.poll
+                $NewPollInterval = $CurrentPollInterval + 120
+
+                $Datasource.config.foundation.attributes.poll = $NewPollInterval
+                $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
+                $Datasource | ValidateDatasource
+                $Datasource.config.foundation.attributes.poll | Should Be $NewPollInterval
+
+                $Datasource.config.foundation.attributes.poll = $CurrentPollInterval
+                $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
+                $Datasource | ValidateDatasource
+                $Datasource.config.foundation.attributes.poll | Should Be $CurrentPollInterval
+            }
+        }
+
+        it "succeeds when modifying password in configuration" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datasource = Get-OciDatasources -config | ? { $_.Name -match "Test" }
+            
+            $Datasource | Should Not BeNullOrEmpty
+
+            $Datasource.config.foundation.attributes.password = "test"
+            $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
+            $Datasource | ValidateDatasource
         }
 
         it "succeeds with transient OCI Server" {
