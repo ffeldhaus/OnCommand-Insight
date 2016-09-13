@@ -459,7 +459,7 @@ Here's an example to change the password of a single datasource:
 ```powershell
 $Datasource = Get-OciDatasources | Select -first 1 | Get-OciDatasource -config
 # modify password attribute
-$Datasource.config.packages.foundation.attributes.password = "test"
+$Datasource.config.foundation.attributes.password = "test"
 # update datasource
 $Datasource | Update-OciDatasource
 ```
@@ -468,7 +468,7 @@ Here's an example to change the password of all datasources:
 ```powershell
 $Datasources = Get-OciDatasources -config
 # modify password attribute
-$Datasources | % { $_.config.packages.foundation.attributes.password = "test" }
+$Datasources | % { $_.config.foundation.attributes.password = "test" }
 # update datasources
 $Datasources | Update-OciDatasource
 ```
