@@ -636,27 +636,28 @@ Describe "Datasource management" {
             }
         }
 
-        it "succeeds when modifying password in configuration" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-
-            $Datasource = Get-OciDatasources -config | ? { $_.Name -match "Test" }
-            
-            $Datasource | Should Not BeNullOrEmpty
-
-            $Datasource.config.foundation.attributes.password = "test"
-            $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
-            $Datasource | ValidateDatasource
-        }
-
-        it "succeeds with transient OCI Server" {
+        it "succeeds when modifying name using transient OCI Server" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
             $Global:CurrentOciServer | Should BeNullOrEmpty
 
-            $Datasources = Get-OciDatasources -Server $OciServer
+            $Datasources = Get-OciDatasources
             $Datasources | Should Not BeNullOrEmpty
-            $Datasources = $Datasources | Get-OciDatasource -Server $OciServer
-            $Datasources | Should Not BeNullOrEmpty
-            $Datasources | ValidateDatasource
+            
+            foreach ($Datasource in $Datasources) {
+                $CurrentName = $Datasource.name
+                $NewName = $Datasource.name + "test"
+                $Datasource = $Datasource | Update-OciDataSource -name $NewName
+
+                $Datasource | ValidateDatasource
+                $Datasource.Name | Should Be $NewName
+
+                sleep 1
+
+                $Datasource = $Datasource | Update-OciDataSource -name $CurrentName
+
+                $Datasource | ValidateDatasource
+                $Datasource.Name | Should Be $CurrentName
+            }
         }
     }
 }
