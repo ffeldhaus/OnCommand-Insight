@@ -31912,14 +31912,14 @@ function Global:Restore-OciBackup {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
-                Position=0,
-                HelpMessage="OnCommand Insight Server")][PSObject]$Server,
         [parameter(Mandatory=$True,
-                Position=1,
-                HelpMessage="Full path of OnCommand Insight Backup, either locally or on OnCommand Insight Server.",
-                ValueFromPipeline=$True,
-                ValueFromPipelineByPropertyName=$True)][PSObject[]]$FilePath
+                   Position=0,
+                   HelpMessage="Full path of OnCommand Insight Backup, either locally or on OnCommand Insight Server.",
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True)][PSObject[]]$FilePath,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -31980,46 +31980,46 @@ function Global:Restore-OciBackup {
                 } -ArgumentList $URI,$boundary,$Body,$Server.Headers
             }
 
-            try {
-                $percentComplete = 10
-                $activity = "Restore started"
-                $status = "Uploading"
-                Write-Progress -Activity $activity -status $status -percentComplete $percentComplete
-                sleep 2
-                $i = 0
-                while ($true) {
-                    $ProgressUri = $Uri + "?_=" + (get-date | ConvertTo-UnixTimestamp)
-                    $i++
+            $percentComplete = 10
+            $activity = "Restore started"
+            $status = "Uploading"
+            Write-Progress -Activity $activity -status $status -percentComplete $percentComplete
+            sleep 2
+            $i = 0
+            while ($true) {
+                $ProgressUri = $Uri + "?_=" + (get-date | ConvertTo-UnixTimestamp)
+                $i++
+                try {
                     $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $ProgressUri -Headers $Server.Headers -ErrorAction SilentlyContinue
-                    if ($i -eq 1440) { 
-                        Write-Host ''
-                        throw 'Backup did not finish within 24 hours' 
-                    }
-                    if ($Result.status -eq 'SUCCESSFUL') {
-                        Write-Host "finished"
-                        return
-                    }
-                    elseif ($Result.status -eq 'FAILED' -and ($Result.currentStep.startTime | get-date) -ge $StartTime -or $Job.State -ne 'Running') {
-                        return
-                    }
-                    elseif (($Result.currentStep.startTime | get-date) -ge $StartTime) {
-                        $activity = $Result.currentStep.operationText
-                        $status = $Result.components.name
-                    }
-                    switch ($Result.currentStep.phaseText) {
-                        "Restoring" { $percentComplete = 20 }
-                        "Waiting" { $percentComplete = 30 }
-                    } 
-                    Write-Progress -Activity $activity -status $status -percentComplete $percentComplete
-                    sleep 5
                 }
-                Write-Progress -Activity $Result.currentStep.phaseText -status $Result.currentStep.operationText -percentComplete 100
-                sleep 1
+                catch {
+                    $ResponseBody = ParseExceptionBody $_.Exception.Response
+                    Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+                }
+                if ($i -eq 1440) { 
+                    Write-Host ''
+                    throw 'Backup did not finish within 24 hours' 
+                }
+                if ($Result.status -eq 'SUCCESSFUL') {
+                    Write-Host "finished"
+                    return
+                }
+                elseif ($Result.status -eq 'FAILED' -and ($Result.currentStep.startTime | get-date) -ge $StartTime -or $Job.State -ne 'Running') {
+                    return
+                }
+                elseif (($Result.currentStep.startTime | get-date) -ge $StartTime) {
+                    $activity = $Result.currentStep.operationText
+                    $status = $Result.components.name | select -last 1
+                }
+                switch ($Result.currentStep.phaseText) {
+                    "Restoring" { $percentComplete = 20 }
+                    "Waiting" { $percentComplete = 30 }
+                } 
+                Write-Progress -Activity $activity -status $status -percentComplete $percentComplete
+                sleep 5
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
+            Write-Progress -Activity $Result.currentStep.phaseText -status $Result.currentStep.operationText -percentComplete 100
+            sleep 1
         }
         Write-Output $Result
     }
@@ -32035,15 +32035,15 @@ function Global:Get-OciBackup {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
-                Position=0,
-                HelpMessage="OnCommand Insight Server")][PSObject]$Server,
         [parameter(Mandatory=$True,
-                Position=1,
-                HelpMessage="Path where to store OnCommand Insight Backup.")][PSObject]$Path,
+                   Position=0,
+                   HelpMessage="Path where to store OnCommand Insight Backup.")][PSObject]$Path,
         [parameter(Mandatory=$False,
-                Position=2,
-                HelpMessage="Time in minutes to wait for backup to complete (Default = 60 minutes).")][PSObject]$Timeout=60
+                   Position=1,
+                   HelpMessage="Time in minutes to wait for backup to complete (Default = 60 minutes).")][PSObject]$Timeout=60,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -32074,7 +32074,11 @@ function Global:Get-OciBackup {
 
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-            Invoke-RestMethod -TimeoutSec 864000000000 -Method POST -Uri $args[0] -Headers $args[1] 
+            Write-Verbose "Test"
+            Write-Verbose $args[0]
+            Write-Verbose $args[1]
+
+            Invoke-RestMethod -TimeoutSec ([int32]::MaxValue) -Method POST -Uri $args[0] -Headers $args[1] -Verbose
         } -ArgumentList $URI,$Server.Headers
 
         try {
@@ -32131,8 +32135,8 @@ function Global:Get-OciBackups {
  
     PARAM (
         [parameter(Mandatory=$False,
-                Position=0,
-                HelpMessage="OnCommand Insight Server")][PSObject]$Server
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
