@@ -1072,17 +1072,21 @@ function global:Connect-OciServer {
         }
     }
 
-    if ([environment]::OSVersion.Platform -match "Win") {
-        # check if proxy is used
-        $ProxyRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-        $ProxySettings = Get-ItemProperty -Path $ProxyRegistry
-        if ($ProxySettings.ProxyEnable) {
-            Write-Warning "Proxy Server $($ProxySettings.ProxyServer) configured in Internet Explorer may be used to connect to the OCI server!"
-        }
-        if ($ProxySettings.AutoConfigURL) {
-            Write-Warning "Proxy Server defined in automatic proxy configuration script $($ProxySettings.AutoConfigURL) configured in Internet Explorer may be used to connect to the OCI server!"
+    # TODO: Remove as soon as PowerShell 6 fixes OSVersion implementation
+    try {
+        if ([environment]::OSVersion.Platform -match "Win") {
+            # check if proxy is used
+            $ProxyRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+            $ProxySettings = Get-ItemProperty -Path $ProxyRegistry
+            if ($ProxySettings.ProxyEnable) {
+                Write-Warning "Proxy Server $($ProxySettings.ProxyServer) configured in Internet Explorer may be used to connect to the OCI server!"
+            }
+            if ($ProxySettings.AutoConfigURL) {
+                Write-Warning "Proxy Server defined in automatic proxy configuration script $($ProxySettings.AutoConfigURL) configured in Internet Explorer may be used to connect to the OCI server!"
+            }
         }
     }
+    catch {}
  
     if ($HTTPS -or !$HTTP) {
         Try {
