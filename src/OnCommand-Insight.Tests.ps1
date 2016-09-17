@@ -23,7 +23,7 @@ function ValidateAcquisitionUnit {
             $AcquisitionUnit.self | Should Be "/rest/v1/admin/acquisitionUnits/$($AcquisitionUnit.id)"
             $AcquisitionUnit.name | Should Be "local"
             $AcquisitionUnit.ip | Should Match "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"
-            $AcquisitionUnit.status | Should Be "CONNECTED"
+            $AcquisitionUnit.status | Should Match "CONNECTED|CONNECTED_TIMEOUT"
             $AcquisitionUnit.isActive | Should Be "True"
             if ($AcquisitionUnit.leaseContract) {
                 $AcquisitionUnit.leaseContract | Should Be 120000
