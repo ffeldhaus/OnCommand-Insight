@@ -640,20 +640,20 @@ Describe "Datasource management" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
             $Global:CurrentOciServer | Should BeNullOrEmpty
 
-            $Datasources = Get-OciDatasources
+            $Datasources = Get-OciDatasources -Server $OciServer
             $Datasources | Should Not BeNullOrEmpty
             
             foreach ($Datasource in $Datasources) {
                 $CurrentName = $Datasource.name
                 $NewName = $Datasource.name + "test"
-                $Datasource = $Datasource | Update-OciDataSource -name $NewName
+                $Datasource = $Datasource | Update-OciDataSource -name $NewName -Server $OciServer
 
                 $Datasource | ValidateDatasource
                 $Datasource.Name | Should Be $NewName
 
                 sleep 1
 
-                $Datasource = $Datasource | Update-OciDataSource -name $CurrentName
+                $Datasource = $Datasource | Update-OciDataSource -name $CurrentName -Server $OciServer
 
                 $Datasource | ValidateDatasource
                 $Datasource.Name | Should Be $CurrentName
