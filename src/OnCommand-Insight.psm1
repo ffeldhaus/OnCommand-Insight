@@ -1035,7 +1035,7 @@ function global:Connect-OciServer {
         [parameter(Mandatory=$True,
                    Position=0,
                    HelpMessage="The name of the OCI Server. This value may also be a string representation of an IP address. If not an address, the name must be resolvable to an address.")][String]$Name,
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                    Position=1,
                    HelpMessage="A System.Management.Automation.PSCredential object containing the credentials needed to log into the OCI server.")][System.Management.Automation.PSCredential]$Credential,
         [parameter(Mandatory=$False,
@@ -1057,13 +1057,6 @@ function global:Connect-OciServer {
                    Position=6,
                    HelpMessage="Timeout value for HTTP connections. Defaults to 600 seconds.")][Int]$Timeout
     )
-
-    if (!$Credential) {
-        $Credential = Get-OciCredential -Name $Name | Select-Object -ExpandProperty Credential
-        if (!$Credential) {
-            throw "No Credentials supplied and $Name not in list of known OCI Servers"
-        }
-    }
  
     $EncodedAuthorization = [System.Text.Encoding]::UTF8.GetBytes($Credential.UserName + ':' + $Credential.GetNetworkCredential().Password)
     $EncodedPassword = [System.Convert]::ToBase64String($EncodedAuthorization)
