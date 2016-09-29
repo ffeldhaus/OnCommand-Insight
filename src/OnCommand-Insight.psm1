@@ -444,12 +444,18 @@ function ParsePerformance($Performance) {
         $Performance.iops.total.end = $Performance.iops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
     }
     if ($Performance.cacheHitRatio) {
-        $Performance.cacheHitRatio.read.start = $Performance.cacheHitRatio.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.cacheHitRatio.read.end = $Performance.cacheHitRatio.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.cacheHitRatio.write.start = $Performance.cacheHitRatio.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.cacheHitRatio.write.end = $Performance.cacheHitRatio.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.cacheHitRatio.total.start = $Performance.cacheHitRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.cacheHitRatio.total.end = $Performance.cacheHitRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        if ($Performance.cacheHitRatio.read) {
+            $Performance.cacheHitRatio.read.start = $Performance.cacheHitRatio.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+            $Performance.cacheHitRatio.read.end = $Performance.cacheHitRatio.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        }
+        if ($Performance.cacheHitRatio.write) {
+            $Performance.cacheHitRatio.write.start = $Performance.cacheHitRatio.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+            $Performance.cacheHitRatio.write.end = $Performance.cacheHitRatio.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        }
+        if ($Performance.cacheHitRatio.total) {
+            $Performance.cacheHitRatio.total.start = $Performance.cacheHitRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+            $Performance.cacheHitRatio.total.end = $Performance.cacheHitRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        }
     }
     if ($Performance.latency) {
         $Performance.latency.read.start = $Performance.latency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
@@ -11079,22 +11085,9 @@ function Global:Get-OciHost {
 
 <#
     .SYNOPSIS
-    Delete annotations from object
+    Delete annotations from host
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-{
-  "definition":{"id":"5001"}
-},
-{
-  "definition":{"id":"5002"}
-}
-]
-</pre>
-                    
+    Delete annotations from host             
     .PARAMETER id
     Id of object to delete
     .PARAMETER definition
@@ -11102,7 +11095,7 @@ function Global:Get-OciHost {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Remove-OciAnnotationsByHosts {
+function Global:Remove-OciAnnotationsByHost {
     [CmdletBinding()]
  
     PARAM (
@@ -11113,9 +11106,9 @@ function Global:Remove-OciAnnotationsByHosts {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return related Definition")][Switch]$definition,
+                    HelpMessage="Return related Definition")][PSObject[]]$annotations,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -11130,38 +11123,16 @@ function Global:Remove-OciAnnotationsByHosts {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
-           
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
  
             try {
-                $Body = ""
+                if (!$Annotations) {
+                    $Annotations = Get-OciAnnotationsByHost -id $id -Server $Server
+                }
+                $Definitions = @()
+                foreach ($Annotation in $Annotations) {
+                    $Definitions += @{definition=@{id=$Annotation.id}} 
+                }
+                $Body = ConvertTo-Json $Definitions
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
@@ -11181,11 +11152,11 @@ function Global:Remove-OciAnnotationsByHosts {
 
 <#
     .SYNOPSIS
-    Retrieve annotations for object
+    Retrieve annotations of host
     .DESCRIPTION
-    
+    Retrieve annotations of host
     .PARAMETER id
-    Id of object to retrieve
+    Id of host to retrieve annotations for
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=definition)
     .PARAMETER definition
@@ -11193,13 +11164,13 @@ function Global:Remove-OciAnnotationsByHosts {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Get-OciAnnotationsByHosts {
+function Global:Get-OciAnnotationsByHost {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id of object to retrieve",
+                    HelpMessage="Id of host to retrieve annotations for",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
@@ -11273,28 +11244,17 @@ function Global:Get-OciAnnotationsByHosts {
 
 <#
     .SYNOPSIS
-    Update annotations for object
+    Update annotations of host
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-  {
-    "rawValue": "Bronze",
-    "definition": {
-      "id": "4992",
-    }
-  }
-]
-</pre>
-            
+    Update annotations of host     
     .PARAMETER id
     Id of object to update
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER annotation
+    Annotation
+    .PARAMETER rawValue
+    Annotation value to set for host
 #>
-function Global:Update-OciAnnotationsByHost {
+function Global:Update-OciAnnotationByHost {
     [CmdletBinding()]
  
     PARAM (
@@ -11303,11 +11263,14 @@ function Global:Update-OciAnnotationsByHost {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=1,
-                    HelpMessage="Return related Definition")][Switch]$definition,
+                    HelpMessage="Annotation")][PSObject]$annotation,
+        [parameter(Mandatory=$True,
+                    Position=2,
+                    HelpMessage="Annotation value to set for host")][String]$rawValue,
         [parameter(Mandatory=$False,
-                   Position=2,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -11323,37 +11286,18 @@ function Global:Update-OciAnnotationsByHost {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
  
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
             try {
-                $Body = ""
+                $Body = @"
+[
+    {
+        "rawValue": "$rawValue",
+        "definition": 
+            {
+                "id": "$($annotation.id)"
+            }
+    }
+]
+"@
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
@@ -14702,7 +14646,8 @@ function Global:Get-OciStorageNodesByInternalVolume {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $StorageNodes = ParseStorageNodes($Result)
+            Write-Output $StorageNodes
         }
     }
 }
@@ -19166,7 +19111,8 @@ function Global:Get-OciStorageNode {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $StorageNodes = ParseStorageNodes($Result)
+            Write-Output $StorageNodes
         }
     }
 }
