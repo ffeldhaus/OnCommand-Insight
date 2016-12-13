@@ -660,6 +660,62 @@ Describe "Datasource management" {
             }
         }
     }
+
+    Context "creating datasources" {
+        it "succeeds for all datasource types" {
+             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+             $User = "test"
+             $IP = "127.0.0.1"
+             $Password = "test"
+
+             $DatasourceTypes = Get-OciDatasourceTypes
+
+             $AcquisitionUnit = Get-OciAcquisitionUnits | select -first 1
+
+             foreach ($DatasourceType in $DatasourceTypes) {
+                if ($DatasourceType.vendorModels.count -gt 1) {
+                    $DatasourceType.vendorModels = $DatasourceType.vendorModels | select -Last 1
+                }
+                $Datasource = New-OciDatasource -type $DatasourceType -name "test" -acquisitionUnit $AcquisitionUnit
+                if ($Datasource.config.foundation) {
+                    if ($Datasource.config.foundation.attributes.PSobject.Properties.name -match "ip") {
+                        $Datasource.config.foundation.attributes.ip = $IP
+                    }
+                    if ($Datasource.config.foundation.attributes.PSobject.Properties.name -match "user") {
+                        $Datasource.config.foundation.attributes.user = $User
+                    }
+                    if ($Datasource.config.foundation.attributes.PSobject.Properties.name -match "password") {
+                        $Datasource.config.foundation.attributes.password = $Password
+                    }
+                }
+                if ($Datasource.config.performance) {
+                    $Datasource.config.performance.attributes.enabled = $true
+                }
+                if ($Datasource.config.storageperformance) {
+                    $Datasource.config.storageperformance.attributes.enabled = $true
+                }
+                if ($Datasource.config.hostvirtualization) {
+                    $Datasource.config.hostvirtualization.attributes.enabled = $true
+                }
+                if ($Datasource.config.cloud) {
+                    if ($Datasource.config.cloud.attributes.PSobject.Properties.name -match "ip") {
+                        $Datasource.config.cloud.attributes.ip = $IP
+                    }
+                    if ($Datasource.config.cloud.attributes.PSobject.Properties.name -match "user") {
+                        $Datasource.config.cloud.attributes.user = $User
+                    }
+                    if ($Datasource.config.cloud.attributes.PSobject.Properties.name -match "password") {
+                        $Datasource.config.cloud.attributes.password = $Password
+                    }
+                }
+                $Datasource = Add-OciDatasource -name $Datasource.name -acquisitionUnit $AcquisitionUnit -config $Datasource.config
+                sleep 2
+                $null = $Datasource | Remove-OciDatasource
+                sleep 3
+             }
+        }
+    }
 }
 
 Describe "Application management" {
