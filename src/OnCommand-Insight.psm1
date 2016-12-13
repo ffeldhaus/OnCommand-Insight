@@ -1204,12 +1204,7 @@ function Global:Get-OciAcquisitionUnits {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-    }
-   
-    Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits"
-  
-        $expand=$null
+
         $switchparameters=@("datasources")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -1221,6 +1216,10 @@ function Global:Get-OciAcquisitionUnits {
                 }
             }
         }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits"
 
         if ($expand) {
             $Uri += "?expand=$expand"
@@ -1282,28 +1281,27 @@ function Global:Get-OciAcquisitionUnit {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("datasources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($Server.BaseUri) + "/rest/v1/admin/acquisitionUnits/$id"
-
-            $expand=$null
-            $switchparameters=@("datasources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $($Server.BaseUri) + "/rest/v1/admin/acquisitionUnits/$id"            
  
             if ($expand) {
-                $Uri += "?$($Separator)expand=$expand"
+                $Uri += "?expand=$expand"
             }
  
             try {
@@ -1398,25 +1396,24 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
-
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"            
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -1592,25 +1589,24 @@ function Global:Add-OciCertificate {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/certificates"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -1814,25 +1810,24 @@ function Global:Get-OciDatasources {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
-
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -2149,25 +2144,24 @@ function Global:Get-OciDatasource {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -2311,25 +2305,24 @@ function Global:Get-OciAcquisitionUnitByDatasource {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("datasources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $($Server.BaseUri) + "/rest/v1/admin/datasources/$id/acquisitionUnit"
-
-            $expand=$null
-            $switchparameters=@("datasources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -2393,25 +2386,24 @@ function Global:Get-OciActivePatchByDatasource {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("datasourceConclusions")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/activePatch"
- 
-            $expand=$null
-            $switchparameters=@("datasourceConclusions")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -2474,26 +2466,24 @@ function Global:Get-OciDatasourceChanges {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("details")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/changes"
- 
-            $expand=$null
-            $switchparameters=@("details")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
 
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -2657,25 +2647,24 @@ function Global:Get-OciDatasourceEvents {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("details")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/events"
- 
-            $expand=$null
-            $switchparameters=@("details")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -2836,30 +2825,35 @@ function Global:Update-OciDatasourceNote {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$True,
                     Position=1,
-                    HelpMessage="Note to be added to datasource")][String]$value
+                    HelpMessage="Note to be added to datasource")][String]$value,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/note"
- 
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -2983,25 +2977,24 @@ function Global:Poll-OciDatasource {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/poll"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3077,25 +3070,24 @@ function Global:Suspend-OciDatasource {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/postpone"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             try {
                 if ('POST' -match 'PUT|POST') {
@@ -3148,25 +3140,24 @@ function Global:Resume-OciDatasource {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/resume"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/resume"         
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3226,30 +3217,35 @@ function Global:Test-OciDatasource {
                     Position=0,
                     HelpMessage="Id of data source to test",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3383,25 +3379,24 @@ function Global:Update-OciLdapConfiguration {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"           
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3471,25 +3466,24 @@ function Global:Test-OciLdapConfiguration {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3603,25 +3597,24 @@ function Global:Update-OciLicenses {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/license"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/license"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3690,25 +3683,24 @@ function Global:Replace-OciLicense {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/license"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/license"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3781,12 +3773,7 @@ function Global:Get-OciPatches {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-    }
-   
-    Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
 
-        $expand=$null
         $switchparameters=@("datasourceConclusions")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -3798,6 +3785,10 @@ function Global:Get-OciPatches {
                 }
             }
         }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches"        
  
         if ($expand) {
             $Uri += "?$($Separator)expand=$expand"
@@ -3834,30 +3825,35 @@ function Global:Add-OciPatches {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions
+                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("datasourceConclusions")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
-
-            $expand=$null
-            $switchparameters=@("datasourceConclusions")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -3937,25 +3933,24 @@ function Global:Get-OciPatch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("datasourceConclusions")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
- 
-            $expand=$null
-            $switchparameters=@("datasourceConclusions")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"            
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -4002,30 +3997,35 @@ function Global:Update-OciPatch {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions
+                    HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("datasourceConclusions")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
-
-            $expand=$null
-            $switchparameters=@("datasourceConclusions")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -4090,25 +4090,24 @@ function Global:Approve-OciPatch {
  
     Begin {
         $Result = $null
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -4237,30 +4236,35 @@ function Global:Update-OciPatchNote {
                     Position=0,
                     HelpMessage="Id of patch to update",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/note"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/note"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -4320,30 +4324,35 @@ function Global:Rollback-OciPatch {
                     Position=0,
                     HelpMessage="Id of patch to rolback",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/rollback"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/rollback"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -4451,30 +4460,34 @@ function Global:Add-OciUsers {
     [CmdletBinding()]
  
     PARAM (
-
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/users"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/users"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -4586,25 +4599,27 @@ function Global:Remove-OciUser {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -4728,30 +4743,35 @@ function Global:Update-OciUser {
                     Position=0,
                     HelpMessage="The id of user to update",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -5387,30 +5407,35 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
                     HelpMessage="The object type to retrieve target objects for")][String]$objectType,
         [parameter(Mandatory=$True,
                     Position=2,
-                    HelpMessage="The specific value to retrieve target objects for")][String]$value
+                    HelpMessage="The specific value to retrieve target objects for")][String]$value,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/{objectType}/{value}"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/{objectType}/{value}"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -5498,25 +5523,24 @@ function Global:Get-OciApplications {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications"            
 
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -5602,12 +5626,7 @@ function Global:Add-OciApplication {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-    }
 
-    Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/applications"
-
-        $expand=$null
         $switchparameters=@("computeResources","storageResources")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -5619,6 +5638,10 @@ function Global:Add-OciApplication {
                 }
             }
         }
+    }
+
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/applications"
  
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
@@ -5717,30 +5740,35 @@ function Global:Remove-OciApplicationsFromAssets {
                     HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"           
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -5837,30 +5865,35 @@ function Global:Add-OciApplicationsToAssets {
                     HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"           
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -5940,25 +5973,24 @@ function Global:Remove-OciApplication {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -6048,26 +6080,25 @@ function Global:Get-OciApplication {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
-           
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
+                      
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6151,25 +6182,27 @@ function Global:Update-OciApplication {
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -6251,30 +6284,35 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
                     Position=0,
                     HelpMessage="Id of application to un-assign from assets",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"           
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -6441,25 +6479,24 @@ function Global:Bulk-OciAssignApplicationToAssets {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -6569,26 +6606,25 @@ function Global:Get-OciComputeResourcesByApplication {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/computeResources"
-           
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6702,26 +6738,25 @@ function Global:Get-OciStorageResourcesByApplication {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/storageResources"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -7046,6 +7081,18 @@ function Global:Get-OciDatastores {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
@@ -7058,19 +7105,6 @@ function Global:Get-OciDatastores {
             }
 
             $Uri = $($Server.BaseUri) + "/rest/v1/assets/dataStores"
- 
-            $expand=$null
-            $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
             
             $Uri += '?'
             $Separator = ''
@@ -7244,25 +7278,23 @@ function Global:Get-OciDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+        $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id"
- 
-            $expand=$null
-            $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -7351,25 +7383,24 @@ function Global:Remove-OciAnnotationsByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $CurrentOciServer.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
-           
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $CurrentOciServer.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -7445,25 +7476,24 @@ function Global:Get-OciAnnotationsByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"            
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -7542,25 +7572,24 @@ function Global:Update-OciAnnotationsByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"            
  
             if ($expand) {
                 $Uri += "$($Separator)expand=$expand"
@@ -7669,25 +7698,24 @@ function Global:Get-OciDatasourcesByDataStore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -7823,25 +7851,24 @@ function Global:Get-OciHostsByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"
- 
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -7927,25 +7954,24 @@ function Global:Get-OciDatastorePerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/performance"
- 
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8060,25 +8086,24 @@ function Global:Get-OciStorageResourcesByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/storageResources"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/storageResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8193,25 +8218,24 @@ function Global:Get-OciVmdksByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/vmdks"
-
-            $expand=$null
-            $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/vmdks"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8332,25 +8356,24 @@ function Global:Get-OciDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id"
- 
-            $expand=$null
-            $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8434,25 +8457,24 @@ function Global:Remove-OciAnnotationsByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8526,25 +8548,24 @@ function Global:Get-OciAnnotationsByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8628,25 +8649,24 @@ function Global:Update-OciAnnotationsByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8812,25 +8832,24 @@ function Global:Get-OciBackendVolumesByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/backendVolumes"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/backendVolumes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -8950,25 +8969,24 @@ function Global:Get-OciDatasourcesByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -9054,25 +9072,24 @@ function Global:Get-OciDiskPerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/performance"
-
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -9202,25 +9219,24 @@ function Global:Get-OciStoragePoolsByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storagePools"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storagePools"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -9335,25 +9351,24 @@ function Global:Get-OciStorageResourcesByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storageResources"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -9446,6 +9461,18 @@ function Global:Get-OciFabrics {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("switches","datasources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
@@ -9457,20 +9484,7 @@ function Global:Get-OciFabrics {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics"
-           
-            $expand=$null
-            $switchparameters=@("switches","datasources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics"                      
  
             $Uri += '?'
             $Separator = ''
@@ -9614,25 +9628,24 @@ function Global:Get-OciFabric {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("switches","datasources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id"
-
-            $expand=$null
-            $switchparameters=@("switches","datasources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -9752,25 +9765,24 @@ function Global:Get-OciDatasourcesByFabric {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -9905,6 +9917,18 @@ function Global:Get-OciPortsByFabric {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
@@ -9916,20 +9940,7 @@ function Global:Get-OciPortsByFabric {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports"
-           
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports"                      
 
             $Uri += '?'
             $Separator = ''
@@ -10019,25 +10030,24 @@ function Global:Get-OciPortsByFabricCount {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports/count"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports/count"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -10151,25 +10161,24 @@ function Global:Get-OciSwitchesByFabric {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/switches"
-
-            $expand=$null
-            $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/switches"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -10264,25 +10273,24 @@ function Global:Get-OciFilesystem {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageResources","vmdks","computeResource")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id"
- 
-            $expand=$null
-            $switchparameters=@("storageResources","vmdks","computeResource")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -10386,25 +10394,24 @@ function Global:Get-OciComputeResourceByFileSystem {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/computeResource"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/computeResource"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -10518,25 +10525,24 @@ function Global:Get-OciStorageResorcesByFileSystem {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/storageResources"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/storageResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -10650,25 +10656,24 @@ function Global:Get-OciVmdksByFileSystem {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/vmdks"
-
-            $expand=$null
-            $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/vmdks"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -10810,6 +10815,18 @@ function Global:Get-OciHosts {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
@@ -10821,20 +10838,7 @@ function Global:Get-OciHosts {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts"
-           
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts"                      
  
             $Uri += '?'
             $Separator = ''
@@ -11028,25 +11032,24 @@ function Global:Get-OciHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id"
- 
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -11189,25 +11192,24 @@ function Global:Get-OciAnnotationsByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -11364,25 +11366,24 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -11470,25 +11471,24 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -11572,25 +11572,24 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -11671,25 +11670,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -11768,25 +11766,24 @@ function Global:Remove-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id$/applications/$appId"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id$/applications/$appId"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -11918,25 +11915,24 @@ function Global:Get-OciClusterHostsByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/clusterHosts"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/clusterHosts"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -12013,25 +12009,24 @@ function Global:Get-OciDataCenterByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/dataCenter"
-           
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/dataCenter"                     
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -12148,25 +12143,24 @@ function Global:Get-OciDatasourcesByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/datasources"
-           
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/datasources"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -12258,25 +12252,24 @@ function Global:Get-OciFileSystemsByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageResources","vmdks","computeResource")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/fileSystems"
-
-            $expand=$null
-            $switchparameters=@("storageResources","vmdks","computeResource")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/fileSystems"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -12358,25 +12351,24 @@ function Global:Get-OciHostPerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/performance"
-           
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/performance"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -12494,25 +12486,24 @@ function Global:Get-OciPortsByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/ports"
- 
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/ports"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -12624,25 +12615,24 @@ function Global:Get-OciStorageResourcesByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/storageResources"
-           
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/storageResources"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -12774,26 +12764,26 @@ function Global:Get-OciVirtualMachinesByHost {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
+ 
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/virtualMachines"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
+            
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12934,25 +12924,24 @@ function Global:Get-OciInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -13033,25 +13022,24 @@ function Global:Remove-OciAnnotationsByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -13125,25 +13113,24 @@ function Global:Get-OciAnnotationsByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -13223,25 +13210,24 @@ function Global:Update-OciAnnotationsByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -13320,25 +13306,24 @@ function Global:Remove-OciApplicationsFromInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -13415,25 +13400,24 @@ function Global:Get-OciApplicationsByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -13512,26 +13496,25 @@ function Global:Add-OciApplicationsToInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         $applicationId = @($applicationId)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -13605,25 +13588,24 @@ function Global:Update-OciApplicationsByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -13702,25 +13684,24 @@ function Global:Remove-OciApplicationsByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications/$appId"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications/$appId"            
  
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
@@ -13810,25 +13791,24 @@ function Global:Get-OciComputeResourcesByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/computeResources"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/computeResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -13940,25 +13920,24 @@ function Global:Get-OciDataStoresByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/dataStores"
- 
-            $expand=$null
-            $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/dataStores"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -14075,25 +14054,24 @@ function Global:Get-OciDatasourcesByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -14176,25 +14154,24 @@ function Global:Get-OciInternalVolumePerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/performance"
- 
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -14302,25 +14279,24 @@ function Global:Get-OciQtreesByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/qtrees"
-
-            $expand=$null
-            $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/qtrees"          
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -14463,25 +14439,24 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/replicaSources"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/replicaSources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -14598,25 +14573,24 @@ function Global:Get-OciStorageNodesByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/storageNodes"
-
-            $expand=$null
-            $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/storageNodes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -14779,25 +14753,24 @@ function Global:Get-OciVolumesByInternalVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/volumes"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/volumes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -14914,25 +14887,24 @@ function Global:Get-OciPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id"
-
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15012,25 +14984,24 @@ function Global:Remove-OciAnnotationsByPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15104,25 +15075,24 @@ function Global:Get-OciAnnotationsByPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15202,25 +15172,24 @@ function Global:Update-OciAnnotationsByPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
-           
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15306,25 +15275,24 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15412,25 +15380,24 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15514,25 +15481,24 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15613,25 +15579,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15750,25 +15715,24 @@ function Global:Get-OciConnectedPortsByPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/connectedPorts"
-  
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/connectedPorts"           
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15885,25 +15849,24 @@ function Global:Get-OciDatasourcesByPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -15980,25 +15943,24 @@ function Global:Get-OciDeviceByPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/device"
- 
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/device"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16085,25 +16047,24 @@ function Global:Get-OciFabricsByPort {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("switches","datasources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/fabrics"
- 
-            $expand=$null
-            $switchparameters=@("switches","datasources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/fabrics"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16185,25 +16146,24 @@ function Global:Get-OciPortPerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/performance"
- 
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16311,25 +16271,24 @@ function Global:Get-OciQtree {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id"
-
-            $expand=$null
-            $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16409,25 +16368,24 @@ function Global:Remove-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16501,25 +16459,24 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16599,25 +16556,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"           
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16703,25 +16659,24 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16810,25 +16765,24 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -16912,25 +16866,24 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17011,25 +16964,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
-           
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17108,25 +17060,24 @@ function Global:Remove-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications/$appId"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications/$appId"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17268,25 +17219,24 @@ function Global:Get-OciInternalVolumeByQtree {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/internalVolume"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/internalVolume"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17372,30 +17322,35 @@ function Global:Get-OciSharesByQtree {
                     HelpMessage="Return list of related Annotations")][Switch]$annotations,
         [parameter(Mandatory=$False,
                     Position=7,
-                    HelpMessage="Return list of related Applications")][Switch]$applications
+                    HelpMessage="Return list of related Applications")][Switch]$applications,
+        [parameter(Mandatory=$False,
+                   Position=8,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("storage","qtree","annotations","applications")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/shares"
-
-            $expand=$null
-            $switchparameters=@("storage","qtree","annotations","applications")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/shares"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17547,25 +17502,24 @@ function Global:Get-OciStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/storage"
- 
-            $expand=$null
-            $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/storage"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17727,25 +17681,24 @@ function Global:Get-OciVolumesByQtree {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/volumes"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/volumes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17842,25 +17795,24 @@ function Global:Get-OciShare {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","qtree","annotations","applications")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id"
-
-            $expand=$null
-            $switchparameters=@("storage","qtree","annotations","applications")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -17929,30 +17881,35 @@ function Global:Remove-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return related Definition")][Switch]$definition
+                    HelpMessage="Return related Definition")][Switch]$definition,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18026,25 +17983,24 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
-           
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18124,25 +18080,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18228,25 +18183,24 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18335,25 +18289,24 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18437,25 +18390,24 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18536,25 +18488,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18633,25 +18584,24 @@ function Global:Remove-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications/{appId}"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications/{appId}"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18758,25 +18708,24 @@ function Global:Get-OciQtree {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/qtree"
-           
-            $expand=$null
-            $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/qtree"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -18928,25 +18877,24 @@ function Global:Get-OciStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/storage"
-
-            $expand=$null
-            $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/storage"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19063,25 +19011,24 @@ function Global:Get-OciStorageNode {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id"
- 
-            $expand=$null
-            $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19162,25 +19109,24 @@ function Global:Remove-OciAnnotationsByStorageNode {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19254,25 +19200,24 @@ function Global:Get-OciAnnotationsByStorageNode {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19352,25 +19297,24 @@ function Global:Update-OciAnnotationsByStorageNode {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19489,25 +19433,24 @@ function Global:Get-OciDatasourcesByStorageNode {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19589,25 +19532,24 @@ function Global:Get-OciStorageNodePerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/performance"
-
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19725,25 +19667,24 @@ function Global:Get-OciPortsByStorageNode {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/ports"
- 
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/ports"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -19870,25 +19811,24 @@ function Global:Get-OciStoragePoolsByNode {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/storagePools"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/storagePools"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20015,25 +19955,24 @@ function Global:Get-OciStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20113,25 +20052,24 @@ function Global:Remove-OciAnnotationsByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
-            
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"                       
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20205,25 +20143,24 @@ function Global:Get-OciAnnotationsByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20303,25 +20240,24 @@ function Global:Update-OciAnnotationsByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20440,25 +20376,24 @@ function Global:Get-OciDatasourcesByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20575,25 +20510,24 @@ function Global:Get-OciDisksByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/disks"
- 
-            $expand=$null
-            $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20735,25 +20669,24 @@ function Global:Get-OciInternalVolumesByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/internalVolumes"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/internalVolumes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -20835,25 +20768,24 @@ function Global:Get-OciStoragePoolPerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/performance"
- 
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -21006,25 +20938,24 @@ function Global:Get-OciStorageByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storage"
- 
-            $expand=$null
-            $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storage"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -21141,25 +21072,24 @@ function Global:Get-OciStorageNodesByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageNodes"
- 
-            $expand=$null
-            $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageNodes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -21271,25 +21201,24 @@ function Global:Get-OciStorageResourcesByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageResources"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -21451,25 +21380,24 @@ function Global:Get-OciVolumesByStoragePool {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/volumes"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -21630,18 +21558,7 @@ function Global:Get-OciStorages {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-    }
-   
-    Process {
-        # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
-        if ($Limit -eq 0) {
-            $FetchAll = $true
-            $Limit = 50
-        }
 
-        $Uri = $Server.BaseUri + "/rest/v1/assets/storages"
-           
-        $expand=$null
         $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -21653,6 +21570,16 @@ function Global:Get-OciStorages {
                 }
             }
         }
+    }
+   
+    Process {
+        # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
+        if ($Limit -eq 0) {
+            $FetchAll = $true
+            $Limit = 50
+        }
+
+        $Uri = $Server.BaseUri + "/rest/v1/assets/storages"                  
  
         $Uri += '?'
         $Separator = ''
@@ -21864,25 +21791,24 @@ function Global:Get-OciStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"
- 
-            $expand=$null
-            $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -21962,26 +21888,24 @@ function Global:Remove-OciAnnotationsByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
- 
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22055,25 +21979,24 @@ function Global:Get-OciAnnotationsByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22153,25 +22076,24 @@ function Global:Update-OciAnnotationsByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22257,25 +22179,24 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22364,25 +22285,24 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22466,25 +22386,24 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22565,25 +22484,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22702,25 +22620,24 @@ function Global:Get-OciDatasourcesByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22837,25 +22754,24 @@ function Global:Get-OciDisksByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/disks"
- 
-            $expand=$null
-            $switchparameters=@("storage","storagePools","performance","storageResources","backendVolumes","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/disks"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -22997,25 +22913,24 @@ function Global:Get-OciInternalVolumesByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/internalVolumes"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/internalVolumes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23097,25 +23012,24 @@ function Global:Get-OciStoragePerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/performance"
-
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23233,25 +23147,24 @@ function Global:Get-OciPortsByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/ports"
-
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/ports"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23313,25 +23226,24 @@ function Global:Get-OciProtocolsByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/protocols"
- 
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/protocols"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23438,25 +23350,24 @@ function Global:Get-OciQtreesByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/qtrees"
- 
-            $expand=$null
-            $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/qtrees"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23553,25 +23464,24 @@ function Global:Get-OciSharesByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","qtree","annotations","applications")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/shares"
- 
-            $expand=$null
-            $switchparameters=@("storage","qtree","annotations","applications")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/shares"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23688,25 +23598,24 @@ function Global:Get-OciStorageNodesByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageNodes"
-
-            $expand=$null
-            $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageNodes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23833,25 +23742,24 @@ function Global:Get-OciStoragePoolsByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storagePools"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storagePools"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -23963,25 +23871,24 @@ function Global:Get-OciStorageResourcesByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageResources"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -24143,25 +24050,24 @@ function Global:Get-OciVolumesByStorage {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/volumes"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/volumes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -24276,6 +24182,18 @@ function Global:Get-OciSwitches {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
@@ -24287,20 +24205,7 @@ function Global:Get-OciSwitches {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches"
-
-            $expand=$null
-            $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches"            
  
             $Uri += '?'
             $Separator = ''
@@ -24470,25 +24375,24 @@ function Global:Get-OciSwitch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id"
-
-            $expand=$null
-            $switchparameters=@("fabric","performance","ports","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -24558,30 +24462,35 @@ function Global:Remove-OciAnnotationsBySwitch {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return related Definition")][Switch]$definition
+                    HelpMessage="Return related Definition")][Switch]$definition,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -24655,25 +24564,24 @@ function Global:Get-OciAnnotationsBySwitch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -24753,25 +24661,24 @@ function Global:Update-OciAnnotationsBySwitch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -24857,25 +24764,24 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -24964,25 +24870,24 @@ function Global:Get-OciApplicationsBySwitch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -25066,25 +24971,24 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -25154,30 +25058,35 @@ function Global:Update-OciByTypeAndId {
                     HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -25296,25 +25205,24 @@ function Global:Get-OciDatasourcesBySwitch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -25402,25 +25310,24 @@ function Global:Get-OciFabricBySwitch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("switches","datasources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/fabric"
-
-            $expand=$null
-            $switchparameters=@("switches","datasources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/fabric"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -25502,25 +25409,24 @@ function Global:Get-OciSwitchPerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/performance"
-
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -25638,25 +25544,24 @@ function Global:Get-OciPortsBySwitch {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/ports"
- 
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/ports"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -25796,6 +25701,18 @@ function Global:Get-OciVirtualMachines {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
@@ -25807,20 +25724,7 @@ function Global:Get-OciVirtualMachines {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines"            
  
             $Uri += '?'
             $Separator = ''
@@ -26009,25 +25913,24 @@ function Global:Get-OciVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26108,25 +26011,24 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26200,25 +26102,24 @@ function Global:Get-OciAnnotationsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26298,25 +26199,24 @@ function Global:Update-OciAnnotationsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26402,25 +26302,24 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26509,25 +26408,24 @@ function Global:Get-OciApplicationsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26611,25 +26509,24 @@ function Global:Bulk-OciAssignApplicationsToAsset {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26710,25 +26607,24 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26807,25 +26703,24 @@ function Global:Remove-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications/$appId"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications/$appId"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -26937,25 +26832,24 @@ function Global:Get-OciDataStoreByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/dataStore"
-
-            $expand=$null
-            $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/dataStore"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27073,25 +26967,24 @@ function Global:Get-OciDatasourcesByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/datasources"
- 
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27184,25 +27077,24 @@ function Global:Get-OciFileSystemsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageResources","vmdks","computeResource")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/fileSystems"
- 
-            $expand=$null
-            $switchparameters=@("storageResources","vmdks","computeResource")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/fileSystems"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27334,25 +27226,24 @@ function Global:Get-OciHostByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/host"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","applications","virtualMachines","dataCenter","annotations","clusterHosts","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/host"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27435,25 +27326,24 @@ function Global:Get-OciVirtualMachinePerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/performance"
- 
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27571,25 +27461,24 @@ function Global:Get-OciPortsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/ports"
- 
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/ports"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27702,25 +27591,24 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/storageResources"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/storageResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27833,25 +27721,24 @@ function Global:Get-OciVmdksByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/vmdks"
-
-            $expand=$null
-            $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/vmdks"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -27964,25 +27851,24 @@ function Global:Get-OciVmdk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id"
-
-            $expand=$null
-            $switchparameters=@("performance","dataStore","storageResources","virtualMachine","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28063,25 +27949,24 @@ function Global:Remove-OciAnnotationsByVmdk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28155,25 +28040,24 @@ function Global:Get-OciAnnotationsByVmdk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28253,25 +28137,24 @@ function Global:Update-OciAnnotationsByVmdk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
- 
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28390,25 +28273,24 @@ function Global:Get-OciDatasourcesByVmdk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/datasources"
-
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28491,25 +28373,24 @@ function Global:Get-OciVmdkPerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/performance"
-
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28622,25 +28503,24 @@ function Global:Get-OciStorageResourcesByVmdk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/storageResources"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/storageResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28773,25 +28653,24 @@ function Global:Get-OciVirtualMachineByVmdk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/virtualMachine"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/virtualMachine"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -28954,25 +28833,24 @@ function Global:Get-OciVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29053,25 +28931,24 @@ function Global:Remove-OciAnnotationsByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29145,25 +29022,24 @@ function Global:Get-OciAnnotationsByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29243,25 +29119,24 @@ function Global:Update-OciAnnotationsByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("definition")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
-
-            $expand=$null
-            $switchparameters=@("definition")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29352,25 +29227,24 @@ function Global:Remove-OciApplicationsFromVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29459,25 +29333,24 @@ function Global:Get-OciApplicationsByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
-
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29566,25 +29439,24 @@ function Global:Add-OciApplicationsToVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29670,25 +29542,24 @@ function Global:Update-OciApplicationsByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
-           
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"                      
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29767,25 +29638,24 @@ function Global:Remove-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications/$appId"
- 
-            $expand=$null
-            $switchparameters=@("computeResources","storageResources")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications/$appId"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29847,25 +29717,24 @@ function Global:Get-OciAutoTierPolicyByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/autoTierPolicy"
-
-            $expand=$null
-            $switchparameters=@("")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/autoTierPolicy"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -29967,25 +29836,24 @@ function Global:Get-OciComputeResourcesByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/computeResources"
-
-            $expand=$null
-            $switchparameters=@("performance","ports","storageResources","fileSystems","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/computeResources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -30097,25 +29965,24 @@ function Global:Get-OciDatastoresByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/dataStores"
-
-            $expand=$null
-            $switchparameters=@("performance","hosts","vmdks","datasources","storageResources","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/dataStores"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -30232,25 +30099,24 @@ function Global:Get-OciDatasourcesByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/datasources"
-
-            $expand=$null
-            $switchparameters=@("acquisitionUnit","note","changes","packages","activePatch","events","devices","config")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/datasources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -30392,25 +30258,24 @@ function Global:Get-OciInternalVolumeByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/internalVolume"
- 
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePool","volumes","storageNodes","annotations","datasources","replicaSources","qtrees","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/internalVolume"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -30492,25 +30357,24 @@ function Global:Get-OciVolumePerformance {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("history")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/performance"
- 
-            $expand=$null
-            $switchparameters=@("history")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/performance"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -30628,25 +30492,24 @@ function Global:Get-OciPortsByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/ports"
-
-            $expand=$null
-            $switchparameters=@("device","fabrics","performance","connectedPorts","annotations","datasources","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/ports"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -30753,25 +30616,24 @@ function Global:Get-OciQtree {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/qtree"
- 
-            $expand=$null
-            $switchparameters=@("storage","internalVolume","shares","annotations","applications","volumes")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/qtree"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -30933,25 +30795,24 @@ function Global:Get-OciSourceVolumesByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/replicaSources"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","dataStores","computeResources","applications","storagePools","virtualStoragePools","virtualizer","internalVolume","autoTierPolicy","ports","storageNodes","replicaSources","datasources","annotations","qtree","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/replicaSources"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -31103,25 +30964,24 @@ function Global:Get-OciStorageByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storage"
-
-            $expand=$null
-            $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storage"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -31238,25 +31098,24 @@ function Global:Get-OciStorageNodesByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storageNodes"
-
-            $expand=$null
-            $switchparameters=@("storage","partner","performance","datasources","storagePools","ports","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storageNodes"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -31383,26 +31242,25 @@ function Global:Get-OciStoragePoolsByVolume {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storagePools"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
- 
+            
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -31528,25 +31386,24 @@ function Global:Get-OciVirtualStoragePools {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualStoragePools"
-
-            $expand=$null
-            $switchparameters=@("storage","performance","storageResources","internalVolumes","volumes","disks","datasources","storageNodes","annotations","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualStoragePools"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -31698,25 +31555,24 @@ function Global:Get-OciVirtualizer {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+
+        $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
     }
    
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualizer"
-
-            $expand=$null
-            $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
-            foreach ($parameter in $switchparameters) {
-                if ((Get-Variable $parameter).Value) {
-                    if ($expand) {
-                        $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                    }
-                    else {
-                        $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                    }
-                }
-            }
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualizer"            
  
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
