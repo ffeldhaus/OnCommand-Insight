@@ -73,8 +73,7 @@ function global:Invoke-MultipartFormDataUpload
     [CmdletBinding()]
     PARAM
     (
-        [string][parameter(Mandatory = $true)][ValidateNotNullOrEmpty()]$InFile,
-        [string]$ContentType,
+        [string[]][parameter(Mandatory = $true)][ValidateNotNullOrEmpty()]$InFile,
         [Uri][parameter(Mandatory = $true)][ValidateNotNullOrEmpty()]$Uri,
         [PSObject]$Header
     )
@@ -88,20 +87,17 @@ function global:Invoke-MultipartFormDataUpload
 			$PSCmdlet.ThrowTerminatingError($errorRecord)
         }
 
-        if (-not $ContentType)
-        {
-            Add-Type -AssemblyName System.Web
+        Add-Type -AssemblyName System.Web
 
-            $mimeType = [System.Web.MimeMapping]::GetMimeMapping($InFile)
+        $mimeType = [System.Web.MimeMapping]::GetMimeMapping($InFile)
             
-            if ($mimeType)
-            {
-                $ContentType = $mimeType
-            }
-            else
-            {
-                $ContentType = "application/octet-stream"
-            }
+        if ($mimeType)
+        {
+            $ContentType = $mimeType
+        }
+        else
+        {
+            $ContentType = "application/octet-stream"
         }
     }
     PROCESS
@@ -1074,7 +1070,12 @@ function global:Connect-OciServer {
             [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         }
         else {
-            $PSDefaultParameterValues.Add("Invoke-RestMethod:SkipCertificateCheck",$true)
+            if (!"Invoke-RestMethod:SkipCertificateCheck") {
+                $PSDefaultParameterValues.Add("Invoke-RestMethod:SkipCertificateCheck",$true)
+            }
+            else {
+                $PSDefaultParameterValues.'Invoke-RestMethod:SkipCertificateCheck'=$true
+            }
         }
     }
 
