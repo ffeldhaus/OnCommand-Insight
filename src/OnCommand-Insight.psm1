@@ -567,42 +567,67 @@ function ParseVmdks($Vmdks) {
 }
 
 function ParseHosts($Hosts) {
-    $Hosts = @($Hosts)
-    foreach ($Host in $Hosts) {
-        if ($Host.createTime) {
-            $Host.createTime = $Host.createTime | Get-Date
+    foreach ($HostInstance in $Hosts) {
+        if ($HostInstance.createTime) {
+            $HostInstance.createTime = $HostInstance.createTime | Get-Date
         }
-        if ($Host.performance) {
-            $Host.performance = ParsePerformance($Host.performance)
+        if ($HostInstance.performance) {
+            $HostInstance.performance = ParsePerformance($HostInstance.performance)
         }
-        if ($Host.storageResources) {
-            $Host.storageResources = ParseStorageResources($Host.storageResources)
+        if ($HostInstance.storageResources) {
+            $HostInstance.storageResources = ParseStorageResources($HostInstance.storageResources)
         }
-        if ($Host.fileSystems) {
-            $Host.fileSystems = ParseFileSystems($Host.fileSystems)
+        if ($HostInstance.fileSystems) {
+            $HostInstance.fileSystems = ParseFileSystems($HostInstance.fileSystems)
         }
-        if ($Host.ports) {
-            $Host.ports = ParsePorts($Host.ports)
+        if ($HostInstance.ports) {
+            $HostInstance.ports = ParsePorts($HostInstance.ports)
         }
-        if ($Host.applications) {
-            $Host.applications = ParseApplications($Host.applications)
+        if ($HostInstance.applications) {
+            $HostInstance.applications = ParseApplications($HostInstance.applications)
         }
-        if ($Host.virtualMachines) {
-            $Host.virtualMachines = ParseVirtualMachines($Host.virtualMachines)
+        if ($HostInstance.virtualMachines) {
+            $HostInstance.virtualMachines = ParseVirtualMachines($HostInstance.virtualMachines)
         }
-        if ($Host.clusterHosts) {
-            $Host.clusterHosts = ParseHosts($Host.clusterHosts)
+        if ($HostInstance.clusterHosts) {
+            $HostInstance.clusterHosts = ParseHosts($HostInstance.clusterHosts)
         }
-        if ($Host.annotations) {
-            $Host.annotations = ParseAnnotations($Host.annotations)
+        if ($HostInstance.annotations) {
+            $HostInstance.annotations = ParseAnnotations($HostInstance.annotations)
         }
-        if ($Host.datasources) {
-            $Host.datasources = ParseDatasources($Host.datasources)
+        if ($HostInstance.datasources) {
+            $HostInstance.datasources = ParseDatasources($HostInstance.datasources)
         }
 
-        Write-Output $Host
+        Write-Output $HostInstance
     }
 }
+
+function ParseTopologies($Topologies) {
+    foreach ($Topology in $Topologies) {
+        if ($Topology.nodes) {
+            $Topology.nodes = ParseTopologyNodes($Topology.nodes)
+        }
+        if ($Topology.links) {
+            $Topology.links = ParseTopologyLinks($Topology.links)
+        }
+
+        Write-Output $Topology
+    }
+}
+
+function ParseTopologyNodes($Nodes) {
+    foreach ($Node in $Nodes) {
+        Write-Output $Node
+    }
+}
+
+function ParseTopologyLinks($Links) {
+    foreach ($Link in $Links) {
+        Write-Output $Link
+    }
+}
+
 
 function ParsePorts($Ports) {
     $Ports = @($Ports)
@@ -10711,6 +10736,102 @@ function Global:Get-OciVmdksByFileSystem {
 
 <#
     .SYNOPSIS
+    Retrieve the topology of a host
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciTopologyByHost {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of the host to retrieve the topology for",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/topology/Host/$id"
+ 
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $Topology = ParseTopologies($Result)
+          
+        Write-Output $Topology
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve the topology of a storage system
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciTopologyByStorage {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of the storage system to retrieve the topology for",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/topology/Storage/$id"
+ 
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $Topology = ParseTopologies($Result)
+          
+        Write-Output $Topology
+    }
+}
+
+<#
+    .SYNOPSIS
     Retrieve all hosts
     .DESCRIPTION
     
@@ -11080,9 +11201,9 @@ function Global:Get-OciHost {
                 $Result = ParseJsonString($Result.Trim())
             }
             
-            $Host = ParseHosts($Result)
+            $Hosts = ParseHosts($Result)
             
-            Write-Output $Host
+            Write-Output $Hosts
         }
     }
 }
@@ -25679,7 +25800,7 @@ function Global:Get-OciVirtualMachines {
                     HelpMessage="Return related Datastore")][Switch]$dataStore,
         [parameter(Mandatory=$False,
                     Position=12,
-                    HelpMessage="Return related Host")][Switch]$host,
+                    HelpMessage="Return related Host")][Switch]$HostSwitch,
         [parameter(Mandatory=$False,
                     Position=13,
                     HelpMessage="Return list of related Vmdks")][Switch]$vmdks,
@@ -25703,7 +25824,7 @@ function Global:Get-OciVirtualMachines {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","host","vmdks","applications","annotations","datasources","performancehistory")
+        $switchparameters=@("performance","ports","storageResources","fileSystems","dataStore","HostSwitch","vmdks","applications","annotations","datasources","performancehistory")
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -25770,7 +25891,7 @@ function Global:Get-OciVirtualMachines {
 
             if ($FetchAll -and @($VirtualMachines).Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciVirtualMachines -fromTime $fromTime -toTime $toTime -performance:$performance -performancehistory:$performancehistory -sort $sort -limit $limit -offset $offset -ports:$ports -storageResources:$storageResources -fileSystems:$fileSystems -dataStore:$dataStore -host:$host -vmdks:$vmdks -applications:$applications -annotations:$annotations -datasources:$datasources -Server $Server
+                Get-OciVirtualMachines -fromTime $fromTime -toTime $toTime -performance:$performance -performancehistory:$performancehistory -sort $sort -limit $limit -offset $offset -ports:$ports -storageResources:$storageResources -fileSystems:$fileSystems -dataStore:$dataStore -host:$HostSwitch -vmdks:$vmdks -applications:$applications -annotations:$annotations -datasources:$datasources -Server $Server
             }
         }
     }
@@ -27274,8 +27395,8 @@ function Global:Get-OciHostByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Host = ParseHosts($Result)
-            Write-Output $Host
+            $Hosts = ParseHosts($Result)
+            Write-Output $Hosts
         }
     }
 }
