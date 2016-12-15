@@ -6937,7 +6937,7 @@ function Global:Remove-OciBusinessEntity {
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
-                   Position=0,
+                   Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  

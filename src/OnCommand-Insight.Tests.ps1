@@ -91,6 +91,26 @@ function ValidateApplication {
     }
 }
 
+function ValidateBusinessEntity {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$True,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Businesse entity to be verified")][PSObject]$BusinessEntity
+    )
+
+        Process {
+            $BusinessEntity.id | Should BeGreaterThan 0
+            $BusinessEntity.self | Should Be "/rest/v1/assets/businessEntities/$($BusinessEntity.id)"
+            $BusinessEntity.tenant | Should Match ".+"
+            $BusinessEntity.lob | Should Match ".+"
+            $BusinessEntity.businessUnit | Should Match ".+" 
+            $BusinessEntity.project | Should Match ".+"
+    }
+}
+
 function ValidatePackage {
     [CmdletBinding()]
         
@@ -718,6 +738,77 @@ Describe "Datasource management" {
     }
 }
 
+Describe "Annotation management" {
+
+    BeforeEach {
+        $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+        $null = Get-OciAnnotations | ? { $_.Name -eq "OciCmdletTest" } | Remove-OciAnnotation
+        $OciServer = $null
+        $Global:CurrentOciServer = $null
+        $Annotation = $null
+    }
+
+    Context "adding and removing annotations" {
+        it "succeeds for type BOOLEAN" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type DATE" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type DATE
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type FIXED_ENUM" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type FIXED_ENUM -enumValues @(@{name="key1";label="label of key 1"},@{name="key2";label="label of key 2"})
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type FLEXIBLE_ENUM" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type FLEXIBLE_ENUM -enumValues @(@{name="key1";label="label of key 1"},@{name="key2";label="label of key 2"})
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds for type NUMBER" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type NUMBER
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds with description" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN -Description "description"
+            $Annotation.description | Should Be "description"
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $CurrentOciServer | Should BeNullOrEmpty
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN -Server $OciServer
+            $Annotation | ValidateAnnotation
+            $Annotation | Remove-OciAnnotation -Server $OciServer
+        }
+    }
+}
+
 Describe "Application management" {
 
     BeforeEach {
@@ -866,73 +957,49 @@ Describe "Application management" {
     }
 }
 
-Describe "Annotation management" {
+Describe "Business entity management" {
 
     BeforeEach {
         $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
         $null = Get-OciAnnotations | ? { $_.Name -eq "OciCmdletTest" } | Remove-OciAnnotation
         $OciServer = $null
         $Global:CurrentOciServer = $null
-        $Annotation = $null
+        $BusinessEntity = $null
     }
 
-    Context "adding and removing annotations" {
-        it "succeeds for type BOOLEAN" {
+    Context "adding and removing business entities" {
+        it "succeeds with only tenant" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
-            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN
-            $Annotation | ValidateAnnotation
-            $Annotation | Remove-OciAnnotation
+            $Tenant = "OciCmdletTest"
+            $BusinessEntity = Add-OciBusinessEntity -Tenant $Tenant
+            $BusinessEntity | ValidateBusinessEntity
+            $BusinessEntity.tenant | Should Be $Tenant
+            $BusinessEntity | Remove-OciBusinessEntity
         }
 
-        it "succeeds for type DATE" {
+        it "succeeds with parameters tenant, LineOfBusiness, BusinessUnit and Project" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
-            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type DATE
-            $Annotation | ValidateAnnotation
-            $Annotation | Remove-OciAnnotation
-        }
+            $Tenant = "OciCmdletTest"
+            $LineOfBusiness = "OciCmdletTest"
+            $BusinessUnit = "OciCmdletTest"
+            $Project = "OciCmdletTest"
 
-        it "succeeds for type FIXED_ENUM" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-
-            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type FIXED_ENUM -enumValues @(@{name="key1";label="label of key 1"},@{name="key2";label="label of key 2"})
-            $Annotation | ValidateAnnotation
-            $Annotation | Remove-OciAnnotation
-        }
-
-        it "succeeds for type FLEXIBLE_ENUM" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-
-            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type FLEXIBLE_ENUM -enumValues @(@{name="key1";label="label of key 1"},@{name="key2";label="label of key 2"})
-            $Annotation | ValidateAnnotation
-            $Annotation | Remove-OciAnnotation
-        }
-
-        it "succeeds for type NUMBER" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-
-            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type NUMBER
-            $Annotation | ValidateAnnotation
-            $Annotation | Remove-OciAnnotation
-        }
-
-        it "succeeds with description" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-
-            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN -Description "description"
-            $Annotation.description | Should Be "description"
-            $Annotation | ValidateAnnotation
-            $Annotation | Remove-OciAnnotation
+            $BusinessEntity = Add-OciBusinessEntity -Tenant $Tenant -LineOfBusiness $LineOfBusiness -BusinessUnit $BusinessUnit -Project $Project
+            $BusinessEntity | ValidateBusinessEntity
+            $BusinessEntity.tenant | Should Be $Tenant
+            $BusinessEntity | Remove-OciBusinessEntity
         }
 
         it "succeeds with transient OCI Server" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
-            $CurrentOciServer | Should BeNullOrEmpty
 
-            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN -Server $OciServer
-            $Annotation | ValidateAnnotation
-            $Annotation | Remove-OciAnnotation -Server $OciServer
+            $Tenant = "OciCmdletTest"
+            $BusinessEntity = Add-OciBusinessEntity -Tenant $Tenant -Server $OciServer
+            $BusinessEntity | ValidateBusinessEntity
+            $BusinessEntity.tenant | Should Be $Tenant
+            $BusinessEntity | Remove-OciBusinessEntity -Server $OciServer
         }
     }
 }
