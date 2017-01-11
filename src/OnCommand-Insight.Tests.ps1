@@ -24,7 +24,7 @@ function ValidateAcquisitionUnit {
             $AcquisitionUnit.name | Should Be "local"
             $AcquisitionUnit.ip | Should Match "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"
             $AcquisitionUnit.status | Should Match "CONNECTED|CONNECTED_TIMEOUT"
-            $AcquisitionUnit.isActive | Should Be "True"
+            $AcquisitionUnit.isActive | Should BeOfType Boolean
             if ($AcquisitionUnit.leaseContract) {
                 $AcquisitionUnit.leaseContract | Should Be 120000
             }
@@ -380,6 +380,103 @@ function ValidateDevice {
             $Device.wwn | Should Match '.*'
             $Device.description | Should Match '.+'
             $Device.self | Should Match "/rest/v1/assets/$($Device.type.toLower())[es]*/$($Device.id)"
+    }
+}
+
+function ValidateDatastore {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datastore to be verified")][PSObject]$Datastore
+    )
+
+        Process {
+            $Datastore.id | Should BeGreaterThan 0
+            $Datastore.name | Should Match '.+'
+            $Datastore.simpleName | Should Match '.+'
+            $Datastore.virtualCenterIp | Should Match '.+'
+            $Datastore.capacity | ValidateCapacity
+            $Datastore.self | Should Match "/rest/v1/assets/datastores/$($Datastore.id)"
+    }
+}
+
+function ValidateCapacity {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Capacity to be verified")][PSObject]$Capacity
+    )
+
+        Process {
+            $Capacity.description | Should Match '.+'
+            $Capacity.unitType | Should Match '.+'
+            $Capacity.total | ValidateValue
+            $Capacity.used | ValidateValue
+    }
+}
+
+function ValidateValue {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Value to be verified")][PSObject]$Value
+    )
+
+    Process {
+        $Value.value -as [Decimal] | Should BeOfType Decimal
+        if ($Value.highThreshold) {
+            $Value.highThreshold | Should BeOfType Decimal
+            $Value.highThreshold | Should BeGreaterThan -1
+            $Value.highThreshold | Should BeLessThan 101
+        }
+        if ($Value.numericType) {
+            $Value.numericType | Should Match "LONG"
+        }
+        if ($Value.unitType) {
+            $Value.unitType | Should Match "Mhz|MB"
+        }
+    }
+}
+
+function ValidateHost {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Host to be verified")][PSObject]$HostItem
+    )
+
+        Process {
+            $HostItem.id | Should BeGreaterThan 0
+            $HostItem.name | Should Match '.+'
+            $HostItem.simpleName | Should Match '.+'
+            $HostItem.ip | Should Match '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+,?)+'
+            $HostItem.resourceType | Should Be 'Host'
+            $HostItem.self | Should Match "/rest/v1/assets/hosts/$($Host.id)"
+            $HostItem.os | Should Match '.*'
+            $HostItem.model | Should Match '.*'
+            $HostItem.manufacturer | Should Match '.*'
+            if ($HostItem.memory) {
+                $HostItem.memory | ValidateValue
+            }
+            if ($HostItem.cpuCount) { 
+                $HostItem.cpuCount | Should BeGreaterThan 0
+            }
+            if ($HostItem.cpu) {
+                $HostItem.cpu | ValidateValue
+            }
+            $HostItem.isActive | Should BeOfType Boolean
     }
 }
 
@@ -1000,6 +1097,138 @@ Describe "Business entity management" {
             $BusinessEntity | ValidateBusinessEntity
             $BusinessEntity.tenant | Should Be $Tenant
             $BusinessEntity | Remove-OciBusinessEntity -Server $OciServer
+        }
+    }
+}
+
+Describe "Datastore management" {
+
+    BeforeEach {
+        $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+        $null = Get-OciAnnotations | ? { $_.Name -eq "OciCmdletTest" } | Remove-OciAnnotation
+        $OciServer = $null
+        $Global:CurrentOciServer = $null        
+    }
+
+    Context "retrieving datastores" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datastores = Get-OciDatastores
+            @($Datastores).Count | Should BeGreaterThan 0
+            $Datastores | ValidateDatastore
+        }
+
+        it "succeeds with parameter limit and offset" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $DatastoreCount = Get-OciDatastoreCount
+
+            $Datastores = @()
+            for ($i=0;$i -le $DatastoreCount;$i++) {
+                $Datastores += Get-OciDatastores -limit 1 -offset $i
+            }
+            @(($Datastores.id | select -Unique)).Count | Should Be $DatastoreCount
+            $Datastores | ValidateDatastore
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Datastores = Get-OciDatastores -Server $OciServer
+            @($Datastores).Count | Should BeGreaterThan 0
+            $Datastores | ValidateDatastore
+        }
+    }
+
+    Context "managing annotations of datastores" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datastores = Get-OciDatastores
+            @($Datastores).Count | Should BeGreaterThan 0
+            $Datastores | ValidateDatastore
+        }
+
+        it "succeeds with parameter limit and offset" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $DatastoreCount = Get-OciDatastoreCount
+
+            $Datastores = @()
+            for ($i=0;$i -le $DatastoreCount;$i++) {
+                $Datastores += Get-OciDatastores -limit 1 -offset $i
+            }
+            @(($Datastores.id | select -Unique)).Count | Should Be $DatastoreCount
+            $Datastores | ValidateDatastore
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Datastores = Get-OciDatastores -Server $OciServer
+            @($Datastores).Count | Should BeGreaterThan 0
+            $Datastores | ValidateDatastore
+        }
+    }
+
+    Context "retrieving related objects" {
+        it "succeeds when retrieving related datasources" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datasources = Get-OciDatastores | Get-OciDatasourcesByDataStore
+            @($Datasources).Count | Should BeGreaterThan 0
+            $Datasources | ValidateDatasource
+        }
+
+        it "succeeds when retrieving related datasources with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Datasources = Get-OciDatastores -Server $OciServer | Get-OciDatasourcesByDataStore -Server $OciServer 
+            @($Datasources).Count | Should BeGreaterThan 0
+            $Datasources | ValidateDatasource
+        }
+
+        it "succeeds when retrieving related hosts" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Hosts = Get-OciDatastores | Get-OciHostsByDataStore
+            $Hosts | ValidateHost
+        }
+
+        it "succeeds when retrieving related hosts with parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Hosts = Get-OciDatastores | select -first 1 | Get-OciHostsByDataStore -performance -performancehistory
+            $Hosts | ValidateHost
+        }
+
+        it "succeeds when retrieving related hosts with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Hosts = Get-OciDatastores -Server $OciServer  | Get-OciHostsByDataStore -Server $OciServer 
+            $Hosts | ValidateHost
+        }
+
+        it "succeeds when retrieving related performance" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Performance = Get-OciDatastores | Get-OciDatastorePerformance
+            $Performance | ValidatePerformance
+        }
+
+        it "succeeds when retrieving related performance with parameters fromTime and toTime" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Performance = Get-OciDatastores | select -first 1 | Get-OciDatastorePerformance -fromTime (Get-Date).AddDays(-1) -toTime (Get-Date)
+            $Performance | ValidatePerformance
+        }
+
+        it "succeeds when retrieving related performance with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Performance = Get-OciDatastores -Server $OciServer  | Get-OciDatastorePerformance -Server $OciServer 
+            $Performance | ValidatePerformance
         }
     }
 }
