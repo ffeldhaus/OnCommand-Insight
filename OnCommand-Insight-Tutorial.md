@@ -121,7 +121,7 @@ $VolumesWithPerformance = Get-OciStorages | Get-OciVolumesByStorage -Performance
 
 To extract just the Minimum, Maximum and Average IOPS and pretty print the data use:
 ```powershell
-$VolumesWithPerformance | % { New-Object -TypeName PSObject -Property @{Name=$_.Name;"Min total IOPS"=$_.performance.iops.total.min;"Max total IOPS"=$_.performance.iops.total.max; "Avg total IOPS"=$_.performance.iops.total.avg} } | ft -Wrap
+$VolumesWithPerformance | % { [PSCustomObject]@{Name=$_.Name;"Min total IOPS"=$_.performance.iops.total.min;"Max total IOPS"=$_.performance.iops.total.max; "Avg total IOPS"=$_.performance.iops.total.avg} } | ft -Wrap
 ```
 
 ### Get related objects
