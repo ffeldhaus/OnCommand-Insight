@@ -5508,9 +5508,9 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
     .DESCRIPTION
     Retrieve all applications
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -5526,10 +5526,10 @@ function Global:Get-OciApplications {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -6060,9 +6060,9 @@ function Global:Remove-OciApplication {
     .PARAMETER id
     Id of application to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -6083,10 +6083,10 @@ function Global:Get-OciApplication {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -6387,9 +6387,9 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
     .PARAMETER id
     Id of application to retrieve assets for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -6404,10 +6404,10 @@ function Global:Get-OciAssetsByApplication {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -6571,9 +6571,9 @@ function Global:Bulk-OciAssignApplicationToAssets {
     .PARAMETER id
     Id of application to retrieve compute resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -6600,10 +6600,10 @@ function Global:Get-OciComputeResourcesByApplication {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -6693,9 +6693,9 @@ function Global:Get-OciComputeResourcesByApplication {
     .PARAMETER id
     Id of application to retrieve storage resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -6726,10 +6726,10 @@ function Global:Get-OciStorageResourcesByApplication {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -7029,9 +7029,9 @@ function Global:Get-OciBusinessEntity {
     .DESCRIPTION
     Retrieve all datastores
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER limit
@@ -7063,10 +7063,10 @@ function Global:Get-OciDatastores {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -7233,9 +7233,9 @@ function Global:Get-OciDatastoreCount {
     .PARAMETER id
     Id of datastore to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -7266,10 +7266,10 @@ function Global:Get-OciDatastore {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -7648,9 +7648,9 @@ function Global:Update-OciAnnotationsByDatastore {
     .PARAMETER id
     Id of datastore to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -7683,10 +7683,10 @@ function Global:Get-OciDatasourcesByDataStore {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -7786,9 +7786,9 @@ function Global:Get-OciDatasourcesByDataStore {
     .PARAMETER id
     Id of the datastore to retrieve the hosts
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -7827,10 +7827,10 @@ function Global:Get-OciHostsByDatastore {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -7939,9 +7939,9 @@ function Global:Get-OciHostsByDatastore {
     .PARAMETER id
     Id of datastore to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER history
@@ -7960,10 +7960,10 @@ function Global:Get-OciDatastorePerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -8041,9 +8041,9 @@ function Global:Get-OciDatastorePerformance {
     .PARAMETER id
     Id of the datastore to retrieve the storage resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -8074,10 +8074,10 @@ function Global:Get-OciStorageResourcesByDatastore {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -8173,9 +8173,9 @@ function Global:Get-OciStorageResourcesByDatastore {
     .PARAMETER id
     Id of the datastore to retrieve the Vmdks
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -8206,10 +8206,10 @@ function Global:Get-OciVmdksByDatastore {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -8306,9 +8306,9 @@ function Global:Get-OciVmdksByDatastore {
     .PARAMETER id
     Id of storage pool disk to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -8341,10 +8341,10 @@ function Global:Get-OciDisk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -8737,9 +8737,9 @@ function Global:Update-OciAnnotationsByDisk {
     .PARAMETER id
     Id of the virtual disk to retrieve backend volumes for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -8790,10 +8790,10 @@ function Global:Get-OciBackendVolumesByDisk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -8919,9 +8919,9 @@ function Global:Get-OciBackendVolumesByDisk {
     .PARAMETER id
     Id of disk to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -8954,10 +8954,10 @@ function Global:Get-OciDatasourcesByDisk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -9057,9 +9057,9 @@ function Global:Get-OciDatasourcesByDisk {
     .PARAMETER id
     Id of disk to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER history
@@ -9078,10 +9078,10 @@ function Global:Get-OciDiskPerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -9159,9 +9159,9 @@ function Global:Get-OciDiskPerformance {
     .PARAMETER id
     Id of disk to retrieve storage pools for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -9198,10 +9198,10 @@ function Global:Get-OciStoragePoolsByDisk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -9306,9 +9306,9 @@ function Global:Get-OciStoragePoolsByDisk {
     .PARAMETER id
     Id of disk to retrieve resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -9339,10 +9339,10 @@ function Global:Get-OciStorageResourcesByDisk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -9436,9 +9436,9 @@ function Global:Get-OciStorageResourcesByDisk {
     .DESCRIPTION
     Retrieve all fabrics
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER limit
@@ -9458,10 +9458,10 @@ function Global:Get-OciFabrics {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -9608,9 +9608,9 @@ function Global:Get-OciFabricCount {
     .PARAMETER id
     Id of fabric to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER switches
@@ -9631,10 +9631,10 @@ function Global:Get-OciFabric {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -9715,9 +9715,9 @@ function Global:Get-OciFabric {
     .PARAMETER id
     Id of fabric to retrieve datasources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -9750,10 +9750,10 @@ function Global:Get-OciDatasourcesByFabric {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -9852,9 +9852,9 @@ function Global:Get-OciDatasourcesByFabric {
     .PARAMETER id
     Id of fabric to retrieve ports for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER limit
@@ -9893,10 +9893,10 @@ function Global:Get-OciPortsByFabric {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -10025,9 +10025,9 @@ function Global:Get-OciPortsByFabric {
     .PARAMETER id
     Id of fabric to retrieve ports for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -10042,10 +10042,10 @@ function Global:Get-OciPortsByFabricCount {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -10116,9 +10116,9 @@ function Global:Get-OciPortsByFabricCount {
     .PARAMETER id
     Id of fabric to retrieve switches for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER fabric
@@ -10149,10 +10149,10 @@ function Global:Get-OciSwitchesByFabric {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -10248,9 +10248,9 @@ function Global:Get-OciSwitchesByFabric {
     .PARAMETER id
     Id of file system to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageResources
@@ -10273,10 +10273,10 @@ function Global:Get-OciFilesystem {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -10359,9 +10359,9 @@ function Global:Get-OciFilesystem {
     .PARAMETER id
     Id of file system to retrieve the compute resource for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -10388,10 +10388,10 @@ function Global:Get-OciComputeResourceByFileSystem {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -10480,9 +10480,9 @@ function Global:Get-OciComputeResourceByFileSystem {
     .PARAMETER id
     Id of file system to retrieve the storage resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -10513,10 +10513,10 @@ function Global:Get-OciStorageResorcesByFileSystem {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -10611,9 +10611,9 @@ function Global:Get-OciStorageResorcesByFileSystem {
     .PARAMETER id
     Id of file system to retrieve the VMDKs for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -10644,10 +10644,10 @@ function Global:Get-OciVmdksByFileSystem {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -10836,9 +10836,9 @@ function Global:Get-OciTopologyByStorage {
     .DESCRIPTION
     
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -10878,10 +10878,10 @@ function Global:Get-OciHosts {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -11063,9 +11063,9 @@ function Global:Get-OciHostCount {
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -11104,10 +11104,10 @@ function Global:Get-OciHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -11549,9 +11549,9 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -11570,10 +11570,10 @@ function Global:Get-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -11948,9 +11948,9 @@ function Global:Remove-OciByTypeAndId {
     .PARAMETER id
     Id of host to retrieve cluster hosts for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -11987,10 +11987,10 @@ function Global:Get-OciClusterHostsByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12097,9 +12097,9 @@ function Global:Get-OciClusterHostsByHost {
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
 #>
@@ -12114,10 +12114,10 @@ function Global:Get-OciDataCenterByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12191,9 +12191,9 @@ function Global:Get-OciDataCenterByHost {
     .PARAMETER id
     Id of host to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -12224,10 +12224,10 @@ function Global:Get-OciDatasourcesByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12325,9 +12325,9 @@ function Global:Get-OciDatasourcesByHost {
     .PARAMETER id
     Id of host to retrieve file systems for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageResources
@@ -12348,10 +12348,10 @@ function Global:Get-OciFileSystemsByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12434,9 +12434,9 @@ function Global:Get-OciFileSystemsByHost {
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER history
@@ -12453,10 +12453,10 @@ function Global:Get-OciHostPerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12534,9 +12534,9 @@ function Global:Get-OciHostPerformance {
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER device
@@ -12567,10 +12567,10 @@ function Global:Get-OciPortsByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12668,9 +12668,9 @@ function Global:Get-OciPortsByHost {
     .PARAMETER id
     Id of host to retrieve storage resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -12699,10 +12699,10 @@ function Global:Get-OciStorageResourcesByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12797,9 +12797,9 @@ function Global:Get-OciStorageResourcesByHost {
     .PARAMETER id
     Id of host to retrieve virtual machines  for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -12836,10 +12836,10 @@ function Global:Get-OciVirtualMachinesByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -12947,9 +12947,9 @@ function Global:Get-OciVirtualMachinesByHost {
     .PARAMETER id
     Id of internal volume to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -12990,10 +12990,10 @@ function Global:Get-OciInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -13478,9 +13478,9 @@ function Global:Remove-OciApplicationsFromInternalVolume {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -13499,10 +13499,10 @@ function Global:Get-OciApplicationsByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -13854,9 +13854,9 @@ function Global:Remove-OciApplicationsByInternalVolume {
     .PARAMETER id
     Id of internal volume to retrieve compute resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -13881,10 +13881,10 @@ function Global:Get-OciComputeResourcesByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -13973,9 +13973,9 @@ function Global:Get-OciComputeResourcesByInternalVolume {
     .PARAMETER id
     Id of internal volume to retrieve data stores for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -14004,10 +14004,10 @@ function Global:Get-OciDataStoresByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -14102,9 +14102,9 @@ function Global:Get-OciDataStoresByInternalVolume {
     .PARAMETER id
     Id of internal volume to retrieve datasource for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -14135,10 +14135,10 @@ function Global:Get-OciDatasourcesByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -14237,9 +14237,9 @@ function Global:Get-OciDatasourcesByInternalVolume {
     .PARAMETER id
     Id of internal volume to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
         .PARAMETER history
@@ -14256,10 +14256,10 @@ function Global:Get-OciInternalVolumePerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -14337,9 +14337,9 @@ function Global:Get-OciInternalVolumePerformance {
     .PARAMETER id
     Id of internal volume to retrieve storage qtrees for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -14366,10 +14366,10 @@ function Global:Get-OciQtreesByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -14462,9 +14462,9 @@ function Global:Get-OciQtreesByInternalVolume {
     .PARAMETER id
     Id of internal volume to retrieve replica source internal volumes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -14505,10 +14505,10 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -14621,9 +14621,9 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
     .PARAMETER id
     Id of internal volume to retrieve storage nodes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -14654,10 +14654,10 @@ function Global:Get-OciStorageNodesByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -14756,9 +14756,9 @@ function Global:Get-OciStorageNodesByInternalVolume {
     .PARAMETER id
     Id of internal volume to retrieve volumes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -14807,10 +14807,10 @@ function Global:Get-OciVolumesByInternalVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -14937,9 +14937,9 @@ function Global:Get-OciVolumesByInternalVolume {
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER device
     Return related Device Object
     .PARAMETER fabrics
@@ -14971,10 +14971,10 @@ function Global:Get-OciPort {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=4,
                     HelpMessage="Return related Device Object")][Switch]$device,
@@ -15458,9 +15458,9 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
         .PARAMETER computeResources
@@ -15479,10 +15479,10 @@ function Global:Get-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -15765,9 +15765,9 @@ function Global:Update-OciByTypeAndId {
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER device
     Return related Device Object
     .PARAMETER fabrics
@@ -15799,10 +15799,10 @@ function Global:Get-OciConnectedPortsByPort {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=4,
                     HelpMessage="Return related Device Object")][Switch]$device,
@@ -15897,9 +15897,9 @@ function Global:Get-OciConnectedPortsByPort {
     .PARAMETER id
     Id of port to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -15930,10 +15930,10 @@ function Global:Get-OciDatasourcesByPort {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -16033,9 +16033,9 @@ function Global:Get-OciDatasourcesByPort {
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
 #>
 function Global:Get-OciDeviceByPort {
     [CmdletBinding()]
@@ -16051,10 +16051,10 @@ function Global:Get-OciDeviceByPort {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -16127,9 +16127,9 @@ function Global:Get-OciDeviceByPort {
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER switches
     Return list of related Switches
     .PARAMETER datasources
@@ -16149,10 +16149,10 @@ function Global:Get-OciFabricsByPort {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=4,
                     HelpMessage="Return list of related Switches")][Switch]$switches,
@@ -16231,9 +16231,9 @@ function Global:Get-OciFabricsByPort {
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER history
     Return list of related History
 #>
@@ -16251,10 +16251,10 @@ function Global:Get-OciPortPerformance {
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=3,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=4,
                     HelpMessage="Return list of related History")][Switch]$history,
@@ -16329,9 +16329,9 @@ function Global:Get-OciPortPerformance {
     .PARAMETER id
     Id of qtree to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -16358,10 +16358,10 @@ function Global:Get-OciQtree {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -16843,9 +16843,9 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -16864,10 +16864,10 @@ function Global:Get-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -17242,9 +17242,9 @@ function Global:Remove-OciByTypeAndId {
     .PARAMETER id
     Id of qtree to retrieve internal volume for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -17285,10 +17285,10 @@ function Global:Get-OciInternalVolumeByQtree {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -17401,9 +17401,9 @@ function Global:Get-OciInternalVolumeByQtree {
     .PARAMETER id
     Id of qtree to retrieve shares for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -17426,10 +17426,10 @@ function Global:Get-OciSharesByQtree {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -17515,9 +17515,9 @@ function Global:Get-OciSharesByQtree {
     .PARAMETER id
     Id of qtree to retrieve storage for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageNodes
@@ -17562,10 +17562,10 @@ function Global:Get-OciStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -17684,9 +17684,9 @@ function Global:Get-OciStorage {
     .PARAMETER id
     Id of qtree to retrieve volumes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -17735,10 +17735,10 @@ function Global:Get-OciVolumesByQtree {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -17863,9 +17863,9 @@ function Global:Get-OciVolumesByQtree {
     .PARAMETER id
     Id of share to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -17888,10 +17888,10 @@ function Global:Get-OciShare {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -18367,9 +18367,9 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -18388,10 +18388,10 @@ function Global:Get-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -18766,9 +18766,9 @@ function Global:Remove-OciByTypeAndId {
     .PARAMETER id
     Id of share to retrieve qtree for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -18795,10 +18795,10 @@ function Global:Get-OciQtree {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -18890,9 +18890,9 @@ function Global:Get-OciQtree {
     .PARAMETER id
     Id of share to retrieve storage for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageNodes
@@ -18937,10 +18937,10 @@ function Global:Get-OciStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -19059,9 +19059,9 @@ function Global:Get-OciStorage {
     .PARAMETER id
     Id of storage node to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -19092,10 +19092,10 @@ function Global:Get-OciStorageNode {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -19481,9 +19481,9 @@ function Global:Update-OciAnnotationsByStorageNode {
     .PARAMETER id
     Id of storage node to retrieve datasources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -19514,10 +19514,10 @@ function Global:Get-OciDatasourcesByStorageNode {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -19615,9 +19615,9 @@ function Global:Get-OciDatasourcesByStorageNode {
     .PARAMETER id
     Id of storage node to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER history
@@ -19634,10 +19634,10 @@ function Global:Get-OciStorageNodePerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -19715,9 +19715,9 @@ function Global:Get-OciStorageNodePerformance {
     .PARAMETER id
     Id of storage node to retrieve ports for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER device
@@ -19748,10 +19748,10 @@ function Global:Get-OciPortsByStorageNode {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -19849,9 +19849,9 @@ function Global:Get-OciPortsByStorageNode {
     .PARAMETER id
     Id of storage node to retrieve storage pool for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -19886,10 +19886,10 @@ function Global:Get-OciStoragePoolsByNode {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -19993,9 +19993,9 @@ function Global:Get-OciStoragePoolsByNode {
     .PARAMETER id
     Id of storage pool to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -20030,10 +20030,10 @@ function Global:Get-OciStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -20424,9 +20424,9 @@ function Global:Update-OciAnnotationsByStoragePool {
     .PARAMETER id
     Id of storage pool to retrieve datasources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -20457,10 +20457,10 @@ function Global:Get-OciDatasourcesByStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -20558,9 +20558,9 @@ function Global:Get-OciDatasourcesByStoragePool {
     .PARAMETER id
     Id of storage pool to retrieve disks for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -20591,10 +20591,10 @@ function Global:Get-OciDisksByStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -20692,9 +20692,9 @@ function Global:Get-OciDisksByStoragePool {
     .PARAMETER id
     Id of storage pool to retrieve internal volumes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -20735,10 +20735,10 @@ function Global:Get-OciInternalVolumesByStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -20851,9 +20851,9 @@ function Global:Get-OciInternalVolumesByStoragePool {
     .PARAMETER id
     Id of storage pool to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
         .PARAMETER history
@@ -20870,10 +20870,10 @@ function Global:Get-OciStoragePoolPerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -20951,9 +20951,9 @@ function Global:Get-OciStoragePoolPerformance {
     .PARAMETER id
     Id of storage pool to retrieve storage for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageNodes
@@ -20998,10 +20998,10 @@ function Global:Get-OciStorageByStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -21120,9 +21120,9 @@ function Global:Get-OciStorageByStoragePool {
     .PARAMETER id
     Id of storage pool to retrieve storage nodes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -21153,10 +21153,10 @@ function Global:Get-OciStorageNodesByStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -21254,9 +21254,9 @@ function Global:Get-OciStorageNodesByStoragePool {
     .PARAMETER id
     Id of storage pool to retrieve resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -21285,10 +21285,10 @@ function Global:Get-OciStorageResourcesByStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -21383,9 +21383,9 @@ function Global:Get-OciStorageResourcesByStoragePool {
     .PARAMETER id
     Id of storage pool to retrieve volumes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -21434,10 +21434,10 @@ function Global:Get-OciVolumesByStoragePool {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -21561,9 +21561,9 @@ function Global:Get-OciVolumesByStoragePool {
     .DESCRIPTION
     Retrieve all storages
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER sort
     Filter for sorting by metric/s
     .PARAMETER expand
@@ -21609,10 +21609,10 @@ function Global:Get-OciStorages {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -21804,9 +21804,9 @@ function Global:Get-OciStorageCount {
     .PARAMETER id
     Id of storage to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageNodes
@@ -21851,10 +21851,10 @@ function Global:Get-OciStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -22363,9 +22363,9 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -22384,10 +22384,10 @@ function Global:Get-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -22668,9 +22668,9 @@ function Global:Update-OciByTypeAndId {
     .PARAMETER id
     Id of storage to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -22701,10 +22701,10 @@ function Global:Get-OciDatasourcesByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -22802,9 +22802,9 @@ function Global:Get-OciDatasourcesByStorage {
     .PARAMETER id
     Id of storage to retrieve disks for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -22835,10 +22835,10 @@ function Global:Get-OciDisksByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -22936,9 +22936,9 @@ function Global:Get-OciDisksByStorage {
     .PARAMETER id
     Id of storage to retrieve internal volumes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -22979,10 +22979,10 @@ function Global:Get-OciInternalVolumesByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -23095,9 +23095,9 @@ function Global:Get-OciInternalVolumesByStorage {
     .PARAMETER id
     Id of storage to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER history
@@ -23114,10 +23114,10 @@ function Global:Get-OciStoragePerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -23195,9 +23195,9 @@ function Global:Get-OciStoragePerformance {
     .PARAMETER id
     Id of storage to retrieve storage ports for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER device
@@ -23228,10 +23228,10 @@ function Global:Get-OciPortsByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -23408,9 +23408,9 @@ function Global:Get-OciProtocolsByStorage {
     .PARAMETER id
     Id of storage to retrieve storage qtrees for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -23437,10 +23437,10 @@ function Global:Get-OciQtreesByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -23532,9 +23532,9 @@ function Global:Get-OciQtreesByStorage {
     .PARAMETER id
     Id of storage to retrieve storage shares for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -23557,10 +23557,10 @@ function Global:Get-OciSharesByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -23646,9 +23646,9 @@ function Global:Get-OciSharesByStorage {
     .PARAMETER id
     Id of storage to retrieve storage nodes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -23679,10 +23679,10 @@ function Global:Get-OciStorageNodesByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -23780,9 +23780,9 @@ function Global:Get-OciStorageNodesByStorage {
     .PARAMETER id
     Id of storage to retrieve storage pools for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -23817,10 +23817,10 @@ function Global:Get-OciStoragePoolsByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -23924,9 +23924,9 @@ function Global:Get-OciStoragePoolsByStorage {
     .PARAMETER id
     Id of storage to retrieve storage resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -23955,10 +23955,10 @@ function Global:Get-OciStorageResourcesByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -24053,9 +24053,9 @@ function Global:Get-OciStorageResourcesByStorage {
     .PARAMETER id
     Id of storage to retrieve volumes for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -24104,10 +24104,10 @@ function Global:Get-OciVolumesByStorage {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -24230,9 +24230,9 @@ function Global:Get-OciVolumesByStorage {
     .DESCRIPTION
     Retrieve all Switches
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER limit
@@ -24260,10 +24260,10 @@ function Global:Get-OciSwitches {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -24428,9 +24428,9 @@ function Global:Get-OciSwitchCount {
     .PARAMETER id
     Id of switch to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER fabric
@@ -24459,10 +24459,10 @@ function Global:Get-OciSwitch {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -24948,9 +24948,9 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -24969,10 +24969,10 @@ function Global:Get-OciApplicationsBySwitch {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -25253,9 +25253,9 @@ function Global:Update-OciByTypeAndId {
     .PARAMETER id
     Id of switch to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -25286,10 +25286,10 @@ function Global:Get-OciDatasourcesBySwitch {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -25388,9 +25388,9 @@ function Global:Get-OciDatasourcesBySwitch {
     .PARAMETER id
     Id of switch.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=portSummary)
         .PARAMETER switches
@@ -25409,10 +25409,10 @@ function Global:Get-OciFabricBySwitch {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=portSummary)")][String]$expand,
@@ -25492,9 +25492,9 @@ function Global:Get-OciFabricBySwitch {
     .PARAMETER id
     Id of switch.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=portSummary)
     .PARAMETER history
@@ -25511,10 +25511,10 @@ function Global:Get-OciSwitchPerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=portSummary)")][String]$expand,
@@ -25592,9 +25592,9 @@ function Global:Get-OciSwitchPerformance {
     .PARAMETER id
     Id of switch to retrieve switch ports for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER device
@@ -25625,10 +25625,10 @@ function Global:Get-OciPortsBySwitch {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -25724,9 +25724,9 @@ function Global:Get-OciPortsBySwitch {
     .DESCRIPTION
     Retrieve all Virtual Machines
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -25764,10 +25764,10 @@ function Global:Get-OciVirtualMachines {
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -25946,9 +25946,9 @@ function Global:Get-OciVirtualMachineCount {
     .PARAMETER id
     Id of virtual machine to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -25985,10 +25985,10 @@ function Global:Get-OciVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -26486,9 +26486,9 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -26507,10 +26507,10 @@ function Global:Get-OciApplicationsByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -26885,9 +26885,9 @@ function Global:Remove-OciByTypeAndId {
     .PARAMETER id
     Id of virtual machine to retrieve data store for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -26916,10 +26916,10 @@ function Global:Get-OciDataStoreByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27015,9 +27015,9 @@ function Global:Get-OciDataStoreByVirtualMachine {
     .PARAMETER id
     Id of virtual machine to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -27048,10 +27048,10 @@ function Global:Get-OciDatasourcesByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27150,9 +27150,9 @@ function Global:Get-OciDatasourcesByVirtualMachine {
     .PARAMETER id
     Id of virtual machine to retrieve file systems for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageResources
@@ -27173,10 +27173,10 @@ function Global:Get-OciFileSystemsByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27259,9 +27259,9 @@ function Global:Get-OciFileSystemsByVirtualMachine {
     .PARAMETER id
     Id of virtual machine to retrieve host for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -27298,10 +27298,10 @@ function Global:Get-OciHostByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27409,9 +27409,9 @@ function Global:Get-OciHostByVirtualMachine {
     .PARAMETER id
     Id of virtual machine to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
         .PARAMETER history
@@ -27428,10 +27428,10 @@ function Global:Get-OciVirtualMachinePerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27509,9 +27509,9 @@ function Global:Get-OciVirtualMachinePerformance {
     .PARAMETER id
     Id of virtual machine to retrieve ports for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER device
@@ -27542,10 +27542,10 @@ function Global:Get-OciPortsByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27644,9 +27644,9 @@ function Global:Get-OciPortsByVirtualMachine {
     .PARAMETER id
     Id of virtual machine to retrieve storage resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -27675,10 +27675,10 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27774,9 +27774,9 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
     .PARAMETER id
     Id of virtual machine to retrieve disks for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -27805,10 +27805,10 @@ function Global:Get-OciVmdksByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -27904,9 +27904,9 @@ function Global:Get-OciVmdksByVirtualMachine {
     .PARAMETER id
     Id of virtual machine disk to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -27935,10 +27935,10 @@ function Global:Get-OciVmdk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -28321,9 +28321,9 @@ function Global:Update-OciAnnotationsByVmdk {
     .PARAMETER id
     Id of vmdk to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -28354,10 +28354,10 @@ function Global:Get-OciDatasourcesByVmdk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -28456,9 +28456,9 @@ function Global:Get-OciDatasourcesByVmdk {
     .PARAMETER id
     Id of virtual machine disk to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER history
@@ -28475,10 +28475,10 @@ function Global:Get-OciVmdkPerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -28556,9 +28556,9 @@ function Global:Get-OciVmdkPerformance {
     .PARAMETER id
     Id of virtual machine disk to retrieve storage resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -28587,10 +28587,10 @@ function Global:Get-OciStorageResourcesByVmdk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -28686,9 +28686,9 @@ function Global:Get-OciStorageResourcesByVmdk {
     .PARAMETER id
     Id of virtual machine disk to retrieve virtual machine for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -28725,10 +28725,10 @@ function Global:Get-OciVirtualMachineByVmdk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -28836,9 +28836,9 @@ function Global:Get-OciVirtualMachineByVmdk {
     .PARAMETER id
     Id of volume to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -28887,10 +28887,10 @@ function Global:Get-OciVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -29411,9 +29411,9 @@ function Global:Remove-OciApplicationsFromVolume {
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
@@ -29432,10 +29432,10 @@ function Global:Get-OciApplicationsByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -29899,9 +29899,9 @@ function Global:Get-OciAutoTierPolicyByVolume {
     .PARAMETER id
     Id of volume to retrieve compute resources for
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -29926,10 +29926,10 @@ function Global:Get-OciComputeResourcesByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30018,9 +30018,9 @@ function Global:Get-OciComputeResourcesByVolume {
     .PARAMETER id
     Id of target volume to retrieve the data stores for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER performance
@@ -30049,10 +30049,10 @@ function Global:Get-OciDatastoresByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30147,9 +30147,9 @@ function Global:Get-OciDatastoresByVolume {
     .PARAMETER id
     Id of volume to retrieve datasources for.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER acquisitionUnit
@@ -30180,10 +30180,10 @@ function Global:Get-OciDatasourcesByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30281,9 +30281,9 @@ function Global:Get-OciDatasourcesByVolume {
     .PARAMETER id
     Id of volume to retrieve the internal volume.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -30324,10 +30324,10 @@ function Global:Get-OciInternalVolumeByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30440,9 +30440,9 @@ function Global:Get-OciInternalVolumeByVolume {
     .PARAMETER id
     Id of volume to retrieve
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER history
@@ -30459,10 +30459,10 @@ function Global:Get-OciVolumePerformance {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30540,9 +30540,9 @@ function Global:Get-OciVolumePerformance {
     .PARAMETER id
     Id of volume to retrieve the ports that are connected to storage ports.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER device
@@ -30573,10 +30573,10 @@ function Global:Get-OciPortsByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30674,9 +30674,9 @@ function Global:Get-OciPortsByVolume {
     .PARAMETER id
     Id of volume to retrieve the qtree.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -30703,10 +30703,10 @@ function Global:Get-OciQtree {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30798,9 +30798,9 @@ function Global:Get-OciQtree {
     .PARAMETER id
     Id of target volume to retrieve the source volumes.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -30849,10 +30849,10 @@ function Global:Get-OciSourceVolumesByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -30977,9 +30977,9 @@ function Global:Get-OciSourceVolumesByVolume {
     .PARAMETER id
     Id of the volume to retrieve the storage.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageNodes
@@ -31024,10 +31024,10 @@ function Global:Get-OciStorageByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -31146,9 +31146,9 @@ function Global:Get-OciStorageByVolume {
     .PARAMETER id
     Id of volume to retrieve the storage nodes.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -31179,10 +31179,10 @@ function Global:Get-OciStorageNodesByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -31280,9 +31280,9 @@ function Global:Get-OciStorageNodesByVolume {
     .PARAMETER id
     Id of volume to retrieve the storage pools.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -31317,10 +31317,10 @@ function Global:Get-OciStoragePoolsByVolume {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -31424,9 +31424,9 @@ function Global:Get-OciStoragePoolsByVolume {
     .PARAMETER id
     Id of volume to retrieve the virtual storage pools.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storage
@@ -31461,10 +31461,10 @@ function Global:Get-OciVirtualStoragePools {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
@@ -31568,9 +31568,9 @@ function Global:Get-OciVirtualStoragePools {
     .PARAMETER id
     Id of volume to retrieve the virtualizer.
     .PARAMETER fromTime
-    Filter for time range, from time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
-    Filter for time range, to time in milliseconds
+    Filter for time range, either in milliseconds or as DateTime
     .PARAMETER expand
     Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER storageNodes
@@ -31615,10 +31615,10 @@ function Global:Get-OciVirtualizer {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, from time in milliseconds")][PSObject]$fromTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Filter for time range, to time in milliseconds")][PSObject]$toTime,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
         [parameter(Mandatory=$False,
                     Position=3,
                     HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
