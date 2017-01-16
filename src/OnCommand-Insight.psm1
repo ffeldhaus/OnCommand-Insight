@@ -1616,7 +1616,7 @@ function Global:Add-OciCertificate {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -2863,7 +2863,7 @@ function Global:Update-OciDatasourceNote {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3004,7 +3004,7 @@ function Global:Poll-OciDatasource {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3097,7 +3097,7 @@ function Global:Suspend-OciDatasource {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3167,7 +3167,7 @@ function Global:Resume-OciDatasource {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3240,10 +3240,10 @@ function Global:Test-OciDatasource {
  
     PARAM (
         [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id of data source to test",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+                   Position=0,
+                   HelpMessage="Id of data source to test",
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -3255,7 +3255,7 @@ function Global:Test-OciDatasource {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3269,46 +3269,43 @@ function Global:Test-OciDatasource {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"            
+        $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
- 
-            try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
         }
+ 
+        try {
+            if ('POST' -match 'PUT|POST') {
+                Write-Verbose "Body: "
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+            }
+            else {
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+            }
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        Write-Output $Result
     }
 }
 
@@ -3406,7 +3403,7 @@ function Global:Update-OciLdapConfiguration {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3493,7 +3490,7 @@ function Global:Test-OciLdapConfiguration {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3624,7 +3621,7 @@ function Global:Update-OciLicenses {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -3710,7 +3707,7 @@ function Global:Replace-OciLicense {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -4117,7 +4114,7 @@ function Global:Approve-OciPatch {
     Begin {
         $Result = $null
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -4274,7 +4271,7 @@ function Global:Update-OciPatchNote {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -4362,7 +4359,7 @@ function Global:Rollback-OciPatch {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -4497,7 +4494,7 @@ function Global:Add-OciUsers {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -4629,7 +4626,7 @@ function Global:Remove-OciUser {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -4781,7 +4778,7 @@ function Global:Update-OciUser {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -5445,7 +5442,7 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -6322,7 +6319,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -6506,7 +6503,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -9951,7 +9948,7 @@ function Global:Get-OciPortsByFabricCount {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -12026,7 +12023,7 @@ function Global:Get-OciDataCenterByHost {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -15960,7 +15957,7 @@ function Global:Get-OciDeviceByPort {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -23243,7 +23240,7 @@ function Global:Get-OciProtocolsByStorage {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
@@ -29734,7 +29731,7 @@ function Global:Get-OciAutoTierPolicyByVolume {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-        $switchparameters=@("")
+        $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
                 if ($expand) {
