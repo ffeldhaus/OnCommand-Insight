@@ -3334,59 +3334,31 @@ function Global:Get-OciLdapConfiguration {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
+        $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
  
-            try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-          
-            Write-Output $Result
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+        
+        # add empty password to directoryLookup as this is not returned from OCI Server and is required for passing object to Update-OciLdapConfiguration
+        $Result.directoryLookup | Add-Member -MemberType NoteProperty -Name password -Value "" -ErrorAction SilentlyContinue
+
+        Write-Output $Result
     }
 }
 
-# TODO: Implement / Test updating o ldap configuration
 <#
     .SYNOPSIS
     Update LDAP config
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-{
-    "isEnabled": true,
-    "directoryLookup": {
-        "server": "ldap://localhost",
-        "timeout": 1000,
-        "referral": "follow",
-        "userName": "directoryLookupUserName",
-        "password": "directoryLookupUserPassword",
-        "domain": "DC=domain,DC=com"
-    },
-    "groups": {
-        "users": "insight.users",
-        "guests": "insight.guests",
-        "admins": "insight.admins",
-        "serverAdmins": "insight.server.admins"
-    },
-    "attributes": {
-        "role": "memberOf",
-        "mail": "mail",
-        "userPrincipalName": "userPrincipalName",
-        "distinguishedName": "distinguishedName"
-    }
-}
-</pre>
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -3394,7 +3366,25 @@ function Global:Update-OciLdapConfiguration {
     [CmdletBinding()]
  
     PARAM (
-
+        [parameter(Mandatory=$True,
+                   Position=0,
+                   HelpMessage="Enable LDAP Configuration",
+                   ValueFromPipelineByPropertyName=$True)][Boolean]$isEnabled=$true,
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   HelpMessage="Directory Lookup configuration. Hash containing key,value pairs for server, timeout, referral, userName, password and domain. Example: @{'server'='ldap://','timeout'=2000,'referral'='follow','userName'='directoryLookupUserName','domain'='DC=domain,DC=com'}",
+                   ValueFromPipelineByPropertyName=$True)][PSCustomObject]$DirectoryLookup,
+        [parameter(Mandatory=$True,
+                   Position=2,
+                   HelpMessage="LDAP Groups configuration. Hash containing LDAP groups as key,value pairs for users, guests, admins and serverAdmins. Example: @{'users'='insight.users','guests'='insight.guests','admins'='insight.admins','serverAdmins'='insight.server.admins'}",
+                   ValueFromPipelineByPropertyName=$True)][PSCustomObject]$Groups,
+        [parameter(Mandatory=$True,
+                   Position=3,
+                   HelpMessage="LDAP Attribute configuration. Hash containing LDAP attributes as key,value pairs for role, mail, userPrincipalName and distinguishedName. Example: @{'role'='memberOf','mail'='mail','userPrincipalName'='userPrincipalName','distinguishedName'='distinguishedName'}",
+                   ValueFromPipelineByPropertyName=$True)][PSCustomObject]$Attributes,
+        [parameter(Mandatory=$False,
+                   Position=15,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -3402,61 +3392,30 @@ function Global:Update-OciLdapConfiguration {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@()
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"           
+        $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"           
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                if ('PUT' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers
-                }
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        try {
+            $Input = @{"isEnabled"=$isEnabled;
+                        "directoryLookup"=$DirectoryLookup;
+                        "groups"=$Groups;
+                        "attributes"=$Attributes}
+            $Body = ConvertTo-Json -InputObject $Input -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        Write-Output $Result
     }
 }
 
@@ -3464,16 +3423,6 @@ function Global:Update-OciLdapConfiguration {
 <#
     .SYNOPSIS
     Perform an LDAP connection test
-    .DESCRIPTION
-    Request body to include information on LDAP server and credentials to test. Request body should be like JSON below: <br/>
-
-<pre>
-{
-  "server": "ldap://localhost",
-  "userName": "user",
-  "password": "password"
-}
-</pre>
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -3481,7 +3430,21 @@ function Global:Test-OciLdapConfiguration {
     [CmdletBinding()]
  
     PARAM (
-
+        [parameter(Mandatory=$True,
+                   Position=0,
+                   HelpMessage="LDAP Server URL",
+                   ValueFromPipelineByPropertyName=$True)][String]$LdapServer,
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   HelpMessage="User name to use for LDAP test",
+                   ValueFromPipelineByPropertyName=$True)][String]$UserName,
+        [parameter(Mandatory=$True,
+                   Position=2,
+                   HelpMessage="The password of the user for the LDAP test",
+                   ValueFromPipelineByPropertyName=$True)][PSCustomObject]$Password,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
@@ -3489,61 +3452,26 @@ function Global:Test-OciLdapConfiguration {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@()
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"            
+        $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        try {
+            $Body = ConvertTo-Json -InputObject @{"server"=$LdapServer;"userName"=$UserName;"password"=$Password} -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        Write-Output $Result
     }
 }
 
