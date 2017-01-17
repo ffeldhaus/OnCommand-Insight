@@ -383,6 +383,82 @@ $Datasources | % { $_.config.foundation.attributes.password = "test" }
 $Datasources | Update-OciDatasource
 ```
 
+Here's a full interactive example for datasource password management including verification that the change was successfull.
+```powershell
+Import-Module OnCommand-Insight 
+
+$ServerName = Read-Host -Prompt "Please insert OnCommand Insight Server full qualified hostname" 
+
+$Credential = Get-Credential -Message "Please enter credentials to access OnCommand Insight server" 
+
+Connect-OciServer -Name $ServerName -Credential $Credential -HTTPS -Insecure
+
+$Datasources = Get-OciDatasources -config
+
+$DatasourceCredential = Get-Credential -Message "Please enter new credentials to be used by datasources"
+
+foreach ($Datasource in $Datasources) {
+    $Datasource.config.foundation.attributes.user = $DatasourceCredential.UserName
+    
+    $Datasource.config.foundation.attributes.password = $DatasourceCredential.GetNetworkCredential().password
+
+    $Datasource = $Datasource | Update-OciDatasource
+}
+
+foreach ($Datasource in $Datasources) {
+    $Tests = $Datasource | Test-OciDatasource
+
+    foreach ($Test in $Tests) {
+        if ($Test.result -eq "PASSED") {
+            $Test.message = $Test.message -replace "Configuration:","Datasource $($Datasource.Name):"
+            Write-Host $Test.message -ForegroundColor Green
+        }
+        else {
+            $Test.message = $Test.message -replace "Configuration:","Datasource $($Datasource.Name):"
+            Write-Host $Test.message -ForegroundColor Red
+        }
+    }
+}
+```
+
+### LDAP Configuration
+
+The LDAP Configuration can be retrieved via
+
+```powershell
+Get-OciLdapConfiguration
+```
+
+Here's a full example for LDAP configuration changes
+```powershell
+Import-Module OnCommand-Insight
+
+$LdapServer = Read-Host -Prompt "Please insert LDAP URI (e.g. ldaps://dc1.example.com:636,ldaps://dc2.example.com)" 
+$LdapDomain = Read-Host -Prompt "Please insert LDAP Domain (e.g. DC=example,DC=com)" 
+$LdapAdminGroups = Read-Host -Prompt "Please insert LDAP group for Admin role"
+$LdapCredential = Get-Credential  -Message "Please provide credential for accessing LDAP server"
+
+$Test = Test-OciLdapConfiguration -LdapServer $LdapServer -UserName $LdapCredential.UserName -Password $LdapCredential.GetNetworkCredential().password -Verbose
+
+if ($Test.statusCode -eq "SUCCESS") {
+    Write-Host "Connection to LDAP Server $LdapServer with user $($LdapCredential.UserName) succeeded" -ForegroundColor green
+} else {
+    Write-Host "Connection to LDAP Server $LdapServer with user $($LdapCredential.UserName) failed" -ForegroundColor red
+}
+
+$LdapConfiguration = Get-OciLdapConfiguration
+
+$LdapConfiguration.isEnabled                    = $true
+$LdapConfiguration.directoryLookup.server       = $LdapServer
+$LdapConfiguration.directoryLookup.userName     = $LdapCredential.UserName
+$LdapConfiguration.directoryLookup.password     = $LdapCredential.GetNetworkCredential().Password
+$LdapConfiguration.directoryLookup.domain       = $LdapDomain
+$LdapConfiguration.groups.admins                = $LdapAdminGroups 
+$LdapConfiguration.attributes.userPrincipalName = "sAMAccountName"
+
+$LdapConfiguration | Update-OciLdapConfiguration
+```
+
 ### Creating and restoring OCI
 
 All available Backups on the OCI Server can be retrieved with
