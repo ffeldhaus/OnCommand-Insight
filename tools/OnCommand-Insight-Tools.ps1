@@ -9,8 +9,8 @@
         [Parameter(Mandatory = $false)][String]$GitHubUsername="ffeldhaus",
         [Parameter(Mandatory = $false)][String]$GitHubRepository="OnCommand-Insight",
         [Parameter(Mandatory = $false)][switch]$Draft=$false,
-        [Parameter(Mandatory = $false)][switch]$PreRelease=$false
-
+        [Parameter(Mandatory = $false)][switch]$PreRelease=$false,
+        [Parameter(Mandatory = $false)][switch]$RunTests=$false
     )
 
     # The github API key must be available in $GitHubApiKey (https://github.com/blog/1509-personal-api-tokens)
@@ -88,8 +88,10 @@ function New-OciRelease {
     if ($Minor) { $ModuleVersion = New-Object System.Version($ModuleVersion.Major,($ModuleVersion.Minor+1),0) }
     if ($Build) { $ModuleVersion = New-Object System.Version($ModuleVersion.Major,$ModuleVersion.Minor,($ModuleVersion.Build+1)) }
 
-    Write-Host "Running Pester tests"
-    Invoke-OciTests
+    if ($RunTests.IsPresent) {}
+        Write-Host "Running Pester tests"
+        Invoke-OciTests
+    }
 
     Write-Host "Building release for version $ModuleVersion"
 
