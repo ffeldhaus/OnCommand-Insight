@@ -1563,7 +1563,7 @@ function Global:Get-OciCertificates {
     }
 }
 
-# TODO: Check and implement uploading of certificates
+# TODO: Implement uploading of certificates
 <#
     .SYNOPSIS
     Add a certificate based on source host/port or certificate file
@@ -1590,23 +1590,24 @@ function Global:Add-OciCertificate {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
-                   Position=0,
-                   HelpMessage="OnCommand Insight Server.")]$Alias,
         [parameter(Mandatory=$True,
+                   Position=0,
+                   ParameterSetName='host',
+                   HelpMessage="LDAP URI (e.g. dc1.example.com)")][String]$HostName,
+        [parameter(Mandatory=$False,
                    Position=1,
                    ParameterSetName='host',
-                   HelpMessage="OnCommand Insight Server.")]$Host,
+                   HelpMessage="LDAP SSL Port")][Int]$Port=636,
         [parameter(Mandatory=$True,
-                   Position=2,
-                   ParameterSetName='host',
-                   HelpMessage="OnCommand Insight Server.")]$Port='389',
+                   Position=0,
+                   ParameterSetName='file',
+                   HelpMessage="OnCommand Insight Server.")][String]$Alias,
         [parameter(Mandatory=$True,
                    Position=1,
                    ParameterSetName='file',
-                   HelpMessage="OnCommand Insight Server.")]$File,
+                   HelpMessage="OnCommand Insight Server.")][String]$File,
         [parameter(Mandatory=$False,
-                   Position=3,
+                   Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -1615,18 +1616,6 @@ function Global:Add-OciCertificate {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@()
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
@@ -1634,30 +1623,10 @@ function Global:Add-OciCertificate {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/certificates"
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
             try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
+                $Body = ConvertTo-Json @{"host"=$HostName;"port"=$Port} -Compress
+                Write-Verbose "Body: $Body"
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
