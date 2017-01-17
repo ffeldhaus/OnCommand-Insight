@@ -7,6 +7,10 @@ if (!$OciServerName) {
 
 Write-Host "Running tests against OCI Server $OciServerName"
 
+Write-LogInfo {
+    
+}
+
 ### functions for validating OCI objects
 function ValidateAcquisitionUnit {
     [CmdletBinding()]
@@ -477,6 +481,84 @@ function ValidateHost {
                 $HostItem.cpu | ValidateValue
             }
             $HostItem.isActive | Should BeOfType Boolean
+    }
+}
+
+function ValidatePerformance {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Performance to be verified")][PSObject]$Performance
+    )
+
+        Process {
+            $Performance.self | Should Match "/rest/v1/assets/[a-z]+/[0-9]+/performance"
+            $Performance.cpuUtilization | ValidatePerformanceCategory
+            $Performance.diskThroughput | ValidatePerformanceCategory
+            $Performance.swapRate | ValidatePerformanceCategory
+            $Performance.diskIops | ValidatePerformanceCategory
+            $Performance.diskLatency | ValidatePerformanceCategory
+            $Performance.fcWeightedPortBalanceIndex | ValidatePerformanceCategory
+            $Performance.memoryUtilization | ValidatePerformanceCategory
+            $Performance.ipThroughput | ValidatePerformanceCategory
+    }
+}
+
+function ValidatePerformanceCategory {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Performance to be verified")][PSObject]$PerformanceCategory
+    )
+
+        Process {
+            
+            $PerformanceCategory.performanceCategory | Should Match '.+'
+            $PerformanceIndicator.description | Should Match '.+'
+            $PerformanceIndicator.total | ValidatePerformanceIndicator
+    }
+}
+
+function ValidatePerformanceIndicator {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Performance to be verified")][PSObject]$PerformanceIndicator
+    )
+
+        Process {
+            $PerformanceIndicator.description | Should Match '.+'
+            $PerformanceIndicator.unitType | Should Match '%'
+            if ($PerformanceIndicator.start) {
+                $PerformanceIndicator.start | Should BeOfType DateTime
+            }
+            if ($PerformanceIndicator.end) {
+                $PerformanceIndicator.end | Should BeOfType DateTime
+            }
+            if ($PerformanceIndicator.current) {
+                $PerformanceIndicator.current | Should BeOfType Decimal
+            }
+            if ($PerformanceIndicator.min) {
+                $PerformanceIndicator.min | Should BeOfType Decimal
+            }
+            if ($PerformanceIndicator.max) {
+                $PerformanceIndicator.max | Should BeOfType Decimal
+            }
+            if ($PerformanceIndicator.avg) {
+                $PerformanceIndicator.avg | Should BeOfType Decimal
+            }
+            if ($PerformanceIndicator.sum) {
+                $PerformanceIndicator.sum | Should BeOfType Decimal
+            }
     }
 }
 
@@ -1196,11 +1278,21 @@ Describe "Datastore management" {
             $Hosts | ValidateHost
         }
 
-        it "succeeds when retrieving related hosts with parameters" {
+        it "succeeds when retrieving related hosts with parameters performance, fromTime, toTime, ports, storageResources, fileSystems, applications, virtualMachines, dataCenter, annotations, clusterHosts and datasources" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
-            $Hosts = Get-OciDatastores | select -first 1 | Get-OciHostsByDataStore -performance -performancehistory
+            $Hosts = Get-OciDatastores | Get-OciHostsByDataStore -performance -fromTime (Get-Date).AddDays(-1) -toTime (Get-Date) -ports -storageResources -fileSystems -applications -virtualMachines -dataCenter -annotations -clusterHosts -datasources
             $Hosts | ValidateHost
+            $Hosts.performance | ValidatePerformance
+            $Hosts.ports | ValidatePort
+            $Hosts.storageResources | ValidateStorageResource
+            $Hosts.fileSystems | ValidateFileSystem
+            $Hosts.applications | ValidateApplication
+            $Hosts.virtualMachines | ValidateVirtualMachine
+            $Hosts.dataCenter | ValidateDataCenter
+            $Hosts.annotations | ValidateAnnotation
+            $Hosts.clusterHosts | ValidateClusterHost
+            $Hosts.datasources | ValidateDatasource
         }
 
         it "succeeds when retrieving related hosts with transient OCI Server" {
@@ -1220,7 +1312,7 @@ Describe "Datastore management" {
         it "succeeds when retrieving related performance with parameters fromTime and toTime" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
-            $Performance = Get-OciDatastores | select -first 1 | Get-OciDatastorePerformance -fromTime (Get-Date).AddDays(-1) -toTime (Get-Date)
+            $Performance = Get-OciDatastores | Get-OciDatastorePerformance -fromTime (Get-Date).AddDays(-1) -toTime (Get-Date)
             $Performance | ValidatePerformance
         }
 
