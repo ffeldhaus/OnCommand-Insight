@@ -157,7 +157,7 @@ function New-OciRelease {
 
     # Code Signing
     $cert = Get-ChildItem cert:\CurrentUser\My -CodeSigningCert
-    Get-ChildItem $dst\*.ps*  | % { $_.FullName } | Set-AuthenticodeSignature -Certificate $cert | Out-Null
+    Get-ChildItem $dst\*.ps*  | % { $_.FullName } | Set-AuthenticodeSignature -Certificate $cert -TimestampServer "http://timestamp.verisign.com/scripts/timestamp.dll" | Out-Null
     
     Write-Host "Creating the release archive..."
 
