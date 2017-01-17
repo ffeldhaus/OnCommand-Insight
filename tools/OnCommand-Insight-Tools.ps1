@@ -88,7 +88,7 @@ function New-OciRelease {
     if ($Minor) { $ModuleVersion = New-Object System.Version($ModuleVersion.Major,($ModuleVersion.Minor+1),0) }
     if ($Build) { $ModuleVersion = New-Object System.Version($ModuleVersion.Major,$ModuleVersion.Minor,($ModuleVersion.Build+1)) }
 
-    if ($RunTests.IsPresent) {}
+    if ($RunTests.IsPresent) {
         Write-Host "Running Pester tests"
         Invoke-OciTests
     }
