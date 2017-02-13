@@ -439,16 +439,6 @@ function ParsePerformance($Performance) {
         $Performance.accessed.start = $Performance.accessed.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
         $Performance.accessed.end = $Performance.accessed.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
     }
-    if ($Performance.iops) {
-        $Performance.iops.read.start = $Performance.iops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.read.end = $Performance.iops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.write.start = $Performance.iops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.write.end = $Performance.iops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.totalMax.start = $Performance.iops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.totalMax.end = $Performance.iops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.total.start = $Performance.iops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.total.end = $Performance.iops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-    }
     if ($Performance.cacheHitRatio) {
         if ($Performance.cacheHitRatio.read) {
             $Performance.cacheHitRatio.read.start = $Performance.cacheHitRatio.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
@@ -463,6 +453,64 @@ function ParsePerformance($Performance) {
             $Performance.cacheHitRatio.total.end = $Performance.cacheHitRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
         }
     }
+    if ($Performance.cpuUtilization) {
+        $Performance.cpuUtilization.total.start = $Performance.cpuUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.cpuUtilization.total.end = $Performance.cpuUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
+    if ($Performance.diskIops) {
+        $Performance.diskIops.read.start = $Performance.diskIops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.read.end = $Performance.diskIops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.write.start = $Performance.diskIops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.write.end = $Performance.diskIops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.totalMax.start = $Performance.diskIops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.totalMax.end = $Performance.diskIops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.total.start = $Performance.diskIops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.total.end = $Performance.diskIops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
+    if ($Performance.diskLatency) {
+        $Performance.diskLatency.read.start = $Performance.diskLatency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.read.end = $Performance.diskLatency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.write.start = $Performance.diskLatency.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.write.end = $Performance.diskLatency.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.total.start = $Performance.diskLatency.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.total.end = $Performance.diskLatency.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.totalMax.start = $Performance.diskLatency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.totalMax.end = $Performance.diskLatency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
+    if ($Performance.diskThroughput) {
+        $Performance.diskThroughput.read.start = $Performance.diskThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.read.end = $Performance.diskThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.write.start = $Performance.diskThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.write.end = $Performance.diskThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.totalMax.start = $Performance.diskThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.totalMax.end = $Performance.diskThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.total.start = $Performance.diskThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.total.end = $Performance.diskThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
+    if ($Performance.fcWeightedPortBalanceIndex) {
+        $Performance.fcWeightedPortBalanceIndex.start = $Performance.fcWeightedPortBalanceIndex.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.fcWeightedPortBalanceIndex.end = $Performance.fcWeightedPortBalanceIndex.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
+    if ($Performance.iops) {
+        $Performance.iops.read.start = $Performance.iops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.read.end = $Performance.iops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.write.start = $Performance.iops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.write.end = $Performance.iops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.totalMax.start = $Performance.iops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.totalMax.end = $Performance.iops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.total.start = $Performance.iops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.total.end = $Performance.iops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
+    if ($Performance.ipThroughput) {
+        $Performance.ipThroughput.read.start = $Performance.ipThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.read.end = $Performance.ipThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.write.start = $Performance.ipThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.write.end = $Performance.ipThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.totalMax.start = $Performance.ipThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.totalMax.end = $Performance.ipThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.total.start = $Performance.ipThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.total.end = $Performance.ipThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
     if ($Performance.latency) {
         $Performance.latency.read.start = $Performance.latency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
         $Performance.latency.read.end = $Performance.latency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
@@ -473,13 +521,23 @@ function ParsePerformance($Performance) {
         $Performance.latency.totalMax.start = $Performance.latency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
         $Performance.latency.totalMax.end = $Performance.latency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
     }
+    if ($Performance.memoryUtilization) {
+        $Performance.memoryUtilization.total.start = $Performance.memoryUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.memoryUtilization.total.end = $Performance.memoryUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
     if ($Performance.partialBlocksRatio.total) {
         $Performance.partialBlocksRatio.total.start = $Performance.partialBlocksRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp
         $Performance.partialBlocksRatio.total.end = $Performance.partialBlocksRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp
     }
-    if ($Performance.writePending.total) {
-        $Performance.writePending.total.start = $Performance.writePending.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.writePending.total.end = $Performance.writePending.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    if ($Performance.swapRate) {
+        $Performance.swapRate.inRate.start = $Performance.swapRate.inRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.inRate.end = $Performance.swapRate.inRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.outRate.start = $Performance.swapRate.outRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.outRate.end = $Performance.swapRate.outRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.totalMaxRate.start = $Performance.swapRate.totalMaxRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.totalMaxRate.end = $Performance.swapRate.totalMaxRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.totalRate.start = $Performance.swapRate.totalRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.totalRate.end = $Performance.swapRate.totalRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
     }
     if ($Performance.throughput) {
         $Performance.throughput.read.start = $Performance.throughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
@@ -490,6 +548,10 @@ function ParsePerformance($Performance) {
         $Performance.throughput.totalMax.end = $Performance.throughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
         $Performance.throughput.total.start = $Performance.throughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
         $Performance.throughput.total.end = $Performance.throughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+    }
+    if ($Performance.writePending.total) {
+        $Performance.writePending.total.start = $Performance.writePending.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.writePending.total.end = $Performance.writePending.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
     }
     if ($Performance.history) {
         $Performance.history = ParsePerformanceHistory($Performance.history)
@@ -2206,7 +2268,7 @@ function Global:Remove-OciDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            $Datasource = ParseDatasource($Result)
+            $Datasource = ParseDatasources($Result)
             Write-Output $Datasource
         }
     }
@@ -2410,7 +2472,9 @@ function Global:Update-OciDataSource {
         }
        
         $Datasource = ParseDatasources($Result)
-        $config.packages = $Datasource.config.packages
+        if ($Datasource.config.packages) {
+            $config.packages = $Datasource.config.packages
+        }
         Write-Output $Datasource
     }
 }
