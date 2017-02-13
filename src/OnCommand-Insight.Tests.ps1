@@ -7,10 +7,6 @@ if (!$OciServerName) {
 
 Write-Host "Running tests against OCI Server $OciServerName"
 
-Write-LogInfo {
-    
-}
-
 ### functions for validating OCI objects
 function ValidateAcquisitionUnit {
     [CmdletBinding()]
@@ -494,16 +490,50 @@ function ValidatePerformance {
                 HelpMessage="Performance to be verified")][PSObject]$Performance
     )
 
-        Process {
-            $Performance.self | Should Match "/rest/v1/assets/[a-z]+/[0-9]+/performance"
+    Process {
+        $Performance.self | Should Match "/rest/v1/assets/[a-z]+/[0-9]+/performance"
+        if ($Performance.cacheHitRatio) {
+            $Performance.cacheHitRatio | ValidatePerformanceCategory
+        }
+        if ($Performance.cpuUtilization) {
             $Performance.cpuUtilization | ValidatePerformanceCategory
+        }
+        if ($Performance.diskThroughput) {
             $Performance.diskThroughput | ValidatePerformanceCategory
+        }
+        if ($Performance.swapRate) {
             $Performance.swapRate | ValidatePerformanceCategory
+        }
+        if ($Performance.diskIops) {
             $Performance.diskIops | ValidatePerformanceCategory
+        }
+        if ($Performance.diskLatency) {
             $Performance.diskLatency | ValidatePerformanceCategory
-            $Performance.fcWeightedPortBalanceIndex | ValidatePerformanceCategory
-            $Performance.memoryUtilization | ValidatePerformanceCategory
+        }
+        if ($Performance.fcWeightedPortBalanceIndex) {
+            $Performance.fcWeightedPortBalanceIndex | ValidateFcWeightedPortBalanceIndex
+        }
+        if ($Performance.iops) {
+            $Performance.iops | ValidatePerformanceCategory
+        }
+        if ($Performance.ipThroughput) {
             $Performance.ipThroughput | ValidatePerformanceCategory
+        }
+        if ($Performance.latency) {
+            $Performance.latency | ValidatePerformanceCategory
+        }
+        if ($Performance.memoryUtilization) {
+            $Performance.memoryUtilization | ValidatePerformanceCategory
+        }
+        if ($Performance.partialBlocksRatio) {
+            $Performance.partialBlocksRatio | ValidatePerformanceCategory
+        }
+        if ($Performance.throughput) {
+            $Performance.throughput | ValidatePerformanceCategory
+        }
+        if ($Performance.writePending) {
+            $Performance.writePending | ValidatePerformanceCategory
+        }
     }
 }
 
@@ -520,8 +550,57 @@ function ValidatePerformanceCategory {
         Process {
             
             $PerformanceCategory.performanceCategory | Should Match '.+'
-            $PerformanceIndicator.description | Should Match '.+'
-            $PerformanceIndicator.total | ValidatePerformanceIndicator
+            $PerformanceCategory.description | Should Match '.+'
+            if ($PerformanceCategory.read) {
+                $PerformanceCategory.read | ValidatePerformanceIndicator
+            }
+            if ($PerformanceCategory.write) {
+                $PerformanceCategory.write | ValidatePerformanceIndicator
+            }
+            if ($PerformanceCategory.totalMax) {
+                $PerformanceCategory.totalMax | ValidatePerformanceIndicator
+            }
+            if ($PerformanceCategory.total) {
+                $PerformanceCategory.total | ValidatePerformanceIndicator
+            }
+            if ($PerformanceCategory.inRate) {
+                $PerformanceCategory.inRate | ValidatePerformanceIndicator
+            }
+            if ($PerformanceCategory.outRate) {
+                $PerformanceCategory.outRate | ValidatePerformanceIndicator
+            }
+            if ($PerformanceCategory.totalRate) {
+                $PerformanceCategory.totalRate | ValidatePerformanceIndicator
+            }
+            if ($PerformanceCategory.totalMaxRate) {
+                $PerformanceCategory.totalMaxRate | ValidatePerformanceIndicator
+            }
+    }
+}
+
+function ValidateFcWeightedPortBalanceIndex {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Performance to be verified")][PSObject]$FcWeightedPortBalanceIndex
+    )
+
+        Process {
+            
+            $FcWeightedPortBalanceIndex.description | Should Match '.+'
+            if ($FcWeightedPortBalanceIndex.unitType) {
+                $FcWeightedPortBalanceIndex.unitType | Should Match '%|KB/s|MB/s|IO/s|ms'
+            }
+            $FcWeightedPortBalanceIndex.start | Should BeOfType DateTime
+            $FcWeightedPortBalanceIndex.end | Should BeOfType DateTime
+            $FcWeightedPortBalanceIndex.current -as [double] | Should BeOfType Double
+            $FcWeightedPortBalanceIndex.min -as [double] | Should BeOfType Double
+            $FcWeightedPortBalanceIndex.max -as [double] | Should BeOfType Double
+            $FcWeightedPortBalanceIndex.avg -as [double] | Should BeOfType Double
+            $FcWeightedPortBalanceIndex.sum -as [double] | Should BeOfType Double
     }
 }
 
@@ -537,7 +616,7 @@ function ValidatePerformanceIndicator {
 
         Process {
             $PerformanceIndicator.description | Should Match '.+'
-            $PerformanceIndicator.unitType | Should Match '%'
+            $PerformanceIndicator.unitType | Should Match '%|KB/s|MB/s|IO/s|ms'
             if ($PerformanceIndicator.start) {
                 $PerformanceIndicator.start | Should BeOfType DateTime
             }
@@ -545,19 +624,19 @@ function ValidatePerformanceIndicator {
                 $PerformanceIndicator.end | Should BeOfType DateTime
             }
             if ($PerformanceIndicator.current) {
-                $PerformanceIndicator.current | Should BeOfType Decimal
+                $PerformanceIndicator.current -as [double] | Should BeOfType Double
             }
             if ($PerformanceIndicator.min) {
-                $PerformanceIndicator.min | Should BeOfType Decimal
+                $PerformanceIndicator.min -as [double] | Should BeOfType Double
             }
             if ($PerformanceIndicator.max) {
-                $PerformanceIndicator.max | Should BeOfType Decimal
+                $PerformanceIndicator.max -as [double] | Should BeOfType Double
             }
             if ($PerformanceIndicator.avg) {
-                $PerformanceIndicator.avg | Should BeOfType Decimal
+                $PerformanceIndicator.avg -as [double] | Should BeOfType Double
             }
             if ($PerformanceIndicator.sum) {
-                $PerformanceIndicator.sum | Should BeOfType Decimal
+                $PerformanceIndicator.sum -as [double] | Should BeOfType Double
             }
     }
 }
