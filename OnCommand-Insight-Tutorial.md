@@ -40,6 +40,17 @@ Connect-OciServer -Name $ServerName -Credential $Credential
 
 If the login fails, it is often due to an untrusted certificate of the OCI Server. You can ignore the certificate check with the `-insecure` option
 
+Additionally, you can now import the OCI Server certificate into the Trusted Root Certification Authorities. This allows connections to be trusted via PowerShell and Browsers such as Internet Explorer.
+
+```powershell
+Import-OciServerCertificate
+```
+
+You can also remove the certificate from the Trusted Root Certification Authorities with
+```powershell
+Remove-OciServerCertificate
+```
+
 ```powershell
 Connect-OciServer -Name $ServerName -Credential $Credential -Insecure
 ```
