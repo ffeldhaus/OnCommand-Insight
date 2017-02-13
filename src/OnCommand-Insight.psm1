@@ -295,6 +295,13 @@ function ParseDatasources($Datasources) {
     }
 }
 
+function ParseDatasourceTypes($DatasourceTypes) {
+    $DatasourceTypes = @($DatasourceTypes)
+    foreach ($DatasourceType in $DatasourceTypes) {
+        Write-Output $DatasourceType
+    }
+}
+
 function ParseDatasourceConfig($DatasourceConfig) {
     $DatasourceConfig = @($DatasourceConfig)
     foreach ($DatasourceConfig in $DatasourceConfig) {
@@ -302,6 +309,9 @@ function ParseDatasourceConfig($DatasourceConfig) {
             $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "foundation" -Value { $this.packages | ? { $_.id -eq "foundation" } }
             if (!$DatasourceConfig.foundation.attributes.password) {
                 $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value "" -force
+            }
+            if ($DatasourceConfig.foundation.attributes.'partner.ip' -and !$DatasourceConfig.foundation.attributes.'partner.password') {
+                $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name 'partner.password' -Value "" -force
             }
         }
         if ($DatasourceConfig.packages | ? { $_.id -eq "storageperformance" }) {
@@ -1511,7 +1521,8 @@ function Global:Restart-OciAcquisitionUnit {
                 $Result = ParseJsonString($Result.Trim())
             }
        
-            Write-Output $Result
+            $AcquisitionUnit = ParseAcquisitionUnits($Result)
+            Write-Output $AcquisitionUnit
         }
     }
 }
@@ -1637,7 +1648,8 @@ function Global:Add-OciCertificate {
                 $Result = ParseJsonString($Result.Trim())
             }
        
-            Write-Output $Result
+            $Certificate = ParseCertificate($Result)
+            Write-Output $Certificate
         }
     }
 }
@@ -1681,7 +1693,8 @@ function Global:Get-OciDatasourceTypes {
             $Result = ParseJsonString($Result.Trim())
         }
        
-        Write-Output $Result
+        $DatasourceTypes = ParseDatasourceTypes($Result)
+        Write-Output $DatasourceTypes
     }
 }
 
@@ -1733,7 +1746,8 @@ function Global:Get-OciDatasourceType {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $DatasourceType = ParseDatasourceTypes($Result)
+            Write-Output $DatasourceType
         }
     }
 }
@@ -2060,7 +2074,8 @@ function Global:Remove-OciDatasource {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            Write-Output $Result
+            $Datasource = ParseDatasource($Result)
+            Write-Output $Datasource
         }
     }
 }
@@ -2241,6 +2256,12 @@ function Global:Update-OciDataSource {
             }
             if ($config) {
                 $ConfigScriptProperties = $config.PSObject.Members | ? { $_.MemberType -eq "ScriptProperty" } | % { $_.Name }
+                if (!$config.foundation.attributes.password) {
+                    $config.foundation.attributes.PSObject.Properties.Remove('password')
+                }
+                if (!$config.foundation.attributes.'partner.password') {
+                    $config.foundation.attributes.PSObject.Properties.Remove('partner.password')
+                }
                 $Body.config = $config | Select -Property * -ExcludeProperty $ConfigScriptProperties
                 $Uri += "?expand=config"
             }
@@ -2257,6 +2278,7 @@ function Global:Update-OciDataSource {
         }
        
         $Datasource = ParseDatasources($Result)
+        $config.packages = $Datasource.config.packages
         Write-Output $Datasource
     }
 }
@@ -2549,8 +2571,9 @@ function Global:Get-OciDatasourceConfiguration {
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
                 $Result = ParseJsonString($Result.Trim())
             }
-           
-            Write-Output $Result
+            
+            $DatasourceConfiguration = ParseDatasourceConfig($Result)
+            Write-Output $DatasourceConfiguration
         }
     }
 }
@@ -14710,7 +14733,8 @@ function Global:Get-OciVolumesByInternalVolume {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Volues = ParseVolumes($Result)
+            Write-Output $Volumes
         }
     }
 }
@@ -17638,7 +17662,8 @@ function Global:Get-OciVolumesByQtree {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Volumes = ParseVolumes($Result)
+            Write-Output $Volumes
         }
     }
 }
