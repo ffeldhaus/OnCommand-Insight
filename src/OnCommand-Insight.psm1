@@ -1210,6 +1210,138 @@ function global:Connect-OciServer {
 
 <#
     .SYNOPSIS
+    Import OCI Server Certificate into Windows Certificate store
+    .DESCRIPTION
+    Import OCI Server Certificate into Windows Certificate store
+    .PARAMETER server
+    OCI Server to connect to
+    .EXAMPLE
+    Import-OciServerCertificate
+#>
+function global:Import-OciServerCertificate {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="Owner of the certificate store where the certificate should be stored.")][ValidateSet("CurrentUser","LocalMachine")][String]$CertificateStoreOwner="CurrentUser",
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Request = [Net.HttpWebRequest]::Create($Server.BaseUri)
+        $Request.Method = "OPTIONS"
+
+        try {
+            $Response = $Request.GetResponse()
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (!$Request.ServicePoint.Certificate) {
+            Write-Error "No Certificate returned for $($Server.BaseUri)"
+        }
+
+        $Certificate = $Request.ServicePoint.Certificate
+
+        Write-Verbose "Retrieved certificate with subject $($Certificate.Subject) from issuer $($Certificate.Issuer)"
+
+        $CertificateStore = New-Object System.Security.Cryptography.X509Certificates.X509Store([System.Security.Cryptography.X509Certificates.StoreName]::Root,$CertificateStoreOwner)
+
+        $CertificateStore.Open("ReadWrite")
+
+        $CertificateStore.Add($Certificate)
+
+        if ($CertificateStore.Certificates.Contains($Certificate)) {
+            Write-Host "Certificate added succesfully"
+        }
+        else {
+            Write-Warning "Adding certificate failed"
+        }
+
+        $CertificateStore.Close()
+    }
+}
+
+<#
+    .SYNOPSIS
+    Remove OCI Server Certificate from Windows Certificate store
+    .DESCRIPTION
+    Remove OCI Server Certificate from Windows Certificate store
+    .PARAMETER server
+    OCI Server to connect to
+    .EXAMPLE
+    Remove-OciServerCertificate
+#>
+function global:Remove-OciServerCertificate {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="Owner of the certificate store where the certificate should be stored.")][ValidateSet("CurrentUser","LocalMachine")][String]$CertificateStoreOwner="CurrentUser",
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Request = [Net.HttpWebRequest]::Create($Server.BaseUri)
+        $Request.Method = "OPTIONS"
+
+        try {
+            $Response = $Request.GetResponse()
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (!$Request.ServicePoint.Certificate) {
+            Write-Error "No Certificate returned for $($Server.BaseUri)"
+        }
+
+        $Certificate = $Request.ServicePoint.Certificate
+
+        Write-Verbose "Retrieved certificate with subject $($Certificate.Subject) from issuer $($Certificate.Issuer)"
+
+        $CertificateStore = New-Object System.Security.Cryptography.X509Certificates.X509Store([System.Security.Cryptography.X509Certificates.StoreName]::Root,$CertificateStoreOwner)
+
+        $CertificateStore.Open("ReadWrite")
+
+        $CertificateStore.Remove($Certificate)
+
+        if (!$CertificateStore.Certificates.Contains($Certificate)) {
+            Write-Host "Certificate removed succesfully"
+        }
+        else {
+            Write-Warning "Removing certificate failed"
+        }
+
+        $CertificateStore.Close()
+    }
+}
+
+<#
+    .SYNOPSIS
     Retrieve all Acquisition Units
     .DESCRIPTION
     Retrieve all Acquisition Units
