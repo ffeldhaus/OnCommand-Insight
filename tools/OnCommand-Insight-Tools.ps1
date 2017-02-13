@@ -10,7 +10,7 @@
         [Parameter(Mandatory = $false)][String]$GitHubRepository="OnCommand-Insight",
         [Parameter(Mandatory = $false)][switch]$Draft=$false,
         [Parameter(Mandatory = $false)][switch]$PreRelease=$false,
-        [Parameter(Mandatory = $false)][switch]$RunTests=$false
+        [Parameter(Mandatory = $false)][switch]$RunTests=$true
     )
 
     # The github API key must be available in $GitHubApiKey (https://github.com/blog/1509-personal-api-tokens)
