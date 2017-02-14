@@ -43,12 +43,12 @@ If the login fails, it is often due to an untrusted certificate of the OCI Serve
 Additionally, you can now import the OCI Server certificate into the Trusted Root Certification Authorities. This allows connections to be trusted via PowerShell and Browsers such as Internet Explorer.
 
 ```powershell
-Import-OciServerCertificate
+Import-OciServerCertificate -Name $ServerName
 ```
 
 You can also remove the certificate from the Trusted Root Certification Authorities with
 ```powershell
-Remove-OciServerCertificate
+Remove-OciServerCertificate -Name $ServerName
 ```
 
 ```powershell
