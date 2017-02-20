@@ -7272,7 +7272,7 @@ function Global:Get-OciDatastores {
 
             if ($FetchAll -and @($Datastores).Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciDatastores -fromTime $fromTime -toTime $toTime -performance:$performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
+                Get-OciDatastores -fromTime $fromTime -toTime $toTime -limit $limit -offset $offset
             }
         }
     }
