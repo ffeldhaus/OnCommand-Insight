@@ -7272,7 +7272,7 @@ function Global:Get-OciDatastores {
 
             if ($FetchAll -and @($Datastores).Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciDatastores -fromTime $fromTime -toTime $toTime -limit $limit -offset $offset
+                Get-OciDatastores -fromTime $fromTime -toTime $toTime -performance:$performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
             }
         }
     }
@@ -31815,6 +31815,9 @@ function Global:Search-Oci {
         }
     }
 }
+
+### Experimental Cmdlets ###
+
 <#
     .SYNOPSIS
     Retrieve OCI Server health status
@@ -31831,6 +31834,7 @@ function Global:Get-OciHealth {
     )
  
     Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -31881,6 +31885,7 @@ function Global:Restore-OciBackup {
     )
  
     Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32005,6 +32010,7 @@ function Global:Get-OciBackup {
     )
  
     Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32098,6 +32104,7 @@ function Global:Get-OciBackups {
     )
  
     Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32118,5 +32125,200 @@ function Global:Get-OciBackups {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
+    }
+}
+
+
+<#
+    .SYNOPSIS
+    Retrieve queries
+    .DESCRIPTION
+    Retrieve queries
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciQueries {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/queries"
+ 
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        # TODO: implement parsing
+        $Queries = $Result
+        Write-Output $Queries
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve queries
+    .DESCRIPTION
+    Retrieve queries
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciQuery {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of query to retrieve",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/queries/$id"
+ 
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        # TODO: implement parsing
+        $Query = $Result
+        Write-Output $Query
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve annotation rules
+    .DESCRIPTION
+    Retrieve annotation rules
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciAnnotationRules {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/admin/rules"
+ 
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        # TODO: implement parsing
+        $Queries = $Result
+        Write-Output $Queries
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve queries
+    .DESCRIPTION
+    Retrieve queries
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciAnnotationRule {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of query to retrieve",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/admin/rules/$id"
+ 
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        # TODO: implement parsing
+        $Query = $Result
+        Write-Output $Query
     }
 }
