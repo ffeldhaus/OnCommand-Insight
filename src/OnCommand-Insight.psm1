@@ -15,7 +15,7 @@ if ($PSVersionTable.PSVersion.Major -lt 6) {
     # OCI 7.2 only supports TLS 1.2 and PowerShell does not auto negotiate it, thus enforcing TLS 1.2 which works for older OCI Versions as well
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    # Using .NET JSON Serializer as JSON serialization included in Invoke-RestMethod has a length restriction for JSON content
+    # Using .NET JSON Serializer as JSON serialization included in Invoke-RestMethod -WebSession $Server.Session has a length restriction for JSON content
     Add-Type -AssemblyName System.Web.Extensions
     $global:javaScriptSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
     $global:javaScriptSerializer.MaxJsonLength = [System.Int32]::MaxValue
@@ -216,7 +216,7 @@ function ConvertFrom-UnixTimestamp {
 }
 
 ### Type definition
-Add-Type @"
+Add-Type -IgnoreWarnings @"
 namespace OCI {
     public class Server {
         public string Name;
@@ -226,6 +226,7 @@ namespace OCI {
         public System.Version APIVersion;
         public System.TimeZoneInfo Timezone;
         public int Timeout;
+        public System.Object Session;
         public System.Object Metadata;
     }
 }
@@ -1159,7 +1160,7 @@ function Global:Get-OciMetadata {
         $Uri = $Server.BaseUri + "/uiserver/webui/v1/metadata"
 
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1227,11 +1228,11 @@ function global:Connect-OciServer {
             [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         }
         else {
-            if (!"Invoke-RestMethod:SkipCertificateCheck") {
-                $PSDefaultParameterValues.Add("Invoke-RestMethod:SkipCertificateCheck",$true)
+            if (!"Invoke-RestMethod -WebSession $Server.Session:SkipCertificateCheck") {
+                $PSDefaultParameterValues.Add("Invoke-RestMethod -WebSession $Server.Session:SkipCertificateCheck",$true)
             }
             else {
-                $PSDefaultParameterValues.'Invoke-RestMethod:SkipCertificateCheck'=$true
+                $PSDefaultParameterValues.'Invoke-RestMethod -WebSession $Server.Session:SkipCertificateCheck'=$true
             }
         }
     }
@@ -1255,7 +1256,7 @@ function global:Connect-OciServer {
     if ($HTTPS -or !$HTTP) {
         Try {
             $BaseURI = "https://$Name"
-            $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
+            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
@@ -1280,7 +1281,7 @@ function global:Connect-OciServer {
     if ($HTTP) {
         Try {
             $BaseURI = "http://$Name"
-            $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
+            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
@@ -1320,7 +1321,8 @@ function global:Connect-OciServer {
                             Headers=$Headers;
                             APIVersion=$APIVersion;
                             Timezone=$Timezone;
-                            Timeout=$Timeout}
+                            Timeout=$Timeout;
+                            Session=$Session}
 
     $Server.Metadata = Get-OciMetadata -Server $Server
  
@@ -1545,7 +1547,7 @@ function Global:Get-OciAcquisitionUnits {
         }
 
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1624,7 +1626,7 @@ function Global:Get-OciAcquisitionUnit {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1739,7 +1741,7 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1793,7 +1795,7 @@ function Global:Restart-OciAcquisitionUnit {
             $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/restart"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1840,7 +1842,7 @@ function Global:Get-OciCertificates {
             $Uri = $Server.BaseUri + "/rest/v1/admin/certificates"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1920,7 +1922,7 @@ function Global:Add-OciCertificate {
             try {
                 $Body = ConvertTo-Json @{"host"=$HostName;"port"=$Port} -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1965,7 +1967,7 @@ function Global:Get-OciDatasourceTypes {
         $Uri = $Server.BaseUri + "/rest/v1/admin/datasourceTypes"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2018,7 +2020,7 @@ function Global:Get-OciDatasourceType {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasourceTypes/$id"      
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2126,7 +2128,7 @@ function Global:Get-OciDatasources {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2278,7 +2280,7 @@ function Global:Add-OciDatasource {
             }
             $Body = $Body | ConvertTo-Json -Depth 10
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             if ($Result.toString().startsWith('{')) {
                 $Result = ParseJsonString($Result)
             }
@@ -2346,7 +2348,7 @@ function Global:Remove-OciDatasource {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2461,7 +2463,7 @@ function Global:Get-OciDatasource {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2550,7 +2552,7 @@ function Global:Update-OciDataSource {
             }
             $Body = $Body | ConvertTo-Json -Depth 10
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             if ($Result.toString().startsWith('{')) {
                 $Result = ParseJsonString($Result)
             }
@@ -2631,7 +2633,7 @@ function Global:Get-OciAcquisitionUnitByDatasource {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2712,7 +2714,7 @@ function Global:Get-OciActivePatchByDatasource {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2792,7 +2794,7 @@ function Global:Get-OciDatasourceChanges {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2846,7 +2848,7 @@ function Global:Get-OciDatasourceConfiguration {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/config"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2900,7 +2902,7 @@ function Global:Get-OciDatasourceDevices {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/devices"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -2974,7 +2976,7 @@ function Global:Get-OciDatasourceEvents {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3027,7 +3029,7 @@ function Global:Get-OciDatasourceEventDetails {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/events/$id/details"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3081,7 +3083,7 @@ function Global:Get-OciDatasourceNote {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/note"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3139,7 +3141,7 @@ function Global:Update-OciDatasourceNote {
         try {
             $Body = @{value=$value} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3191,7 +3193,7 @@ function Global:Get-OciDatasourcePackageStatus {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/packages"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3244,7 +3246,7 @@ function Global:Poll-OciDatasource {
         try {
             $Body = ""
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3301,7 +3303,7 @@ function Global:Suspend-OciDatasource {
         try {
             $Body = @{days=$days} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3367,10 +3369,10 @@ function Global:Resume-OciDatasource {
         try {
             if ('POST' -match 'PUT|POST') {
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
             }
             else {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
             }
         }
         catch {
@@ -3423,7 +3425,7 @@ function Global:Test-OciDatasource {
         try {
             $Body = ""
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3466,7 +3468,7 @@ function Global:Get-OciLdapConfiguration {
         $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3533,7 +3535,7 @@ function Global:Update-OciLdapConfiguration {
                         "attributes"=$Attributes}
             $Body = ConvertTo-Json -InputObject $Input -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3588,7 +3590,7 @@ function Global:Test-OciLdapConfiguration {
         try {
             $Body = ConvertTo-Json -InputObject @{"server"=$LdapServer;"userName"=$UserName;"password"=$Password} -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3631,7 +3633,7 @@ function Global:Get-OciLicenses {
         $Uri = $Server.BaseUri + "/rest/v1/admin/license"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3683,7 +3685,7 @@ function Global:Update-OciLicenses {
         try {
             $Body = $Licenses | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3764,10 +3766,10 @@ function Global:Replace-OciLicense {
             try {
                 if ('POST' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -3838,7 +3840,7 @@ function Global:Get-OciPatches {
         }
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -3917,10 +3919,10 @@ function Global:Add-OciPatches {
             try {
                 if ('POST' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -4000,7 +4002,7 @@ function Global:Get-OciPatch {
             }
  
             try {               
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4089,10 +4091,10 @@ function Global:Update-OciPatch {
             try {
                 if ('POST' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -4149,7 +4151,7 @@ function Global:Approve-OciPatch {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4211,7 +4213,7 @@ function Global:Get-OciPatchDatasourceConclusions {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4302,10 +4304,10 @@ function Global:Update-OciPatchNote {
             try {
                 if ('PUT' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -4390,10 +4392,10 @@ function Global:Rollback-OciPatch {
             try {
                 if ('POST' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -4438,7 +4440,7 @@ function Global:Get-OciUsers {
         $Uri = $Server.BaseUri + "/rest/v1/admin/users"
 
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4525,10 +4527,10 @@ function Global:Add-OciUsers {
             try {
                 if ('POST' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -4573,7 +4575,7 @@ function Global:Get-OciCurrentUser {
         $Uri = $Server.BaseUri + "/rest/v1/admin/users/current"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4657,10 +4659,10 @@ function Global:Remove-OciUser {
             try {
                 if ('DELETE' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -4714,7 +4716,7 @@ function Global:Get-OciUser {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4809,10 +4811,10 @@ function Global:Update-OciUser {
             try {
                 if ('PUT' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -4857,7 +4859,7 @@ function Global:Get-OciAnnotations {
         $Uri = $Server.BaseUri + "/rest/v1/assets/annotations"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4928,7 +4930,7 @@ function Global:Add-OciAnnotation {
             try {
                 $Body = ConvertTo-Json @{name=$name;type=$type;description=$description;enumValues=$enumValues} -Compress -Depth 4
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -4983,7 +4985,7 @@ function Global:Remove-OciAnnotation {
  
             try {
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5036,7 +5038,7 @@ function Global:Get-OciAnnotation {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5115,10 +5117,10 @@ function Global:Update-OciAnnotation {
             try {
                 if ('PATCH' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -5196,7 +5198,7 @@ function Global:Remove-OciAnnotationValues {
                     if ($targets) {
                         $Body = ConvertTo-Json @(@{objectType=$objectType;targets=$targets}) -Compress -Depth 4
                         Write-Verbose "Body: $Body"
-                        $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                        $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
                     }
                 }
             }
@@ -5251,7 +5253,7 @@ function Global:Get-OciAnnotationValues {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5321,7 +5323,7 @@ function Global:Update-OciAnnotationValues {
             try {
                 $Body = ConvertTo-Json @(@{objectType=$objectType;values=@(@{rawValue=$rawValue;targets=$targets})}) -Compress -Depth 4
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5379,7 +5381,7 @@ function Global:Get-OciAnnotationValuesByObjectType {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/$objectType"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5473,10 +5475,10 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
             try {
                 if ('GET' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -5576,7 +5578,7 @@ function Global:Get-OciApplications {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5684,7 +5686,7 @@ function Global:Add-OciApplication {
                 $Body = ConvertTo-Json @{name=$name;priority=$priority;ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
             }
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -5806,10 +5808,10 @@ function Global:Remove-OciApplicationsFromAssets {
             try {
                 if ('DELETE' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -5931,10 +5933,10 @@ function Global:Add-OciApplicationsToAssets {
             try {
                 if ('PATCH' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -6026,7 +6028,7 @@ function Global:Remove-OciApplication {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6133,7 +6135,7 @@ function Global:Get-OciApplication {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6245,7 +6247,7 @@ function Global:Update-OciApplication {
                     $Body = ConvertTo-Json @{name=$name;priority=$priority;ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
                 }
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6350,10 +6352,10 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
             try {
                 if ('DELETE' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -6433,7 +6435,7 @@ function Global:Get-OciAssetsByApplication {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6534,10 +6536,10 @@ function Global:Bulk-OciAssignApplicationToAssets {
             try {
                 if ('PATCH' -match 'PUT|POST') {
                     Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
                 }
                 else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
                 }
             }
             catch {
@@ -6659,7 +6661,7 @@ function Global:Get-OciComputeResourcesByApplication {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6791,7 +6793,7 @@ function Global:Get-OciStorageResourcesByApplication {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6836,7 +6838,7 @@ function Global:Get-OciBusinessEntities {
         $Uri = $Server.BaseUri + "/rest/v1/assets/businessEntities"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6893,7 +6895,7 @@ function Global:Add-OciBusinessEntity {
         try {
             $Body = @{tenant=$Tenant;lob=$LineOfBusiness;businessUnit=$BusinessUnit;project=$project} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'            
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'            
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6945,7 +6947,7 @@ function Global:Remove-OciBusinessEntity {
             $Uri = $Server.BaseUri + "/rest/v1/assets/businessEntities/$id"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -6998,7 +7000,7 @@ function Global:Get-OciBusinessEntity {
             $Uri = $Server.BaseUri + "/rest/v1/assets/businessEntities/$id"
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7105,7 +7107,7 @@ function Global:Get-OciDatastores {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7156,7 +7158,7 @@ function Global:Get-OciDatastoreCount {
         $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/count"
       
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7285,7 +7287,7 @@ function Global:Get-OciDatastore {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7362,7 +7364,7 @@ function Global:Remove-OciAnnotationsByDatastore {
         try {
             $Body = ConvertTo-Json @($annotationId | % { @{id=$_} }) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7440,7 +7442,7 @@ function Global:Get-OciAnnotationsByDatastore {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7526,7 +7528,7 @@ function Global:Update-OciAnnotationsByDatastore {
         try {
             $Body = ConvertTo-Json @(@{rawValue=$value;definition=@{id=$annotationId.ToString()}}) -Compress -Depth 3
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7661,7 +7663,7 @@ function Global:Get-OciDatasourcesByDataStore {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7811,7 +7813,7 @@ function Global:Get-OciHostsByDatastore {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7901,7 +7903,7 @@ function Global:Get-OciDatastorePerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8033,7 +8035,7 @@ function Global:Get-OciStorageResourcesByDatastore {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8165,7 +8167,7 @@ function Global:Get-OciVmdksByDatastore {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8303,7 +8305,7 @@ function Global:Get-OciDisk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8404,7 +8406,7 @@ function Global:Remove-OciAnnotationsByDisk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8495,7 +8497,7 @@ function Global:Get-OciAnnotationsByDisk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8598,7 +8600,7 @@ function Global:Update-OciAnnotationsByDisk {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8779,7 +8781,7 @@ function Global:Get-OciBackendVolumesByDisk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -8916,7 +8918,7 @@ function Global:Get-OciDatasourcesByDisk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9019,7 +9021,7 @@ function Global:Get-OciDiskPerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9166,7 +9168,7 @@ function Global:Get-OciStoragePoolsByDisk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9298,7 +9300,7 @@ function Global:Get-OciStorageResourcesByDisk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9420,7 +9422,7 @@ function Global:Get-OciFabrics {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9470,7 +9472,7 @@ function Global:Get-OciFabricCount {
         $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/count"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9575,7 +9577,7 @@ function Global:Get-OciFabric {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9712,7 +9714,7 @@ function Global:Get-OciDatasourcesByFabric {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9880,7 +9882,7 @@ function Global:Get-OciPortsByFabric {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -9977,7 +9979,7 @@ function Global:Get-OciPortsByFabricCount {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10108,7 +10110,7 @@ function Global:Get-OciSwitchesByFabric {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10220,7 +10222,7 @@ function Global:Get-OciFilesystem {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10341,7 +10343,7 @@ function Global:Get-OciComputeResourceByFileSystem {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10472,7 +10474,7 @@ function Global:Get-OciStorageResorcesByFileSystem {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10603,7 +10605,7 @@ function Global:Get-OciVmdksByFileSystem {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10650,7 +10652,7 @@ function Global:Get-OciTopologyByHost {
         $Uri = $Server.BaseUri + "/rest/v1/assets/topology/Host/$id"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10698,7 +10700,7 @@ function Global:Get-OciTopologyByStorage {
         $Uri = $Server.BaseUri + "/rest/v1/assets/topology/Storage/$id"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10874,7 +10876,7 @@ function Global:Get-OciHosts {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -10925,7 +10927,7 @@ function Global:Get-OciHostCount {
         $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/count"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11075,7 +11077,7 @@ function Global:Get-OciHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11144,7 +11146,7 @@ function Global:Remove-OciAnnotationsByHost {
                 }
                 $Body = ConvertTo-Json $Definitions
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11235,7 +11237,7 @@ function Global:Get-OciAnnotationsByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11308,7 +11310,7 @@ function Global:Update-OciAnnotationByHost {
 ]
 "@
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11410,7 +11412,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
  
             try {
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11514,7 +11516,7 @@ function Global:Get-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11617,7 +11619,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11715,7 +11717,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11809,7 +11811,7 @@ function Global:Remove-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -11958,7 +11960,7 @@ function Global:Get-OciClusterHostsByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12052,7 +12054,7 @@ function Global:Get-OciDataCenterByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12186,7 +12188,7 @@ function Global:Get-OciDatasourcesByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12295,7 +12297,7 @@ function Global:Get-OciFileSystemsByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12394,7 +12396,7 @@ function Global:Get-OciHostPerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12529,7 +12531,7 @@ function Global:Get-OciPortsByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12658,7 +12660,7 @@ function Global:Get-OciStorageResourcesByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12808,7 +12810,7 @@ function Global:Get-OciVirtualMachinesByHost {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -12967,7 +12969,7 @@ function Global:Get-OciInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13067,7 +13069,7 @@ function Global:Remove-OciAnnotationsByInternalVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13156,7 +13158,7 @@ function Global:Get-OciAnnotationsByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13255,7 +13257,7 @@ function Global:Update-OciAnnotationsByInternalVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13339,7 +13341,7 @@ function Global:Remove-OciApplicationsFromInternalVolume {
             try {
                 $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13443,7 +13445,7 @@ function Global:Get-OciApplicationsByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13530,7 +13532,7 @@ function Global:Add-OciApplicationsToInternalVolume {
             try {
                 $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13633,7 +13635,7 @@ function Global:Update-OciApplicationsByInternalVolume {
             try {
                 $Body = "{ `"id`": `"$applicationId`" }"
                     Write-Verbose "Body: $Body"
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13715,7 +13717,7 @@ function Global:Remove-OciApplicationsByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13834,7 +13836,7 @@ function Global:Get-OciComputeResourcesByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -13963,7 +13965,7 @@ function Global:Get-OciDataStoresByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -14097,7 +14099,7 @@ function Global:Get-OciDatasourcesByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -14197,7 +14199,7 @@ function Global:Get-OciInternalVolumePerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -14322,7 +14324,7 @@ function Global:Get-OciQtreesByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -14482,7 +14484,7 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -14616,7 +14618,7 @@ function Global:Get-OciStorageNodesByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -14796,7 +14798,7 @@ function Global:Get-OciVolumesByInternalVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -14931,7 +14933,7 @@ function Global:Get-OciPort {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15030,7 +15032,7 @@ function Global:Remove-OciAnnotationsByPort {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15119,7 +15121,7 @@ function Global:Get-OciAnnotationsByPort {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15218,7 +15220,7 @@ function Global:Update-OciAnnotationsByPort {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15320,7 +15322,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
  
             try {
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15424,7 +15426,7 @@ function Global:Get-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15527,7 +15529,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15625,7 +15627,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15759,7 +15761,7 @@ function Global:Get-OciConnectedPortsByPort {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15893,7 +15895,7 @@ function Global:Get-OciDatasourcesByPort {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -15987,7 +15989,7 @@ function Global:Get-OciDeviceByPort {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16091,7 +16093,7 @@ function Global:Get-OciFabricsByPort {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16190,7 +16192,7 @@ function Global:Get-OciPortPerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16315,7 +16317,7 @@ function Global:Get-OciQtree {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16414,7 +16416,7 @@ function Global:Remove-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16503,7 +16505,7 @@ function Global:Get-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16602,7 +16604,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16705,7 +16707,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16809,7 +16811,7 @@ function Global:Get-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -16912,7 +16914,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17010,7 +17012,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17104,7 +17106,7 @@ function Global:Remove-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17263,7 +17265,7 @@ function Global:Get-OciInternalVolumeByQtree {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17377,7 +17379,7 @@ function Global:Get-OciSharesByQtree {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17546,7 +17548,7 @@ function Global:Get-OciStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17725,7 +17727,7 @@ function Global:Get-OciVolumesByQtree {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17840,7 +17842,7 @@ function Global:Get-OciShare {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -17939,7 +17941,7 @@ function Global:Remove-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18028,7 +18030,7 @@ function Global:Get-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18127,7 +18129,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18230,7 +18232,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18334,7 +18336,7 @@ function Global:Get-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18437,7 +18439,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18535,7 +18537,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18629,7 +18631,7 @@ function Global:Remove-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18753,7 +18755,7 @@ function Global:Get-OciQtree {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -18922,7 +18924,7 @@ function Global:Get-OciStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19056,7 +19058,7 @@ function Global:Get-OciStorageNode {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19156,7 +19158,7 @@ function Global:Remove-OciAnnotationsByStorageNode {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19245,7 +19247,7 @@ function Global:Get-OciAnnotationsByStorageNode {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19344,7 +19346,7 @@ function Global:Update-OciAnnotationsByStorageNode {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19478,7 +19480,7 @@ function Global:Get-OciDatasourcesByStorageNode {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19577,7 +19579,7 @@ function Global:Get-OciStorageNodePerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19712,7 +19714,7 @@ function Global:Get-OciPortsByStorageNode {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -19856,7 +19858,7 @@ function Global:Get-OciStoragePoolsByNode {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20000,7 +20002,7 @@ function Global:Get-OciStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20099,7 +20101,7 @@ function Global:Remove-OciAnnotationsByStoragePool {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20188,7 +20190,7 @@ function Global:Get-OciAnnotationsByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20287,7 +20289,7 @@ function Global:Update-OciAnnotationsByStoragePool {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20421,7 +20423,7 @@ function Global:Get-OciDatasourcesByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20555,7 +20557,7 @@ function Global:Get-OciDisksByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20714,7 +20716,7 @@ function Global:Get-OciInternalVolumesByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20813,7 +20815,7 @@ function Global:Get-OciStoragePoolPerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -20983,7 +20985,7 @@ function Global:Get-OciStorageByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -21117,7 +21119,7 @@ function Global:Get-OciStorageNodesByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -21246,7 +21248,7 @@ function Global:Get-OciStorageResourcesByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -21425,7 +21427,7 @@ function Global:Get-OciVolumesByStoragePool {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -21617,7 +21619,7 @@ function Global:Get-OciStorages {
         }
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -21667,7 +21669,7 @@ function Global:Get-OciStorageCount {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/count"
  
             try {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -21836,7 +21838,7 @@ function Global:Get-OciStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -21935,7 +21937,7 @@ function Global:Remove-OciAnnotationsByStorage {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22024,7 +22026,7 @@ function Global:Get-OciAnnotationsByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22123,7 +22125,7 @@ function Global:Update-OciAnnotationsByStorage {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22226,7 +22228,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22330,7 +22332,7 @@ function Global:Get-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22433,7 +22435,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22531,7 +22533,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22665,7 +22667,7 @@ function Global:Get-OciDatasourcesByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22799,7 +22801,7 @@ function Global:Get-OciDisksByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -22958,7 +22960,7 @@ function Global:Get-OciInternalVolumesByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23057,7 +23059,7 @@ function Global:Get-OciStoragePerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23192,7 +23194,7 @@ function Global:Get-OciPortsByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23271,7 +23273,7 @@ function Global:Get-OciProtocolsByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23395,7 +23397,7 @@ function Global:Get-OciQtreesByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23509,7 +23511,7 @@ function Global:Get-OciSharesByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23643,7 +23645,7 @@ function Global:Get-OciStorageNodesByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23787,7 +23789,7 @@ function Global:Get-OciStoragePoolsByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -23916,7 +23918,7 @@ function Global:Get-OciStorageResourcesByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24095,7 +24097,7 @@ function Global:Get-OciVolumesByStorage {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24243,7 +24245,7 @@ function Global:Get-OciSwitches {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24292,7 +24294,7 @@ function Global:Get-OciSwitchCount {
         $Uri = $Server.BaseUri + "/rest/v1/assets/switches/count"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24420,7 +24422,7 @@ function Global:Get-OciSwitch {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24520,7 +24522,7 @@ function Global:Remove-OciAnnotationsBySwitch {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24609,7 +24611,7 @@ function Global:Get-OciAnnotationsBySwitch {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24708,7 +24710,7 @@ function Global:Update-OciAnnotationsBySwitch {
             try {
                 $Body = ""
                     Write-Verbose "Body: $Body"
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24811,7 +24813,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -24915,7 +24917,7 @@ function Global:Get-OciApplicationsBySwitch {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25018,7 +25020,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25116,7 +25118,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25250,7 +25252,7 @@ function Global:Get-OciDatasourcesBySwitch {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25355,7 +25357,7 @@ function Global:Get-OciFabricBySwitch {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25454,7 +25456,7 @@ function Global:Get-OciSwitchPerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25589,7 +25591,7 @@ function Global:Get-OciPortsBySwitch {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25762,7 +25764,7 @@ function Global:Get-OciVirtualMachines {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25810,7 +25812,7 @@ function Global:Get-OciVirtualMachineCount {
         $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/count"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -25958,7 +25960,7 @@ function Global:Get-OciVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26058,7 +26060,7 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26147,7 +26149,7 @@ function Global:Get-OciAnnotationsByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26246,7 +26248,7 @@ function Global:Update-OciAnnotationsByVirtualMachine {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26349,7 +26351,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26453,7 +26455,7 @@ function Global:Get-OciApplicationsByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26556,7 +26558,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26654,7 +26656,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26748,7 +26750,7 @@ function Global:Remove-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -26877,7 +26879,7 @@ function Global:Get-OciDataStoreByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27012,7 +27014,7 @@ function Global:Get-OciDatasourcesByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27122,7 +27124,7 @@ function Global:Get-OciFileSystemsByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27271,7 +27273,7 @@ function Global:Get-OciHostByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27371,7 +27373,7 @@ function Global:Get-OciVirtualMachinePerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27506,7 +27508,7 @@ function Global:Get-OciPortsByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27636,7 +27638,7 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27766,7 +27768,7 @@ function Global:Get-OciVmdksByVirtualMachine {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27896,7 +27898,7 @@ function Global:Get-OciVmdk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -27996,7 +27998,7 @@ function Global:Remove-OciAnnotationsByVmdk {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28085,7 +28087,7 @@ function Global:Get-OciAnnotationsByVmdk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28184,7 +28186,7 @@ function Global:Update-OciAnnotationsByVmdk {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28318,7 +28320,7 @@ function Global:Get-OciDatasourcesByVmdk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28418,7 +28420,7 @@ function Global:Get-OciVmdkPerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28548,7 +28550,7 @@ function Global:Get-OciStorageResourcesByVmdk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28698,7 +28700,7 @@ function Global:Get-OciVirtualMachineByVmdk {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28878,7 +28880,7 @@ function Global:Get-OciVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -28978,7 +28980,7 @@ function Global:Remove-OciAnnotationsByVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29067,7 +29069,7 @@ function Global:Get-OciAnnotationsByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29166,7 +29168,7 @@ function Global:Update-OciAnnotationsByVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29274,7 +29276,7 @@ function Global:Remove-OciApplicationsFromVolume {
             try {
                 $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29378,7 +29380,7 @@ function Global:Get-OciApplicationsByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29486,7 +29488,7 @@ function Global:Add-OciApplicationsToVolume {
             try {
                 $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29589,7 +29591,7 @@ function Global:Update-OciApplicationsByVolume {
             try {                
                 $Body = ConvertTo-Json ($applicationId | % { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29683,7 +29685,7 @@ function Global:Remove-OciByTypeAndId {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29762,7 +29764,7 @@ function Global:Get-OciAutoTierPolicyByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -29881,7 +29883,7 @@ function Global:Get-OciComputeResourcesByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -30010,7 +30012,7 @@ function Global:Get-OciDatastoresByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -30144,7 +30146,7 @@ function Global:Get-OciDatasourcesByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -30303,7 +30305,7 @@ function Global:Get-OciInternalVolumeByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -30402,7 +30404,7 @@ function Global:Get-OciVolumePerformance {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -30537,7 +30539,7 @@ function Global:Get-OciPortsByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -30661,7 +30663,7 @@ function Global:Get-OciQtree {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -30840,7 +30842,7 @@ function Global:Get-OciSourceVolumesByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31009,7 +31011,7 @@ function Global:Get-OciStorageByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31143,7 +31145,7 @@ function Global:Get-OciStorageNodesByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31287,7 +31289,7 @@ function Global:Get-OciStoragePoolsByVolume {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31431,7 +31433,7 @@ function Global:Get-OciVirtualStoragePools {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31600,7 +31602,7 @@ function Global:Get-OciVirtualizer {
             }
  
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31650,7 +31652,7 @@ function Global:Search-Oci {
             $Uri = $Server.BaseUri + "/rest/v1/search?query=$query"
 
             try {
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31695,7 +31697,7 @@ function Global:Get-OciHealth {
         $Uri = $Server.BaseUri + "/rest/v1/admin/health"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31789,7 +31791,7 @@ function Global:Restore-OciBackup {
 
                     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
-                    Invoke-RestMethod -Uri $args[0] -Timeout 864000000000 -Method Post -ContentType "multipart/form-data; boundary=`"$($args[1])`"" -Body $args[2] -Headers $args[3]
+                    Invoke-RestMethod -WebSession $Server.Session -Uri $args[0] -Timeout 864000000000 -Method Post -ContentType "multipart/form-data; boundary=`"$($args[1])`"" -Body $args[2] -Headers $args[3]
                 } -ArgumentList $URI,$boundary,$Body,$Server.Headers
             }
 
@@ -31803,7 +31805,7 @@ function Global:Restore-OciBackup {
                 $ProgressUri = $Uri + "?_=" + (get-date | ConvertTo-UnixTimestamp)
                 $i++
                 try {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $ProgressUri -Headers $Server.Headers -ErrorAction SilentlyContinue
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $ProgressUri -Headers $Server.Headers -ErrorAction SilentlyContinue
                 }
                 catch {
                     $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -31892,7 +31894,7 @@ function Global:Get-OciBackup {
             Write-Verbose $args[0]
             Write-Verbose $args[1]
 
-            Invoke-RestMethod -TimeoutSec ([int32]::MaxValue) -Method POST -Uri $args[0] -Headers $args[1] -Verbose
+            Invoke-RestMethod -WebSession $Server.Session -TimeoutSec ([int32]::MaxValue) -Method POST -Uri $args[0] -Headers $args[1] -Verbose
         } -ArgumentList $URI,$Server.Headers
 
         try {
@@ -31900,7 +31902,7 @@ function Global:Get-OciBackup {
             $i = 0
             while ($true) {
                 $i++
-                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
                 if ($i -eq ($Timeout * 12) -or $Job.State -ne 'Running') { 
                     Write-Progress -Activity "Backup did not complete in $Timeout minutes" -status "Backing failed" -percentComplete 100
                 }
@@ -31924,7 +31926,7 @@ function Global:Get-OciBackup {
         $Date = [datetime]::ParseExact($($FilePath -replace '.+_D(.*)_[0-9]+.zip','$1'),"yyyyMMdd_HHmm",$null)
 
         try {
-            Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -OutFile $FilePath
+            Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -OutFile $FilePath
             Write-Host "Backup Saved to $FilePath"
             
             $Result = New-Object -TypeName PSCustomObject -ArgumentList @{FilePath=$FilePath;Date=$Date;URI=$Uri}
@@ -31965,7 +31967,7 @@ function Global:Get-OciBackups {
         $Uri = $Server.BaseUri + "/rest/v1/admin/backups"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             
             $Result = $Result | % { [PSCustomObject]@{FilePath=$_.path;Date=($_.date | get-date)} }
 
@@ -32007,7 +32009,7 @@ function Global:Get-OciQueries {
         $Uri = $Server.BaseUri + "/rest/v1/queries"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -32060,7 +32062,7 @@ function Global:Get-OciQuery {
         $Uri = $Server.BaseUri + "/rest/v1/queries/$id"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -32113,7 +32115,7 @@ function Global:Delete-OciQuery {
         $Uri = $Server.BaseUri + "/rest/v1/queries/$id"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -32159,7 +32161,7 @@ function Global:Get-OciAnnotationRules {
         $Uri = $Server.BaseUri + "/rest/v1/admin/rules"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -32210,7 +32212,7 @@ function Global:Get-OciAnnotationRule {
         $Uri = $Server.BaseUri + "/rest/v1/admin/rules/$id"
  
         try {
-            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
