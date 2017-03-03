@@ -3548,7 +3548,6 @@ function Global:Update-OciLdapConfiguration {
     }
 }
 
-# TODO: Implement / Test LDAP connection test
 <#
     .SYNOPSIS
     Perform an LDAP connection test
