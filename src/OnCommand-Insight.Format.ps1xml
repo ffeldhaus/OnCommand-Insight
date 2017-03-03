@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>OCI.Server_Table</Name>
+            <ViewSelectedBy>
+                <TypeName>OCI.Server</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+              <TableHeaders>
+                <TableColumnHeader>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>API Version</Label>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Width>10</Width>
+                </TableColumnHeader>
+              </TableHeaders>
+              <TableRowEntries>
+                <TableRowEntry>
+                  <TableColumnItems>
+                    <TableColumnItem>
+                      <PropertyName>Name</PropertyName>
+                    </TableColumnItem>
+                    <TableColumnItem>
+                      <PropertyName>APIVersion</PropertyName>
+                    </TableColumnItem>
+                    <TableColumnItem>
+                      <PropertyName>Timezone</PropertyName>
+                    </TableColumnItem>
+                    <TableColumnItem>
+                      <PropertyName>Timeout</PropertyName>
+                    </TableColumnItem>
+                  </TableColumnItems>
+                </TableRowEntry>
+              </TableRowEntries>
+            </TableControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>

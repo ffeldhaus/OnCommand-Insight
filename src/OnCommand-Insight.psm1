@@ -215,6 +215,22 @@ function ConvertFrom-UnixTimestamp {
     }
 }
 
+### Type definition
+Add-Type @"
+namespace OCI {
+    public class Server {
+        public string Name;
+        public string BaseURI;
+        public System.Management.Automation.PSCredential Credential;
+        public System.Collections.Hashtable Headers;
+        public System.Version APIVersion;
+        public System.TimeZoneInfo Timezone;
+        public int Timeout;
+        public System.Object Metadata;
+    }
+}
+"@
+
 ### Parsing Functions
 
 function ParseExceptionBody($Response) {
@@ -1117,6 +1133,51 @@ function ParseFabrics($Fabrics) {
 }
 
 <#
+    .SYNOPSIS
+    Retrieve OCI Webinterface Metadata
+    .DESCRIPTION
+    Retrieve OCI Webinterface Metadata
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciMetadata {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/uiserver/webui/v1/metadata"
+
+        try {
+            $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        # TODO: Implement parsing
+        $Metadata = $Result
+        Write-Output $Metadata
+    }
+}
+
+<#
 .EXAMPLE
 Connect-OciServer -Name ociserver.example.com -Credential (Get-Credential)
 
@@ -1196,7 +1257,7 @@ function global:Connect-OciServer {
         Try {
             $BaseURI = "https://$Name"
             $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
-            $APIVersion = $Response.apiVersion
+            $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1221,7 +1282,7 @@ function global:Connect-OciServer {
         Try {
             $BaseURI = "http://$Name"
             $Response = Invoke-RestMethod -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
-            $APIVersion = $Response.apiVersion
+            $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -1254,14 +1315,15 @@ function global:Connect-OciServer {
         $Timeout = 600
     }
  
-    $Server = New-Object -TypeName psobject
-    $Server | Add-Member -MemberType NoteProperty -Name Name -Value $Name
-    $Server | Add-Member -MemberType NoteProperty -Name BaseURI -Value $BaseURI
-    $Server | Add-Member -MemberType NoteProperty -Name Credential -Value $Credential
-    $Server | Add-Member -MemberType NoteProperty -Name Headers -Value $Headers
-    $Server | Add-Member -MemberType NoteProperty -Name APIVersion -Value $APIVersion
-    $Server | Add-Member -MemberType NoteProperty -Name Timezone -Value $Timezone
-    $Server | Add-Member -MemberType NoteProperty -Name Timeout -Value $Timeout
+    $Server = [OCI.Server]@{Name=$Name;
+                            BaseURI=$BaseURI;
+                            Credential=$Credential;
+                            Headers=$Headers;
+                            APIVersion=$APIVersion;
+                            Timezone=$Timezone;
+                            Timeout=$Timeout}
+
+    $Server.Metadata = Get-OciMetadata -Server $Server
  
     if (!$Transient) {
         Set-Variable -Name CurrentOciServer -Value $Server -Scope Global
@@ -31834,7 +31896,7 @@ function Global:Get-OciHealth {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -31885,7 +31947,7 @@ function Global:Restore-OciBackup {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32010,7 +32072,7 @@ function Global:Get-OciBackup {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32104,7 +32166,7 @@ function Global:Get-OciBackups {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32128,7 +32190,6 @@ function Global:Get-OciBackups {
     }
 }
 
-
 <#
     .SYNOPSIS
     Retrieve queries
@@ -32147,7 +32208,7 @@ function Global:Get-OciQueries {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32180,6 +32241,8 @@ function Global:Get-OciQueries {
     Retrieve queries
     .DESCRIPTION
     Retrieve queries
+    .PARAMETER id
+    ID of query to retrieve
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -32189,7 +32252,7 @@ function Global:Get-OciQuery {
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id of query to retrieve",
+                    HelpMessage="ID of query to retrieve",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
@@ -32198,7 +32261,7 @@ function Global:Get-OciQuery {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32244,7 +32307,7 @@ function Global:Get-OciAnnotationRules {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
@@ -32295,7 +32358,7 @@ function Global:Get-OciAnnotationRule {
     )
  
     Begin {
-        Write-Warn "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
+        Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
