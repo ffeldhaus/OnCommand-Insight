@@ -4314,22 +4314,16 @@ function Global:Approve-OciPatch {
                     Position=0,
                     HelpMessage="Id of patch to approve",
                     ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
     Begin {
         $Result = $null
-
-        $switchparameters=@()
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
    
@@ -4338,30 +4332,10 @@ function Global:Approve-OciPatch {
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
             try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
+                $Body = ""
+                Write-Verbose "Body: $Body"
+                $Result = Invoke-RestMethod -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody $_.Exception.Response
