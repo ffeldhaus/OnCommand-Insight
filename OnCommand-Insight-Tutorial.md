@@ -209,6 +209,38 @@ Check that the values have been deleted
 $Annotation | Get-OciAnnotationValues
 ```
 
+### Manage Applications and Business Entities
+
+You can create a Business Entity with
+```powershell
+$BusinessUnity = Add-OciBusinessEntity -Tenant "tenant" -LineOfBusiness "lof" -BusinessUnit "bu" -Project "project"
+```
+
+You can get all Business Entities with
+```powershell
+Get-OciBusinessEntities
+```
+
+You can remove all Business Entities with
+```powershell
+Get-OciBusinessEntities | Remove-OciBusinessEntities
+```
+
+You can create a Application with
+```powershell
+$Application = Add-OciApplication -name "application" -priority Critical -businessEntity $BusinessEntity.id -ignoreShareViolations
+```
+
+You can update an application with 
+```powershell
+$Application | Update-OciApplication -priority Low
+```
+
+Remove all applications
+```powershell
+Get-OciApplications | Remove-OciApplication
+```
+
 ### Retrieve OCI Server health status
 
 ```powershell
@@ -494,36 +526,48 @@ The latest Backup available on the OCI Server can be restored with
 Get-OciBackups | Sort -Property Date -Descending | select -first 1 | Restore-OciBackup
 ```
 
-## Manage Applications and Business Entities
+### Patch Management
 
-You can create a Business Entity with
+#### Add a new patch
+
+You can add new OCI Patches (and service packs) via the following commands (replace path to the patchfile you want to add):
 ```powershell
-$BusinessUnity = Add-OciBusinessEntity -Tenant "tenant" -LineOfBusiness "lof" -BusinessUnit "bu" -Project "project"
+$patchFile = "$HOME\Downloads\7.2_SP5_Patches\7.2_SP5_Patches\netapp_7mode\7.2_ici-4588_netap_api.patch"
+Add-OciPatch -patchFile $patchFile
 ```
 
-You can get all Business Entities with
+#### Check patch status
+
+A new patch will be evaluated by OCI and if all datasources are either working as before, or improve from FAILED to SUCCESS, OCI will give a recommendation for approval of the patch
 ```powershell
-Get-OciBusinessEntities
+Get-OciPatches
 ```
 
-You can remove all Business Entities with
+You can get individual patches with the conclusion OCI reached for each datasource with
 ```powershell
-Get-OciBusinessEntities | Remove-OciBusinessEntities
+Get-OciPatches | Get-OciPatch -datasourceConclusion
 ```
 
-You can create a Application with
+#### Rollback patches
+
+If the patch caused new issues, then a rollback may be neccessary. This can be done with
 ```powershell
-$Application = Add-OciApplication -name "application" -priority Critical -businessEntity $BusinessEntity.id -ignoreShareViolations
+$PatchesToBeRolledBack = Get-OciPatches | where { $_.Recommendation -eq "Rollback" }
+$PatchesToBeRolledBack | Rollback-OciPatch
 ```
 
-You can update an application with 
+#### Approve patches
+
+If the patch was successfull, it can be approved with
 ```powershell
-$Application | Update-OciApplication -priority Low
+$PatchesToBeApproved = Get-OciPatches | where { $_.Recommendation -eq "Approve" }
 ```
 
-Remove all applications
+#### Add patch notes
+
+You can add a comment to a patch with the following command:
 ```powershell
-Get-OciApplications | Remove-OciApplication
+Get-OciPatches | Update-OciPatchNote -value "test"
 ```
 
 ## Troubleshooting
