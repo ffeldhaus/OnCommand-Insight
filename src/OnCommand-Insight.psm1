@@ -73,9 +73,14 @@ function global:Invoke-MultipartFormDataUpload
     [CmdletBinding()]
     PARAM
     (
-        [string[]][parameter(Mandatory = $true)][ValidateNotNullOrEmpty()]$InFile,
-        [Uri][parameter(Mandatory = $true)][ValidateNotNullOrEmpty()]$Uri,
-        [PSObject]$Header
+        [parameter(Mandatory = $true,
+                   Position=0)][ValidateNotNullOrEmpty()][string]$InFile,
+        [parameter(Mandatory = $true,
+                   Position=1)][ValidateNotNullOrEmpty()][string]$Name,
+        [parameter(Mandatory = $true,
+                   Position=2)][ValidateNotNullOrEmpty()][Uri]$Uri,
+        [parameter(Mandatory = $true,
+                   Position=3)][ValidateNotNullOrEmpty()][PSObject]$Header
     )
     BEGIN
     {
@@ -118,10 +123,8 @@ function global:Invoke-MultipartFormDataUpload
         $packageFileStream = New-Object System.IO.FileStream @($InFile, [System.IO.FileMode]::Open)
         
 		$contentDispositionHeaderValue = New-Object System.Net.Http.Headers.ContentDispositionHeaderValue "form-data"
-	    $contentDispositionHeaderValue.Name = "backupFile"
+	    $contentDispositionHeaderValue.Name = $Name
 		$contentDispositionHeaderValue.FileName = (Split-Path $InFile -leaf)
-
-        $contentDispositionHeaderValue
 
         $streamContent = New-Object System.Net.Http.StreamContent $packageFileStream
         $streamContent.Headers.ContentDisposition = $contentDispositionHeaderValue
@@ -1129,6 +1132,23 @@ function ParseFabrics($Fabrics) {
         }
 
         Write-Output $Fabric
+    }
+}
+
+function ParsePatchStatus($PatchStatus) {
+    $PatchStatus = @($PatchStatus)
+    foreach ($PatchStatus in $PatchStatus) {
+        if ($PatchStatus.createTime) {
+            $PatchStatus.createTime = [DateTime]$PatchStatus.createTime
+        }
+        if ($PatchStatus.lastUpdateTime) {
+            $PatchStatus.lastUpdateTime = [DateTime]$PatchStatus.lastUpdateTime
+        }
+        if ($PatchStatus.datasourceTypes) {
+            $PatchStatus.datasourceTypes = $PatchStatus.datasourceTypes | ParseDatasourceTypes
+        }
+
+        Write-Output $PatchStatus
     }
 }
 
@@ -3815,7 +3835,8 @@ function Global:Get-OciPatches {
             $Result = ParseJsonString($Result.Trim())
         }
            
-        Write-Output $Result
+        $PatchStatus = ParsePatchStatus($Result)
+        Write-Output $PatchStatus
     }
 }
 
@@ -3827,15 +3848,18 @@ function Global:Get-OciPatches {
     .PARAMETER datasourceConclusions
     Return list of related Patched datasources status
 #>
-function Global:Add-OciPatches {
+function Global:Add-OciPatch {
     [CmdletBinding()]
  
     PARAM (
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=0,
+                    HelpMessage="Return list of related Patched datasources status")][System.IO.FileInfo]$patchFile,
+        [parameter(Mandatory=$False,
+                    Position=1,
                     HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions,
         [parameter(Mandatory=$False,
-                   Position=1,
+                   Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -3859,46 +3883,22 @@ function Global:Add-OciPatches {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches"            
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        try {
+            $Result = Invoke-MultipartFormDataUpload -InFile $patchFile -Name "patchFile" -Uri $Uri -Header $Server.Headers
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        $PatchStatus = ParsePatchStatus($Result)
+        Write-Output $PatchStatus
     }
 }
 
@@ -4071,14 +4071,13 @@ function Global:Update-OciPatch {
     }
 }
 
-# TODO: Implement / test approving of patch
 <#
     .SYNOPSIS
-    Approve one patch
+    Approve a patch
     .DESCRIPTION
-    Empty body
+    Approve a patch
     .PARAMETER id
-    Id of patch to approve
+    ID of patch to approve
     .PARAMETER server
     OCI Server to connect to
 #>
@@ -4104,26 +4103,23 @@ function Global:Approve-OciPatch {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"            
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"            
  
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        try {
+            $Body = ""
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        Write-Output $Result
     }
 }
 
@@ -4164,28 +4160,25 @@ function Global:Get-OciPatchDatasourceConclusions {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/datasourceConclusions"
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/datasourceConclusions"
  
-            if ($expand) {
-                $Uri += "?$($Separator)expand=$expand"
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        if ($expand) {
+            $Uri += "?$($Separator)expand=$expand"
         }
+ 
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        Write-Output $Result
     }
 }
 
@@ -31685,7 +31678,7 @@ function Global:Restore-OciBackup {
 
                     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
-                    Invoke-MultipartFormDataUpload -InFile $args[0] -Uri $args[1] -Header $args[2]
+                    Invoke-MultipartFormDataUpload -InFile $args[0] -Name "backupFile" -Uri $args[1] -Header $args[2]
                 } -ArgumentList $FilePath,$URI,$Server.Headers
                 
             }
