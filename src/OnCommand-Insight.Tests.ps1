@@ -594,13 +594,27 @@ function ValidateFcWeightedPortBalanceIndex {
             if ($FcWeightedPortBalanceIndex.unitType) {
                 $FcWeightedPortBalanceIndex.unitType | Should Match '%|KB/s|MB/s|IO/s|ms'
             }
-            $FcWeightedPortBalanceIndex.start | Should BeOfType DateTime
-            $FcWeightedPortBalanceIndex.end | Should BeOfType DateTime
-            $FcWeightedPortBalanceIndex.current -as [double] | Should BeOfType Double
-            $FcWeightedPortBalanceIndex.min -as [double] | Should BeOfType Double
-            $FcWeightedPortBalanceIndex.max -as [double] | Should BeOfType Double
-            $FcWeightedPortBalanceIndex.avg -as [double] | Should BeOfType Double
-            $FcWeightedPortBalanceIndex.sum -as [double] | Should BeOfType Double
+            if ($FcWeightedPortBalanceIndex.start) {
+                $FcWeightedPortBalanceIndex.start | Should BeOfType DateTime
+            }
+            if ($FcWeightedPortBalanceIndex.end) {
+                $FcWeightedPortBalanceIndex.end | Should BeOfType DateTime
+            }
+            if ($FcWeightedPortBalanceIndex.current) {
+                $FcWeightedPortBalanceIndex.current -as [double] | Should BeOfType Double
+            }
+            if ($FcWeightedPortBalanceIndex.min) {
+                $FcWeightedPortBalanceIndex.min -as [double] | Should BeOfType Double
+            }
+            if ($FcWeightedPortBalanceIndex.max) {
+                $FcWeightedPortBalanceIndex.max -as [double] | Should BeOfType Double
+            }
+            if ($FcWeightedPortBalanceIndex.avg) {
+                $FcWeightedPortBalanceIndex.avg -as [double] | Should BeOfType Double
+            }
+            if ($FcWeightedPortBalanceIndex.sum) {
+                $FcWeightedPortBalanceIndex.sum -as [double] | Should BeOfType Double
+            }
     }
 }
 
