@@ -3978,12 +3978,11 @@ function Global:Get-OciPatch {
     }
 }
 
-# TODO: Implement / Test updating of patch
 <#
     .SYNOPSIS
     Update one patch
     .DESCRIPTION
-    POST request to include 'patchFile' file parameter
+    Update one patch
     .PARAMETER id
     Id of patch to update
     .PARAMETER datasourceConclusions
@@ -4000,11 +3999,14 @@ function Global:Update-OciPatch {
                     HelpMessage="Id of patch to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=1,
+                    HelpMessage="Return list of related Patched datasources status")][System.IO.FileInfo]$patchFile,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return list of related Patched datasources status")][Switch]$datasourceConclusions,
         [parameter(Mandatory=$False,
-                   Position=1,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -4028,46 +4030,38 @@ function Global:Update-OciPatch {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"            
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
- 
-            try {
-                if ('POST' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
-                }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
         }
+ 
+        try {
+            $Result = Invoke-MultipartFormDataUpload -InFile $patchFile -Name "patchFile" -Uri $Uri -Header $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        $PatchStatus = ParsePatchStatus($Result)
+        Write-Output $PatchStatus
     }
 }
 
@@ -4182,7 +4176,6 @@ function Global:Get-OciPatchDatasourceConclusions {
     }
 }
 
-# TODO: Implement / Test updating of patch note
 <#
     .SYNOPSIS
     Update one patch note
@@ -4240,7 +4233,6 @@ function Global:Update-OciPatchNote {
     }
 }
 
-# TODO: Implement / Test rollback of patch
 <#
     .SYNOPSIS
     Rollback one patch
