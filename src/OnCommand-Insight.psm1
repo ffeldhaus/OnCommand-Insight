@@ -29094,27 +29094,15 @@ function Global:Update-OciAnnotationsByVolume {
 
 <#
     .SYNOPSIS
-    Bulk un-assign applications from asset
+    Bulk un-assign applications from volume
     .DESCRIPTION
-    Request body should contain a list of valid application ids, example: <br/>
-
-<pre>
-[
-    {
-        "id":"12345"
-    },
-    {
-        "id":"67890"
-    }
-]
-</pre>
-            
+    Bulk un-assign applications from volume   
     .PARAMETER id
-    Id of object to update
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
+    Id of volume to remove applications from
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
 #>
 function Global:Remove-OciApplicationsFromVolume {
     [CmdletBinding()]
@@ -29125,11 +29113,9 @@ function Global:Remove-OciApplicationsFromVolume {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$True,
+        [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="List of application IDs",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][String[]]$applicationId,
+                    HelpMessage="List of application IDs")][String[]]$applicationId,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
@@ -29161,42 +29147,27 @@ function Global:Remove-OciApplicationsFromVolume {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
+        if (!$applicationId) {
+            $applicationId = Get-OciApplicationsByVolume -id $id | select -ExpandProperty id
         }
+
+        try {
+            $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        Write-Output $Result
     }
 }
 
