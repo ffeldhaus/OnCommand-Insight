@@ -218,23 +218,6 @@ function ConvertFrom-UnixTimestamp {
     }
 }
 
-### Type definition
-Add-Type -IgnoreWarnings @"
-namespace OCI {
-    public class Server {
-        public string Name;
-        public string BaseURI;
-        public System.Management.Automation.PSCredential Credential;
-        public System.Collections.Hashtable Headers;
-        public System.Version APIVersion;
-        public System.TimeZoneInfo Timezone;
-        public int Timeout;
-        public System.Object Session;
-        public System.Object Metadata;
-    }
-}
-"@
-
 ### Parsing Functions
 
 function ParseExceptionBody($Response) {
@@ -414,31 +397,31 @@ function ParseUsers($Users) {
     }
 }
 
-function ParseDatastores($Datastores) {
+function ParseDatastores($Datastores,$Timezone) {
     $Datastores = @($Datastores)
     foreach ($Datastore in $Datastores) {
         if ($Datastore.performance) {
-            $Datastore.performance = ParsePerformance($Datastore.performance)
+            $Datastore.performance = ParsePerformance $Datastore.performance $Timezone
         }
 
         Write-Output $Datastore
     }
 }
 
-function ParseSwitches($Switches) {
+function ParseSwitches($Switches,$Timezone) {
     $Switches = @($Switches)
     foreach ($Switch in $Switches) {
         if ($Switch.createTime) {
             $Switch.createTime = $Switch.createTime | Get-Date
         }
         if ($Switch.performance) {
-            $Switch.performance = ParsePerformance($Switch.performance)
+            $Switch.performance = ParsePerformance $Switch.performance $Timezone
         }
         if ($Switch.fabric) {
             $Switch.fabric = ParseFabrics($Switch.fabric)
         }
         if ($Switch.ports) {
-            $Switch.ports = ParsePorts($Switch.ports)
+            $Switch.ports = ParsePorts $Switch.ports $Timezone
         }
         if ($Switch.annotations) {
             $Switch.annotations = ParseAnnotations($Switch.annotations)
@@ -454,151 +437,151 @@ function ParseSwitches($Switches) {
     }
 }
 
-function ParsePerformance($Performance) {
+function ParsePerformance($Performance,$Timezone) {
     if ($Performance.accessed) {
-        $Performance.accessed.start = $Performance.accessed.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.accessed.end = $Performance.accessed.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.accessed.start = $Performance.accessed.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.accessed.end = $Performance.accessed.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.cacheHitRatio) {
         if ($Performance.cacheHitRatio.read) {
-            $Performance.cacheHitRatio.read.start = $Performance.cacheHitRatio.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-            $Performance.cacheHitRatio.read.end = $Performance.cacheHitRatio.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+            $Performance.cacheHitRatio.read.start = $Performance.cacheHitRatio.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.read.end = $Performance.cacheHitRatio.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
         }
         if ($Performance.cacheHitRatio.write) {
-            $Performance.cacheHitRatio.write.start = $Performance.cacheHitRatio.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-            $Performance.cacheHitRatio.write.end = $Performance.cacheHitRatio.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+            $Performance.cacheHitRatio.write.start = $Performance.cacheHitRatio.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.write.end = $Performance.cacheHitRatio.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
         }
         if ($Performance.cacheHitRatio.total) {
-            $Performance.cacheHitRatio.total.start = $Performance.cacheHitRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-            $Performance.cacheHitRatio.total.end = $Performance.cacheHitRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+            $Performance.cacheHitRatio.total.start = $Performance.cacheHitRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.total.end = $Performance.cacheHitRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
         }
     }
     if ($Performance.cpuUtilization) {
-        $Performance.cpuUtilization.total.start = $Performance.cpuUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.cpuUtilization.total.end = $Performance.cpuUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.cpuUtilization.total.start = $Performance.cpuUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.cpuUtilization.total.end = $Performance.cpuUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.diskIops) {
-        $Performance.diskIops.read.start = $Performance.diskIops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskIops.read.end = $Performance.diskIops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskIops.write.start = $Performance.diskIops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskIops.write.end = $Performance.diskIops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskIops.totalMax.start = $Performance.diskIops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskIops.totalMax.end = $Performance.diskIops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskIops.total.start = $Performance.diskIops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskIops.total.end = $Performance.diskIops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskIops.read.start = $Performance.diskIops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.read.end = $Performance.diskIops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.write.start = $Performance.diskIops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.write.end = $Performance.diskIops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.totalMax.start = $Performance.diskIops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.totalMax.end = $Performance.diskIops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.total.start = $Performance.diskIops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.total.end = $Performance.diskIops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.diskLatency) {
-        $Performance.diskLatency.read.start = $Performance.diskLatency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskLatency.read.end = $Performance.diskLatency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskLatency.write.start = $Performance.diskLatency.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskLatency.write.end = $Performance.diskLatency.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskLatency.total.start = $Performance.diskLatency.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskLatency.total.end = $Performance.diskLatency.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskLatency.totalMax.start = $Performance.diskLatency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskLatency.totalMax.end = $Performance.diskLatency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskLatency.read.start = $Performance.diskLatency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.read.end = $Performance.diskLatency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.write.start = $Performance.diskLatency.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.write.end = $Performance.diskLatency.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.total.start = $Performance.diskLatency.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.total.end = $Performance.diskLatency.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.totalMax.start = $Performance.diskLatency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.totalMax.end = $Performance.diskLatency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.diskThroughput) {
-        $Performance.diskThroughput.read.start = $Performance.diskThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskThroughput.read.end = $Performance.diskThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskThroughput.write.start = $Performance.diskThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskThroughput.write.end = $Performance.diskThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskThroughput.totalMax.start = $Performance.diskThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskThroughput.totalMax.end = $Performance.diskThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskThroughput.total.start = $Performance.diskThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.diskThroughput.total.end = $Performance.diskThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.diskThroughput.read.start = $Performance.diskThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.read.end = $Performance.diskThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.write.start = $Performance.diskThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.write.end = $Performance.diskThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.totalMax.start = $Performance.diskThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.totalMax.end = $Performance.diskThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.total.start = $Performance.diskThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.total.end = $Performance.diskThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.fcWeightedPortBalanceIndex) {
-        $Performance.fcWeightedPortBalanceIndex.start = $Performance.fcWeightedPortBalanceIndex.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.fcWeightedPortBalanceIndex.end = $Performance.fcWeightedPortBalanceIndex.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.fcWeightedPortBalanceIndex.start = $Performance.fcWeightedPortBalanceIndex.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.fcWeightedPortBalanceIndex.end = $Performance.fcWeightedPortBalanceIndex.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.iops) {
-        $Performance.iops.read.start = $Performance.iops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.read.end = $Performance.iops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.write.start = $Performance.iops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.write.end = $Performance.iops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.totalMax.start = $Performance.iops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.totalMax.end = $Performance.iops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.total.start = $Performance.iops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.iops.total.end = $Performance.iops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.iops.read.start = $Performance.iops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.read.end = $Performance.iops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.write.start = $Performance.iops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.write.end = $Performance.iops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.totalMax.start = $Performance.iops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.totalMax.end = $Performance.iops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.total.start = $Performance.iops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.total.end = $Performance.iops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.ipThroughput) {
-        $Performance.ipThroughput.read.start = $Performance.ipThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.ipThroughput.read.end = $Performance.ipThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.ipThroughput.write.start = $Performance.ipThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.ipThroughput.write.end = $Performance.ipThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.ipThroughput.totalMax.start = $Performance.ipThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.ipThroughput.totalMax.end = $Performance.ipThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.ipThroughput.total.start = $Performance.ipThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.ipThroughput.total.end = $Performance.ipThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.ipThroughput.read.start = $Performance.ipThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.read.end = $Performance.ipThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.write.start = $Performance.ipThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.write.end = $Performance.ipThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.totalMax.start = $Performance.ipThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.totalMax.end = $Performance.ipThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.total.start = $Performance.ipThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.total.end = $Performance.ipThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.latency) {
-        $Performance.latency.read.start = $Performance.latency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.latency.read.end = $Performance.latency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.latency.write.start = $Performance.latency.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.latency.write.end = $Performance.latency.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.latency.total.start = $Performance.latency.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.latency.total.end = $Performance.latency.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.latency.totalMax.start = $Performance.latency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.latency.totalMax.end = $Performance.latency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.latency.read.start = $Performance.latency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.read.end = $Performance.latency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.write.start = $Performance.latency.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.write.end = $Performance.latency.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.total.start = $Performance.latency.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.total.end = $Performance.latency.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.totalMax.start = $Performance.latency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.totalMax.end = $Performance.latency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.memoryUtilization) {
-        $Performance.memoryUtilization.total.start = $Performance.memoryUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.memoryUtilization.total.end = $Performance.memoryUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.memoryUtilization.total.start = $Performance.memoryUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.memoryUtilization.total.end = $Performance.memoryUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.partialBlocksRatio.total) {
         $Performance.partialBlocksRatio.total.start = $Performance.partialBlocksRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp
         $Performance.partialBlocksRatio.total.end = $Performance.partialBlocksRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp
     }
     if ($Performance.swapRate) {
-        $Performance.swapRate.inRate.start = $Performance.swapRate.inRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.swapRate.inRate.end = $Performance.swapRate.inRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.swapRate.outRate.start = $Performance.swapRate.outRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.swapRate.outRate.end = $Performance.swapRate.outRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.swapRate.totalMaxRate.start = $Performance.swapRate.totalMaxRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.swapRate.totalMaxRate.end = $Performance.swapRate.totalMaxRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.swapRate.totalRate.start = $Performance.swapRate.totalRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.swapRate.totalRate.end = $Performance.swapRate.totalRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.swapRate.inRate.start = $Performance.swapRate.inRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.inRate.end = $Performance.swapRate.inRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.outRate.start = $Performance.swapRate.outRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.outRate.end = $Performance.swapRate.outRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalMaxRate.start = $Performance.swapRate.totalMaxRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalMaxRate.end = $Performance.swapRate.totalMaxRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalRate.start = $Performance.swapRate.totalRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalRate.end = $Performance.swapRate.totalRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.throughput) {
-        $Performance.throughput.read.start = $Performance.throughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.throughput.read.end = $Performance.throughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.throughput.write.start = $Performance.throughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.throughput.write.end = $Performance.throughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.throughput.totalMax.start = $Performance.throughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.throughput.totalMax.end = $Performance.throughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.throughput.total.start = $Performance.throughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.throughput.total.end = $Performance.throughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.throughput.read.start = $Performance.throughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.read.end = $Performance.throughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.write.start = $Performance.throughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.write.end = $Performance.throughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.totalMax.start = $Performance.throughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.totalMax.end = $Performance.throughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.total.start = $Performance.throughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.total.end = $Performance.throughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.writePending.total) {
-        $Performance.writePending.total.start = $Performance.writePending.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
-        $Performance.writePending.total.end = $Performance.writePending.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone
+        $Performance.writePending.total.start = $Performance.writePending.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.writePending.total.end = $Performance.writePending.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.history) {
-        $Performance.history = ParsePerformanceHistory($Performance.history)
+        $Performance.history = ParsePerformanceHistory $Performance.history $Timezone
     }
 
     Write-Output $Performance
 }
 
-function ParsePerformanceHistory($PerformanceHistory) {
+function ParsePerformanceHistory($PerformanceHistory,$Timezone) {
     if ($PerformanceHistory[0].count -eq 2) {
         $PerformanceHistory = foreach ($entry in $PerformanceHistory) {
             if ($entry[1] -replace ' ','') {
-                $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Server.Timezone) -PassThru
+                $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone) -PassThru
             }
         }
     }
     Write-Output $PerformanceHistory
 } 
 
-function ParseVirtualMachines($VirtualMachines) {
+function ParseVirtualMachines($VirtualMachines,$Timezone) {
     $VirtualMachines = @($VirtualMachines)
     foreach ($VirtualMachine in $VirtualMachines) {
         if ($VirtualMachine.createTime) {
             $VirtualMachine.createTime = $VirtualMachine.createTime | Get-Date
         }
         if ($VirtualMachine.performance) {
-            $VirtualMachine.performance = ParsePerformance($VirtualMachine.performance)
+            $VirtualMachine.performance = ParsePerformance $VirtualMachine.performance $Timezone
         }
         if ($VirtualMachine.vmdks) {
             $VirtualMachine.vmdks = ParseVmdks($VirtualMachine.vmdks)
@@ -607,13 +590,13 @@ function ParseVirtualMachines($VirtualMachines) {
             $VirtualMachine.host = ParseHosts($VirtualMachine.host)
         }
         if ($VirtualMachine.ports) {
-            $VirtualMachine.ports = ParsePorts($VirtualMachine.ports)
+            $VirtualMachine.ports = ParsePorts $VirtualMachine.ports $Timezone
         }
         if ($VirtualMachine.dataStore) {
-            $VirtualMachine.dataStore = ParseDatastores($VirtualMachine.dataStore)
+            $VirtualMachine.dataStore = ParseDatastores $VirtualMachine.dataStore $Timezone
         }
         if ($VirtualMachine.applications) {
-            $VirtualMachine.applications = ParseApplications($VirtualMachine.applications)
+            $VirtualMachine.applications = ParseApplications $VirtualMachine.applications
         }
         if ($VirtualMachine.fileSystems) {
             $VirtualMachine.fileSystems = ParseFileSystems($VirtualMachine.fileSystems)
@@ -632,17 +615,17 @@ function ParseVirtualMachines($VirtualMachines) {
     }
 }
 
-function ParseVmdks($Vmdks) {
+function ParseVmdks($Vmdks,$Timezone) {
     $Vmdks = @($Vmdks)
     foreach ($Vmdk in $Vmdks) {
         if ($vmdk.dataStore) {
-            $vmdk.dataStore = ParseDatastores($vmdk.dataStore)
+            $vmdk.dataStore = ParseDatastores $vmdk.dataStore $Timezone
         }
         if ($vmdk.virtualMachine) {
-            $vmdk.virtualMachine = ParseVirtualMachines($vmdk.virtualMachine)
+            $vmdk.virtualMachine = ParseVirtualMachines $vmdk.virtualMachine $Timezone
         }
         if ($vmdk.performance) {
-            $vmdk.performance = ParsePerformance($vmdk.performance)
+            $vmdk.performance = ParsePerformance $vmdk.performance $Timezone
         }
         if ($vmdk.storageResources) {
             $vmdk.storageResources = ParseStorageResources($vmdk.storageResources)
@@ -658,13 +641,13 @@ function ParseVmdks($Vmdks) {
     }
 }
 
-function ParseHosts($Hosts) {
+function ParseHosts($Hosts,$Timezone) {
     foreach ($HostInstance in $Hosts) {
         if ($HostInstance.createTime) {
             $HostInstance.createTime = $HostInstance.createTime | Get-Date
         }
         if ($HostInstance.performance) {
-            $HostInstance.performance = ParsePerformance($HostInstance.performance)
+            $HostInstance.performance = ParsePerformance $HostInstance.performance $Timezone
         }
         if ($HostInstance.storageResources) {
             $HostInstance.storageResources = ParseStorageResources($HostInstance.storageResources)
@@ -673,16 +656,16 @@ function ParseHosts($Hosts) {
             $HostInstance.fileSystems = ParseFileSystems($HostInstance.fileSystems)
         }
         if ($HostInstance.ports) {
-            $HostInstance.ports = ParsePorts($HostInstance.ports)
+            $HostInstance.ports = ParsePorts $HostInstance.ports $Timezone
         }
         if ($HostInstance.applications) {
             $HostInstance.applications = ParseApplications($HostInstance.applications)
         }
         if ($HostInstance.virtualMachines) {
-            $HostInstance.virtualMachines = ParseVirtualMachines($HostInstance.virtualMachines)
+            $HostInstance.virtualMachines = ParseVirtualMachines $HostInstance.virtualMachines $Timezone
         }
         if ($HostInstance.clusterHosts) {
-            $HostInstance.clusterHosts = ParseHosts($HostInstance.clusterHosts)
+            $HostInstance.clusterHosts = ParseHosts $HostInstance.clusterHosts $Timezone
         }
         if ($HostInstance.annotations) {
             $HostInstance.annotations = ParseAnnotations($HostInstance.annotations)
@@ -720,14 +703,14 @@ function ParseTopologyLinks($Links) {
     }
 }
 
-function ParsePorts($Ports) {
+function ParsePorts($Ports,$Timezone) {
     $Ports = @($Ports)
     foreach ($Port in $Ports) {
         if ($Port.connectedPorts) {
-            $Port.connectedPorts = ParsePorts($Port.connectedPorts)
+            $Port.connectedPorts = ParsePorts $Port.connectedPorts $Timezone
         }
         if ($Port.performance) {
-            $Port.performance = ParsePerformance($Port.performance)
+            $Port.performance = ParsePerformance $Port.performance $Timezone
         }
         if ($Port.device) {
             $Port.device = ParseDevices($Port.device)
@@ -753,7 +736,7 @@ function ParseDevices($Device) {
     $Devices = @($Devices)
     foreach ($Device in $Devices) {
         if ($Device.performance) {
-            $Device.performance = ParsePerformance($Device.performance)
+            $Device.performance = ParsePerformance $Device.performance $Timezone
         }
         if ($Device.device) {
             $Device.device = ParseDevice($Device.device)
@@ -792,14 +775,14 @@ function ParseAnnotations($Annotations) {
     }
 }
 
-function ParseComputeResources($ComputeResources) {
+function ParseComputeResources($ComputeResources,$Timezone) {
     $ComputeResources = @($ComputeResources)
     foreach ($ComputeResource in $ComputeResources) {
         if ($ComputeResource.createTime) {
             $ComputeResource.createTime = $ComputeResource.createTime | Get-Date
         }
         if ($ComputeResource.performance) {
-            $ComputeResource.performance = ParsePerformance($ComputeResource.performance)
+            $ComputeResource.performance = ParsePerformance $ComputeResource.performance $Timezone
         }
         if ($ComputeResource.storageResources) {
             $ComputeResource.storageResources = ParseStorageResources($ComputeResource.storageResources)
@@ -808,13 +791,13 @@ function ParseComputeResources($ComputeResources) {
             $ComputeResource.fileSystems = ParseFileSystems($ComputeResource.fileSystems)
         }
         if ($ComputeResource.ports) {
-            $ComputeResource.ports = ParsePorts($ComputeResource.ports)
+            $ComputeResource.ports = ParsePorts $ComputeResource.ports $Timezone
         }
         if ($ComputeResource.applications) {
             $ComputeResource.applications = ParseApplications($ComputeResource.applications)
         }
         if ($ComputeResource.virtualMachines) {
-            $ComputeResource.virtualMachines = ParseVirtualMachines($ComputeResource.virtualMachines)
+            $ComputeResource.virtualMachines = ParseVirtualMachines $ComputeResource.virtualMachines $Timezone
         }
         if ($ComputeResource.clusterHosts) {
             $ComputeResource.clusterHosts = ParseHosts($ComputeResource.clusterHosts)
@@ -830,17 +813,17 @@ function ParseComputeResources($ComputeResources) {
     }
 }
 
-function ParseStorageResources($StorageResources) {
+function ParseStorageResources($StorageResources,$Timezone) {
     $StorageResources = @($StorageResources)
     foreach ($StorageResource in $StorageResources) {
         if ($StorageResource.createTime) {
             $StorageResource.createTime = $StorageResource.createTime | Get-Date
         }
         if ($StorageResource.performance) {
-            $StorageResource.performance = ParsePerformance($StorageResource.performance)
+            $StorageResource.performance = ParsePerformance $StorageResource.performance $Timezone
         }
         if ($StorageResource.computeResources) {
-            $StorageResource.computeResources = ParseComputeResources($StorageResource.computeResources)
+            $StorageResource.computeResources = ParseComputeResources $StorageResource.computeResources $Timezone
         }
         if ($StorageResource.fileSystems) {
             $StorageResource.fileSystems = ParseFileSystems($StorageResource.fileSystems)
@@ -852,7 +835,7 @@ function ParseStorageResources($StorageResources) {
             $StorageResource.applications = ParseApplications($StorageResource.applications)
         }
         if ($StorageResource.virtualMachines) {
-            $StorageResource.virtualMachines = ParseVirtualMachines($StorageResource.virtualMachines)
+            $StorageResource.virtualMachines = ParseVirtualMachines $StorageResource.virtualMachines $Timezone
         }
         if ($StorageResource.annotations) {
             $StorageResource.annotations = ParseAnnotations($StorageResource.annotations)
@@ -865,11 +848,11 @@ function ParseStorageResources($StorageResources) {
     }
 }
 
-function ParseVolumes($Volumes) {
+function ParseVolumes($Volumes,$Timezone) {
     $Volumes = @($Volumes)
     foreach ($Volume in $Volumes) {
         if ($Volume.storage) {
-            $Volume.storage = ParseStorages($Volume.storage)
+            $Volume.storage = ParseStorages $Volume.storage $Timezone
         }
         if ($Volume.computeResources) {
             $Volume.computeResources = ParseComputeResources($Volume.computeResources)
@@ -884,19 +867,19 @@ function ParseVolumes($Volumes) {
             $Volume.qtrees = ParseAnnotations($Volume.qtrees)
         }
         if ($Volume.internalVolume) {
-            $Volume.internalVolume = ParseInternalVolumes($Volume.internalVolume)
+            $Volume.internalVolume = ParseInternalVolumes $Volume.internalVolume $Timezone
         }
         if ($Volume.dataStores) {
-            $Volume.dataStores = ParseDatastores($Volume.dataStores)
+            $Volume.dataStores = ParseDatastores $Volume.dataStores $Timezone
         }
         if ($Volume.annotations) {
             $Volume.annotations = ParseAnnotations($Volume.annotations)
         }
         if ($Volume.performance) {
-            $Volume.performance = ParsePerformance($Volume.performance)
+            $Volume.performance = ParsePerformance $Volume.performance $Timezone
         }
         if ($Volume.ports) {
-            $Volume.ports = ParsePorts($Volume.ports)
+            $Volume.ports = ParsePorts $Volume.ports $Timezone
         }
         if ($Volume.storageNodes) {
             $Volume.storageNodes = ParseStorageNodes($Volume.storageNodes)
@@ -915,11 +898,11 @@ function ParseVolumes($Volumes) {
     }
 }
 
-function ParseInternalVolumes($InternalVolumes) {
+function ParseInternalVolumes($InternalVolumes,$Timezone) {
     $InternalVolumes = @($InternalVolumes)
     foreach ($InternalVolume in $InternalVolumes) {
         if ($InternalVolume.storage) {
-            $InternalVolume.storage = ParseStorages($InternalVolume.storage)
+            $InternalVolume.storage = ParseStorages $InternalVolume.storage $Timezone
         }
         if ($InternalVolume.computeResources) {
             $InternalVolume.computeResources = ParseComputeResources($InternalVolume.computeResources)
@@ -928,7 +911,7 @@ function ParseInternalVolumes($InternalVolumes) {
             $InternalVolume.storagePool = ParseStoragePools($InternalVolume.storagePool)
         }
         if ($InternalVolume.performance) {
-            $InternalVolume.performance = ParsePerformance($InternalVolume.performance)
+            $InternalVolume.performance = ParsePerformance $InternalVolume.performance $Timezone
         }
         if ($InternalVolume.volumes) {
             $InternalVolume.volumes = ParseVolumes($InternalVolume.volumes)
@@ -940,7 +923,7 @@ function ParseInternalVolumes($InternalVolumes) {
             $InternalVolume.datasources = ParseDatasources($InternalVolume.datasources)
         }
         if ($InternalVolume.datastores) {
-            $InternalVolume.datastores = ParseDatastores($InternalVolume.datastores)
+            $InternalVolume.datastores = ParseDatastores $InternalVolume.datastores $Timezone
         }
         if ($InternalVolume.applications) {
             $InternalVolume.applications = ParseApplications($InternalVolume.applications)
@@ -963,10 +946,10 @@ function ParseQtrees($Qtrees) {
             $Qtree.quotaCapacity = ParseQuotaCapacities($Qtree.quotaCapacity)
         }
         if ($Qtree.storage) {
-            $Qtree.storage = ParseStorages($Qtree.storage)
+            $Qtree.storage = ParseStorages $Qtree.storage $Timezone
         }
         if ($Qtree.internalVolume) {
-            $Qtree.internalVolume = ParseInternalVolumes($Qtree.internalVolume)
+            $Qtree.internalVolume = ParseInternalVolumes $Qtree.internalVolume $Timezone
         }
         if ($Qtree.shares) {
             $Qtree.shares = ParseShares($Qtree.shares)
@@ -1003,10 +986,10 @@ function ParseStoragePools($StoragePools) {
     $StoragePools = @($StoragePools)
     foreach ($StoragePool in $StoragePools) {
         if ($StoragePool.performance) {
-            $StoragePool.performance = ParsePerformance($StoragePool.performance)
+            $StoragePool.performance = ParsePerformance $StoragePool.performance $Timezone
         }
         if ($StoragePool.storage) {
-            $StoragePool.storage = ParseStorages($StoragePool.storage)
+            $StoragePool.storage = ParseStorages $StoragePool.storage $Timezone
         }
         if ($StoragePool.disks) {
             $StoragePool.disks = ParseDisks($StoragePool.disks)
@@ -1015,7 +998,7 @@ function ParseStoragePools($StoragePools) {
             $StoragePool.storageResources = ParseStorageResources($StoragePool.storageResources)
         }
         if ($StoragePool.internalVolumes) {
-            $StoragePool.internalVolumes = ParseInternalVolumes($StoragePool.internalVolumes)
+            $StoragePool.internalVolumes = ParseInternalVolumes $StoragePool.internalVolumes $Timezone
         }
         if ($StoragePool.volumes) {
             $StoragePool.volumes = ParseVolumes($StoragePool.volumes)
@@ -1034,7 +1017,7 @@ function ParseStoragePools($StoragePools) {
     }
 }
 
-function ParseStorages($Storages) {
+function ParseStorages($Storages, $Timezone) {
     $Storages = @($Storages)
     foreach ($Storage in $Storages) {
         if ($Storage.createTime) {
@@ -1050,7 +1033,7 @@ function ParseStorages($Storages) {
             $Storage.storageResources = ParseStorageResources($Storage.storageResources)
         }
         if ($Storage.internalVolumes) {
-            $Storage.internalVolumes = ParseInternalVolumes($Storage.internalVolumes)
+            $Storage.internalVolumes = ParseInternalVolumes $Storage.internalVolumes $Timezone
         }
         if ($Storage.volumes) {
             $Storage.volumes = ParseVolumes($Storage.volumes)
@@ -1062,7 +1045,7 @@ function ParseStorages($Storages) {
             $Storage.datasources = ParseDatasources($Storage.datasources)
         }
         if ($Storage.ports) {
-            $Storage.ports = ParsePorts($Storage.ports)
+            $Storage.ports = ParsePorts $Storage.ports $Timezone
         }
         if ($Storage.annotations) {
             $Storage.annotations = ParseAnnotations($Storage.annotations)
@@ -1077,7 +1060,7 @@ function ParseStorages($Storages) {
             $Storage.applications = ParseApplications($Storage.applications)
         }
         if ($Storage.performance) {
-            $Storage.performance = ParsePerformance($Storage.performance)
+            $Storage.performance = ParsePerformance $Storage.performance $Timezone
         }
 
         Write-Output $Storage
@@ -1088,7 +1071,7 @@ function ParseStorageNodes($StorageNodes) {
     $StorageNodes = @($StorageNodes)
     foreach ($StorageNode in $StorageNodes) {
         if ($StorageNode.performance) {
-            $StorageNode.performance = ParsePerformance($StorageNode.performance)
+            $StorageNode.performance = ParsePerformance $StorageNode.performance $Timezone
         }
 
         Write-Output $StorageNode
@@ -1099,10 +1082,10 @@ function ParseDisks($Disks) {
     $Disks = @($Disks)
     foreach ($Disk in $Disks) {
         if ($Disk.performance) {
-            $Disk.performance = ParsePerformance($Disk.performance)
+            $Disk.performance = ParsePerformance $Disk.performance $Timezone
         }
         if ($Disk.storage) {
-            $Disk.storage = ParseStorages($Disk.storage)
+            $Disk.storage = ParseStorages $Disk.storage $Timezone
         }
         if ($Disk.storageResources) {
             $Disk.storageResources = ParseStorageResources($Disk.storageResources)
@@ -1335,7 +1318,7 @@ function global:Connect-OciServer {
         $Timeout = 600
     }
  
-    $Server = [OCI.Server]@{Name=$Name;
+    $Server = [PSCustomObject]@{Name=$Name;
                             BaseURI=$BaseURI;
                             Credential=$Credential;
                             Headers=$Headers;
@@ -1343,8 +1326,6 @@ function global:Connect-OciServer {
                             Timezone=$Timezone;
                             Timeout=$Timeout;
                             Session=$Session}
-
-    $Server.Metadata = Get-OciMetadata -Server $Server
  
     if (!$Transient) {
         Set-Variable -Name CurrentOciServer -Value $Server -Scope Global
@@ -7026,7 +7007,7 @@ function Global:Get-OciDatastores {
                 $Result = ParseJsonString($Result.Trim())
             }
             
-            $Datastores = ParseDatastores($Result)
+            $Datastores = ParseDatastores $Result $Timezone
                   
             if ($Datastores) { Write-Output $Datastores }
 
@@ -7206,7 +7187,7 @@ function Global:Get-OciDatastore {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            $Datastore = ParseDatastores($Result)
+            $Datastore = ParseDatastores $Result $Timezone
             Write-Output $Datastore
         }
     }
@@ -7732,7 +7713,7 @@ function Global:Get-OciHostsByDatastore {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Hosts = ParseHosts($Result)
+            $Hosts = ParseHosts($Result,$Server.Timezone)
             
             if ($Hosts) {
                 Write-Output $Hosts
@@ -7822,7 +7803,7 @@ function Global:Get-OciDatastorePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -8086,7 +8067,7 @@ function Global:Get-OciVmdksByDatastore {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Vmdks = ParseVmdks($Result)
+            $Vmdks = ParseVmdks($Result,$Server.Timezone)
            
             Write-Output $Vmdks
         }
@@ -8940,7 +8921,7 @@ function Global:Get-OciDiskPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -9801,7 +9782,7 @@ function Global:Get-OciPortsByFabric {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Ports = ParsePorts($Result)
+            $Ports = ParsePorts($Result,$Server.Timezone)
             if ($Ports) { Write-Output $Ports }
 
             if ($FetchAll -and @($Ports).Count -eq $Limit) {
@@ -10029,7 +10010,7 @@ function Global:Get-OciSwitchesByFabric {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Switches = ParseSwitches($Result)
+            $Switches = ParseSwitches($Result,$Server.Timezone)
             Write-Output $Switches
         }
     }
@@ -10795,7 +10776,7 @@ function Global:Get-OciHosts {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Hosts = ParseHosts($Result)
+            $Hosts = ParseHosts($Result,$Server.Timezone)
 
             if ($Hosts) { Write-Output $Hosts }
 
@@ -10996,7 +10977,7 @@ function Global:Get-OciHost {
                 $Result = ParseJsonString($Result.Trim())
             }
             
-            $Hosts = ParseHosts($Result)
+            $Hosts = ParseHosts($Result,$Server.Timezone)
             
             Write-Output $Hosts
         }
@@ -12315,7 +12296,7 @@ function Global:Get-OciHostPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -12888,7 +12869,7 @@ function Global:Get-OciInternalVolume {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $InternalVolume = ParseInternalVolumes($Result)
+            $InternalVolume = ParseInternalVolumes $Result $Server.Timezone
             Write-Output $InternalVolume
         }
     }
@@ -14118,7 +14099,7 @@ function Global:Get-OciInternalVolumePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -15068,7 +15049,7 @@ function Global:Get-OciAnnotationsByPort {
         .PARAMETER definition
         Return related Definition
 #>
-function Global:Update-OciAnnotationsByPort {
+function Global:Update-get-Port {
     [CmdletBinding()]
  
     PARAM (
@@ -16111,7 +16092,7 @@ function Global:Get-OciPortPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -17347,7 +17328,7 @@ function Global:Get-OciSharesByQtree {
     .PARAMETER performancehistory
     Return related Performance History
 #>
-function Global:Get-OciStorage {
+function Global:Get-OciStorageByQtree {
     [CmdletBinding()]
  
     PARAM (
@@ -17467,7 +17448,8 @@ function Global:Get-OciStorage {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            Write-Output $Result
+            $Storage = ParseStorages $Result $Server.Timezone
+            Write-Output $Storage
         }
     }
 }
@@ -18683,7 +18665,7 @@ function Global:Get-OciQtree {
     .SYNOPSIS
     Retrieve storage for given share
     .DESCRIPTION
-    
+    Retrieve storage for given share
     .PARAMETER id
     Id of share to retrieve storage for
     .PARAMETER fromTime
@@ -18723,7 +18705,7 @@ function Global:Get-OciQtree {
     .PARAMETER performancehistory
     Return related Performance History
 #>
-function Global:Get-OciStorage {
+function Global:Get-OciStorageByShare {
     [CmdletBinding()]
  
     PARAM (
@@ -19498,7 +19480,7 @@ function Global:Get-OciStorageNodePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -20734,7 +20716,7 @@ function Global:Get-OciStoragePoolPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -21725,40 +21707,38 @@ function Global:Get-OciStorage {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
         }
+ 
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $Storage = ParseStorages $Result $Server.Timezone
+        Write-Output $Storage
     }
 }
 
@@ -22978,7 +22958,7 @@ function Global:Get-OciStoragePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -24164,7 +24144,7 @@ function Global:Get-OciSwitches {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Switches = ParseSwitches($Result)
+            $Switches = ParseSwitches($Result,$Server.Timezone)
             if ($Switches) { Write-Output $Switches }
 
             if ($FetchAll -and @($Switches).Count -eq $Limit) {
@@ -24341,7 +24321,7 @@ function Global:Get-OciSwitch {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Switch = ParseSwitches($Result)
+            $Switch = ParseSwitches($Result,$Server.Timezone)
             Write-Output $Switch
         }
     }
@@ -25375,7 +25355,7 @@ function Global:Get-OciSwitchPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -25683,7 +25663,7 @@ function Global:Get-OciVirtualMachines {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $VirtualMachines = ParseVirtualMachines($Result)
+            $VirtualMachines = ParseVirtualMachines($Result,$Server.Timezone)
             Write-Output $VirtualMachines
 
             if ($FetchAll -and @($VirtualMachines).Count -eq $Limit) {
@@ -25879,7 +25859,7 @@ function Global:Get-OciVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $VirtualMachine = ParseVirtualMachines($Result)
+            $VirtualMachine = ParseVirtualMachines($Result,$Server.Timezone)
             Write-Output $VirtualMachine
         }
     }
@@ -26798,7 +26778,7 @@ function Global:Get-OciDataStoreByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            $Datastore = ParseDatastores($Result)
+            $Datastore = ParseDatastores $Result $Timezone
             Write-Output $Datastore
         }
     }
@@ -27192,7 +27172,7 @@ function Global:Get-OciHostByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Hosts = ParseHosts($Result)
+            $Hosts = ParseHosts($Result,$Server.Timezone)
             Write-Output $Hosts
         }
     }
@@ -27292,7 +27272,7 @@ function Global:Get-OciVirtualMachinePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -27427,7 +27407,7 @@ function Global:Get-OciPortsByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Ports = ParsePorts($Result)
+            $Ports = ParsePorts($Result,$Server.Timezone)
             Write-Output $Ports
         }
     }
@@ -27687,7 +27667,7 @@ function Global:Get-OciVmdksByVirtualMachine {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            $Vmdks = ParseVmdks($Result)
+            $Vmdks = ParseVmdks($Result,$Server.Timezone)
             Write-Output $Vmdks
         }
     }
@@ -27817,7 +27797,7 @@ function Global:Get-OciVmdk {
                 $Result = ParseJsonString($Result.Trim())
             }
            
-            $Vmdk = ParseVmdks($Result)
+            $Vmdk = ParseVmdks($Result,$Server.Timezone)
             Write-Output $Vmdk
         }
     }
@@ -28339,7 +28319,7 @@ function Global:Get-OciVmdkPerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }
@@ -28619,7 +28599,7 @@ function Global:Get-OciVirtualMachineByVmdk {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $VirtualMachine = ParseVirtualMachines($Result)
+            $VirtualMachine = ParseVirtualMachines($Result,$Server.Timezone)
             Write-Output $VirtualMachine
         }
     }
@@ -30294,7 +30274,7 @@ function Global:Get-OciVolumePerformance {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Performance = ParsePerformance($Result)
+            $Performance = ParsePerformance($Result,$Server.Timezone)
             Write-Output $Performance
         }
     }

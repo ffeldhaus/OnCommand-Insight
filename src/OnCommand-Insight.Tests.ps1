@@ -480,6 +480,99 @@ function ValidateHost {
     }
 }
 
+function ValidatePort {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Host to be verified")][PSObject]$Port
+    )
+
+    Process {
+        $Port.id | Should BeGreaterThan 0
+        $Port.name | Should Match '.+'
+        $Port.simpleName | Should Match '.+'
+        $Port.self | Should Match "/rest/v1/assets/ports/$($Port.id)"
+        if ($Port.ip) {
+            $HostItem.ip | Should Match '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+,?)+'
+        }
+        if ($Port.wwn) {
+            $Port.wwn | Should Match '[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]'
+        }
+        if ($Port.nodeWwn) {
+            $Port.nodeWwn | Should Match '[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]'
+        }
+        $Port.type | Should Match ".+"
+        if ($Port.speed) {
+            $Port.speed | Should Match '.+'
+        }
+        if ($Port.deviceType) {
+            $Port.deviceType | Should Match '.+'
+        }
+        if ($Port.deviceName) {
+            $Port.deviceName | Should Match '.+'
+        }
+        if ($Port.role) {
+            $Port.role | Should Match '.+'
+        }
+        if ($Port.portIndex) {
+            $Port.portIndex | Should Match '.+'
+        }
+        if ($Port.blade) {
+            $Port.blade | Should Match '.+'
+        }
+        if ($Port.gbicType) {
+            $Port.gbicType | Should Match '.+'
+        }
+        if ($Port.controller) {
+            $Port.controller | Should Match '.+'
+        }
+        if ($Port.isGenerated) {
+            $Port.isGenerated | Should BeOfType Boolean
+        }
+        if ($Port.portState) {
+            $Port.portState | Should Match '.+'
+        }
+        if ($Port.portStatus) {
+            $Port.portStatus | Should Match '.+'
+        }
+        if ($Port.fc4Protocol) {
+            $Port.fc4Protocol | Should Match '.+'
+        }
+        if ($Port.gbicType) {
+            $Port.gbicType | Should Match '.+'
+        }
+        if ($Port.isActive) {
+            $Port.isActive | Should BeOfType Boolean
+        }
+        if ($Port.classOfService) {
+            $Port.classOfService | Should Match '.+'
+        }
+    }
+}
+
+function ValidateStorageResource {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Datastore to be verified")][PSObject]$Datastore
+    )
+
+        Process {
+            $Datastore.id | Should BeGreaterThan 0
+            $Datastore.name | Should Match '.+'
+            $Datastore.simpleName | Should Match '.+'
+            $Datastore.virtualCenterIp | Should Match '.+'
+            $Datastore.capacity | ValidateCapacity
+            $Datastore.self | Should Match "/rest/v1/assets/datastores/$($Datastore.id)"
+    }
+}
+
 function ValidatePerformance {
     [CmdletBinding()]
         
@@ -1374,17 +1467,18 @@ Describe "Datastore management" {
         it "succeeds when retrieving related hosts with parameters performance, fromTime, toTime, ports, storageResources, fileSystems, applications, virtualMachines, dataCenter, annotations, clusterHosts and datasources" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
+            # TODO: Implement Validations!
             $Hosts = Get-OciDatastores | Get-OciHostsByDataStore -performance -fromTime (Get-Date).AddDays(-1) -toTime (Get-Date) -ports -storageResources -fileSystems -applications -virtualMachines -dataCenter -annotations -clusterHosts -datasources
             $Hosts | ValidateHost
             $Hosts.performance | ValidatePerformance
             $Hosts.ports | ValidatePort
-            $Hosts.storageResources | ValidateStorageResource
-            $Hosts.fileSystems | ValidateFileSystem
-            $Hosts.applications | ValidateApplication
-            $Hosts.virtualMachines | ValidateVirtualMachine
-            $Hosts.dataCenter | ValidateDataCenter
+            #$Hosts.storageResources | ValidateStorageResource
+            #$Hosts.fileSystems | ValidateFileSystem
+            #$Hosts.applications | ValidateApplication
+            #$Hosts.virtualMachines | ValidateVirtualMachine
+            #$Hosts.dataCenter | ValidateDataCenter
             $Hosts.annotations | ValidateAnnotation
-            $Hosts.clusterHosts | ValidateClusterHost
+            #$Hosts.clusterHosts | ValidateClusterHost
             $Hosts.datasources | ValidateDatasource
         }
 
