@@ -16,7 +16,7 @@
     # The github API key must be available in $GitHubApiKey (https://github.com/blog/1509-personal-api-tokens)
 
     # The Commit SHA for corresponding to this release
-    $CommitId = git rev-list -n 1 $Version
+    $CommitId = git rev-list -n 1 "refs/tags/$Version"
 
     $ReleaseData = @{
        tag_name = $Version;
@@ -136,6 +136,10 @@ function New-OciRelease {
 
     # Copy the Module files to the dist folder.
     Copy-Item -Path "$src\*.psm1" `
+              -Destination $dst `
+              -Recurse
+
+    Copy-Item -Path "$src\*.ps1xml" `
               -Destination $dst `
               -Recurse
 
