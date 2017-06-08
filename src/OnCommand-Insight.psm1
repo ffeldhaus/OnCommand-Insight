@@ -1135,6 +1135,8 @@ function ParsePatchStatus($PatchStatus) {
     }
 }
 
+## generic functions ##
+
 <#
     .SYNOPSIS
     Retrieve OCI Webinterface Metadata
@@ -1494,6 +1496,8 @@ function global:Remove-OciServerCertificate {
     }
 }
 
+## admin/acquisitionUnits ##
+
 <#
     .SYNOPSIS
     Retrieve all Acquisition Units
@@ -1813,6 +1817,8 @@ function Global:Restart-OciAcquisitionUnit {
     }
 }
 
+## admin/certificates ##
+
 <#
     .SYNOPSIS
     Retrieve list of certificates
@@ -1939,6 +1945,8 @@ function Global:Add-OciCertificate {
         }
     }
 }
+
+## admin/datasources
 
 <#
     .SYNOPSIS
@@ -3441,6 +3449,8 @@ function Global:Test-OciDatasource {
     }
 }
 
+## admin/ldap ##
+
 <#
     .SYNOPSIS
     Retrieve LDAP configuration
@@ -3606,6 +3616,8 @@ function Global:Test-OciLdapConfiguration {
     }
 }
 
+## admin/licenses ##
+
 <#
     .SYNOPSIS
     Retrieve licenses
@@ -3750,6 +3762,8 @@ function Global:Replace-OciLicenses {
         Write-Output $Result
     }
 }
+
+## admin/patches ##
 
 <#
     .SYNOPSIS
@@ -4301,6 +4315,8 @@ function Global:Rollback-OciPatch {
     }
 }
 
+## admin/users ##
+
 <#
     .SYNOPSIS
     Retrieve all users
@@ -4719,6 +4735,8 @@ function Global:Update-OciUser {
         }
     }
 }
+
+## assets/annotations ##
 
 <#
     .SYNOPSIS
@@ -5383,6 +5401,8 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
         }
     }
 }
+
+## assets/applications ##
 
 <#
     .SYNOPSIS
@@ -6699,6 +6719,8 @@ function Global:Get-OciStorageResourcesByApplication {
     }
 }
 
+## assets/businessEntities ##
+
 <#
     .SYNOPSIS
     Retrieve all business entities
@@ -6904,6 +6926,8 @@ function Global:Get-OciBusinessEntity {
         }
     }
 }
+
+## assets/datastores ##
 
 <#
     .SYNOPSIS
@@ -8074,6 +8098,8 @@ function Global:Get-OciVmdksByDatastore {
     }
 }
 
+## assets/disks ##
+
 <#
     .SYNOPSIS
     Retrieve storage pool disks
@@ -9206,6 +9232,8 @@ function Global:Get-OciStorageResourcesByDisk {
     }
 }
 
+## assets/fabrics ##
+
 <#
     .SYNOPSIS
     Retrieve all fabrics
@@ -10016,6 +10044,8 @@ function Global:Get-OciSwitchesByFabric {
     }
 }
 
+## assets/fileSystems ##
+
 <#
     .SYNOPSIS
     Retrieve one file system
@@ -10605,6 +10635,8 @@ function Global:Get-OciTopologyByStorage {
         Write-Output $Topology
     }
 }
+
+## assets/hosts ##
 
 <#
     .SYNOPSIS
@@ -12715,6 +12747,8 @@ function Global:Get-OciVirtualMachinesByHost {
     }
 }
 
+## assets/internalVolumes ##
+
 <#
     .SYNOPSIS
     Retrieve internal volume
@@ -14704,6 +14738,8 @@ function Global:Get-OciVolumesByInternalVolume {
     }
 }
 
+## assets/ports ##
+
 <#
     .SYNOPSIS
     Retrieve one port
@@ -16097,6 +16133,8 @@ function Global:Get-OciPortPerformance {
         }
     }
 }
+
+## assets/qtrees ##
 
 <#
     .SYNOPSIS
@@ -17634,6 +17672,8 @@ function Global:Get-OciVolumesByQtree {
     }
 }
 
+## assets/shares ##
+
 <#
     .SYNOPSIS
     Retrieve one Share
@@ -18830,6 +18870,8 @@ function Global:Get-OciStorageByShare {
     }
 }
 
+## assets/storageNodes ##
+
 <#
     .SYNOPSIS
     Retrieve one storage node
@@ -19763,6 +19805,8 @@ function Global:Get-OciStoragePoolsByNode {
         }
     }
 }
+
+## assets/storagePools ##
 
 <#
     .SYNOPSIS
@@ -21333,6 +21377,8 @@ function Global:Get-OciVolumesByStoragePool {
         }
     }
 }
+
+## assets/storages ##
 
 <#
     .SYNOPSIS
@@ -24001,6 +24047,8 @@ function Global:Get-OciVolumesByStorage {
     }
 }
 
+## assets/switches ##
+
 <#
     .SYNOPSIS
     Retrieve all Switches
@@ -25494,6 +25542,8 @@ function Global:Get-OciPortsBySwitch {
         }
     }
 }
+
+## assets/virtualMachines ##
 
 <#
     .SYNOPSIS
@@ -27673,6 +27723,8 @@ function Global:Get-OciVmdksByVirtualMachine {
     }
 }
 
+## assets/vmdks ##
+
 <#
     .SYNOPSIS
     Retrieve one virtual machine Vmdk
@@ -28604,6 +28656,8 @@ function Global:Get-OciVirtualMachineByVmdk {
         }
     }
 }
+
+## assets/volumes ##
 
 <#
     .SYNOPSIS
@@ -31476,6 +31530,8 @@ function Global:Get-OciVirtualizer {
         }
     }
 }
+
+## other ##
 
 <#
     .SYNOPSIS
