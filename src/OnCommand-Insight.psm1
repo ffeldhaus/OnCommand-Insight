@@ -7217,7 +7217,6 @@ function Global:Get-OciDatastore {
     }
 }
 
-# TODO: Implement / Test
 <#
     .SYNOPSIS
     Delete annotations from object
@@ -7243,7 +7242,7 @@ function Global:Remove-OciAnnotationsByDatastore {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Id of annotation to delete")][Long]$annotationId,
+                    HelpMessage="Annotations to remove from datastore")][PSObject[]]$annotations,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
@@ -7257,27 +7256,19 @@ function Global:Remove-OciAnnotationsByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
         $Uri = $CurrentOciServer.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
+
+        if ($definition) {
+            $Uri += "?expand=definition"
+        }
  
         try {
-            $Body = ConvertTo-Json @($annotationId | % { @{id=$_} }) -Compress
+            $Body = ConvertTo-Json @($Annotations | % { @{definition=@{id=$_.definition.id}} } ) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody $_.Exception.Response
@@ -7331,45 +7322,30 @@ function Global:Get-OciAnnotationsByDatastore {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"            
  
-            if ($expand) {
-                $Uri += "?$($Separator)expand=$expand"
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-            
-            $Annotations = ParseAnnotations($Result)
-            
-            Write-Output $Annotations
+        if ($definition) {
+            $Uri += "?expand=definition"
         }
+ 
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+            
+        $Annotations = ParseAnnotations($Result)
+            
+        Write-Output $Annotations
     }
 }
 
@@ -7380,10 +7356,8 @@ function Global:Get-OciAnnotationsByDatastore {
     Update annotations for datastore      
     .PARAMETER id
     Id of datastore to update
-    .PARAMETER annotationId
-    Annotation ID
-    .PARAMETER value
-    Annotation value
+    .PARAMETER Annotations
+    Annotations
     .PARAMETER definition
     Return related Definition
     .PARAMETER server
@@ -7400,15 +7374,12 @@ function Global:Update-OciAnnotationsByDatastore {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$True,
                     Position=1,
-                    HelpMessage="Annotation ID")][Long]$annotationId,
-        [parameter(Mandatory=$True,
-                    Position=2,
-                    HelpMessage="Annotation value")][String]$value,
+                    HelpMessage="Annotations")][PSObject[]]$Annotations,
         [parameter(Mandatory=$False,
-                    Position=3,
+                    Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=4,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -7416,18 +7387,6 @@ function Global:Update-OciAnnotationsByDatastore {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
-        }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
         }
     }
    
@@ -25917,7 +25876,7 @@ function Global:Get-OciVirtualMachine {
 
 <#
     .SYNOPSIS
-    Delete annotations from object
+    Delete annotations from virtual machine
     .DESCRIPTION
     Request body should be like JSON below: <br/>
 
