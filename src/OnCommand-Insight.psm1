@@ -8200,27 +8200,15 @@ function Global:Get-OciDisk {
     }
 }
 
-# TODO: Test / Implement
 <#
     .SYNOPSIS
-    Delete annotations from object
+    Delete annotations from disk
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-{
-  "definition":{"id":"5001"}
-},
-{
-  "definition":{"id":"5002"}
-}
-]
-</pre>
-                    
+    Delete annotations from disk 
     .PARAMETER id
-    Id of object to delete
+    Id of disk where annotations should be removed from
+    .PARAMETER Annotations
+    Annotations to remove from disk
     .PARAMETER definition
     Return related Definition
     .PARAMETER server
@@ -8237,9 +8225,12 @@ function Global:Remove-OciAnnotationsByDisk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
+                    HelpMessage="Annotations to remove from disk")][PSObject[]]$Annotations,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -8248,55 +8239,34 @@ function Global:Remove-OciAnnotationsByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
+        $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
 
-            Write-Output $Result
+        if ($definition) {
+            $Uri += "?expand=definition"
         }
+
+        if ($Annotations) {
+            $Annotations = Get-OciAnnotationsByDisk -id $id -definition
+        }
+ 
+        try {
+            $Body = ConvertTo-Json @( $Annotations | ? { $_ } | % { @{definition=@{id=$_.definition.id}} } ) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Body $Body -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        Write-Output $Result
     }
 }
 
@@ -8307,8 +8277,6 @@ function Global:Remove-OciAnnotationsByDisk {
     Retrieve annotations of disk
     .PARAMETER id
     Id of object to retrieve
-    .PARAMETER expand
-    Expand parameter for underlying JSON object (e.g. expand=definition)
     .PARAMETER definition
     Return related Definition
     .PARAMETER server
@@ -8325,12 +8293,9 @@ function Global:Get-OciAnnotationsByDisk {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=definition)")][String]$expand,
-        [parameter(Mandatory=$False,
-                    Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=3,
+                   Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -8339,80 +8304,41 @@ function Global:Get-OciAnnotationsByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"     
+        
+        if ($definition) {
+            $Uri += "?expand=definition"
+        }       
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            $Annotations = ParseAnnotations($Result)
-            Write-Output $Annotations
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $Annotations = ParseAnnotations($Result)
+        Write-Output $Annotations
     }
 }
 
-# TODO: Test / Implement
 <#
     .SYNOPSIS
-    Update annotations for object
+    Update annotations of disk
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-  {
-    "rawValue": "Bronze",
-    "definition": {
-      "id": "4992",
-    }
-  }
-]
-</pre>
-            
+    Update annotations of disk      
     .PARAMETER id
-    Id of object to update
+    Id of disk to update
+    .PARAMETER Annotations
+    Annotations to be updated
     .PARAMETER definition
     Return related Definition
     .PARAMETER server
@@ -8427,11 +8353,14 @@ function Global:Update-OciAnnotationsByDisk {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=1,
+                    HelpMessage="Annotations to be updated")][PSObject[]]$Annotations,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=5,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -8440,57 +8369,27 @@ function Global:Update-OciAnnotationsByDisk {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"    
+        
+        if ($definition) {
+            $Uri += "?expand=definition"
+        }        
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        try {
+            $Body = ConvertTo-Json @( $Annotations | ? { $_ } | % { @{definition=@{id=$_.definition.id}} } ) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        $Annotations = ParseAnnotations($Result)
+        Write-Output $Annotations
     }
 }
 
@@ -26025,9 +25924,9 @@ function Global:Update-OciAnnotationsByVirtualMachine {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=1,
-                    HelpMessage="Annotations to be updated")][PSObject]$Annotations,
+                    HelpMessage="Annotations to be updated")][PSObject[]]$Annotations,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
