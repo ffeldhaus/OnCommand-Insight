@@ -7264,6 +7264,10 @@ function Global:Remove-OciAnnotationsByDatastore {
         if ($definition) {
             $Uri += "?expand=definition"
         }
+
+        if (!$Annotations) {
+            $Annotations = Get-OciAnnotationsByDatastore -id $id -definition
+        }
  
         try {
             $Body = ConvertTo-Json @($Annotations | % { @{definition=@{id=$_.definition.id}} } ) -Compress
@@ -7393,12 +7397,12 @@ function Global:Update-OciAnnotationsByDatastore {
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"            
  
-        if ($expand) {
-            $Uri += "?$($Separator)expand=$expand"
+        if ($definition) {
+            $Uri += "?expand=definition"
         }
  
         try {
-            $Body = ConvertTo-Json @(@{rawValue=$value;definition=@{id=$annotationId.ToString()}}) -Compress -Depth 3
+            $Body = ConvertTo-Json @($Annotations | % { @{rawValue=$_.rawValue;definition=@{id=$_.definition.id}} } ) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
@@ -25876,26 +25880,15 @@ function Global:Get-OciVirtualMachine {
 
 <#
     .SYNOPSIS
-    Delete annotations from virtual machine
+    Remove annotations from virtual machine
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-{
-  "definition":{"id":"5001"}
-},
-{
-  "definition":{"id":"5002"}
-}
-]
-</pre>
-                    
+    Remove annotations from virtual machine               
     .PARAMETER id
     Id of object to delete
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER Annotations
+    List of annotations to remove
+    .PARAMETER definition
+    Return related Definition
 #>
 function Global:Remove-OciAnnotationsByVirtualMachine {
     [CmdletBinding()]
@@ -25908,9 +25901,12 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
+                    HelpMessage="List of annotations to remove")][PSObject[]]$Annotations,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=2,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -25919,57 +25915,30 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-       
-            Write-Output $Result
+        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"    
+        
+        if ($Definition) {
+            $Uri += "?expand=definition"
+        }    
+        
+        if (!$Annotations) {
+            $Annotations = Get-OciAnnotationsByVirtualMachine -id $id -definition
         }
+
+        try {
+            $Body = ConvertTo-Json @($Annotations | ? { $_.definition } | % { @{definition=@{id=$_.definition.id}} } ) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+       
+        Write-Output $Result
     }
 }
 
@@ -26010,80 +25979,42 @@ function Global:Get-OciAnnotationsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"     
+            
+        if ($Definition) {
+            $Uri += "?expand=definition"
+        }         
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        Write-Output $Result
     }
 }
 
 <#
     .SYNOPSIS
-    Update annotations for object
+    Update Annotations of Virtual Machine
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-  {
-    "rawValue": "Bronze",
-    "definition": {
-      "id": "4992",
-    }
-  }
-]
-</pre>
-            
+    Update Annotations of Virtual Machine  
     .PARAMETER id
     Id of object to update
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER Annotations
+    Annotations to be updated
+    .PARAMETER definition
+    Return related Definition
 #>
 function Global:Update-OciAnnotationsByVirtualMachine {
     [CmdletBinding()]
@@ -26096,9 +26027,12 @@ function Global:Update-OciAnnotationsByVirtualMachine {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
+                    HelpMessage="Annotations to be updated")][PSObject]$Annotations,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=2,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -26107,57 +26041,30 @@ function Global:Update-OciAnnotationsByVirtualMachine {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
+
+        if ($Definition) {
+            $Uri += "?expand=definition"
+        } 
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        try {
+            $Body = ConvertTo-Json $($Annotations | % { @{rawValue=$_.rawValue;definition=@{id=$_.definition.id}} } ) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        Write-Output $Result
     }
 }
 
