@@ -10866,42 +10866,38 @@ function Global:Get-OciHost {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-            
-            $Hosts = ParseHosts($Result,$Server.Timezone)
-            
-            Write-Output $Hosts
         }
+ 
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+            
+        $Hosts = ParseHosts $Result $Server.Timezone
+        Write-Output $Hosts
     }
 }
 
@@ -11136,7 +11132,7 @@ function Global:Update-OciAnnotationsByHost {
     .DESCRIPTION
     Remove applications from host
     .PARAMETER id
-    Id of host to update
+    Id of host to remove applications from
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
@@ -11151,7 +11147,7 @@ function Global:Remove-OciApplicationsByHost {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$True,
+        [parameter(Mandatory=$False,
                    Position=1,
                    HelpMessage="Applications to remove")][PSObject[]]$Applications,
         [parameter(Mandatory=$False,
@@ -11190,6 +11186,10 @@ function Global:Remove-OciApplicationsByHost {
         if ($expand) {
             $Uri += "?expand=$expand"
         }
+
+        if (!$Applications) {
+            $Applications = Get-OciApplicationsByHost -id $id -Server $Server
+        }
  
         try {
             $Body = ConvertTo-Json -InputObject @($Applications) -Compress
@@ -11212,11 +11212,11 @@ function Global:Remove-OciApplicationsByHost {
 
 <#
     .SYNOPSIS
-    Retrieve the applications of host
+    Retrieve the applications of a host
     .DESCRIPTION
-    Retrieve the applications of host
+    Retrieve the applications of a host
     .PARAMETER id
-    Id of object to retrieve
+    Id of host to retrieve applications for
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
@@ -11228,7 +11228,7 @@ function Global:Get-OciApplicationsByHost {
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
-                    HelpMessage="Id of object to retrieve",
+                    HelpMessage="Id of host to retrieve applications for",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
@@ -11280,134 +11280,28 @@ function Global:Get-OciApplicationsByHost {
             $Result = ParseJsonString($Result.Trim())
         }
 
-        $Applications = ParseApplications($Result)
-        Write-Output $Applications
-    }
-}
-
-<#
-    .SYNOPSIS
-    Bulk assign applications to asset
-    .DESCRIPTION
-    Request body should contain a list of valid application ids, example: <br/>
-
-<pre>
-[
-    {
-        "id":"12345"
-    },
-    {
-        "id":"67890"
-    }
-]
-</pre>
-            
-    .PARAMETER id
-    Id of object to update
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
-#>
-function Global:Bulk-OciAssignApplicationsToAsset {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id of object to update",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
-        [parameter(Mandatory=$False,
-                   Position=3,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
-    )
- 
-    Begin {
-        $Result = $null
-        if (!$Server) {
-            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
-        }
-
-        $switchparameters=@("computeResources","storageResources")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        $Applications = ParseApplications $Result
+        if ($Applications) {
+            Write-Output $Applications
         }
     }
 }
 
 <#
     .SYNOPSIS
-    Add applications for object
+    Update Applications of host
     .DESCRIPTION
-    Request body should contain only one valid application id, example: <br/>
-
-<pre>
-{
-    "id":"12345"
-}
-</pre>
-            
+    Update Applications of host     
     .PARAMETER id
-    Id of object to update
+    Id of host to update applications of
+    .PARAMETER Applications
+    Applications to update
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
     Return list of related Storage resources
 #>
-function Global:Update-OciByTypeAndId {
+function Global:Update-OciApplicationsByHost {
     [CmdletBinding()]
  
     PARAM (
@@ -11416,102 +11310,9 @@ function Global:Update-OciByTypeAndId {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
-        [parameter(Mandatory=$False,
-                   Position=3,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
-    )
- 
-    Begin {
-        $Result = $null
-        if (!$Server) {
-            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
-        }
-
-        $switchparameters=@("computeResources","storageResources")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
-    }
-   
-    Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
- 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
-        }
-    }
-}
-
-<#
-    .SYNOPSIS
-    Delete application from object
-    .DESCRIPTION
-    
-    .PARAMETER id
-    Id of object to delete application from
-    .PARAMETER appId
-    Id of application to delete from object
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
-#>
-function Global:Remove-OciByTypeAndId {
-    [CmdletBinding()]
- 
-    PARAM (
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id of object to delete application from",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$True,
                     Position=1,
-                    HelpMessage="Id of application to delete from object")][Long]$appId,
+                    HelpMessage="Applications to update")][PSObject[]]$Applications,
         [parameter(Mandatory=$False,
                     Position=2,
                     HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
@@ -11543,48 +11344,198 @@ function Global:Remove-OciByTypeAndId {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id$/applications/$appId"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
         }
+ 
+        try {
+            $Body = ConvertTo-Json -InputObject @($Applications) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        $Applications = ParseApplications $Result
+        Write-Output $Applications
     }
 }
 
 <#
     .SYNOPSIS
-    Retrieve the hosts from same cluster of host
+    Add application to host
     .DESCRIPTION
-    
+    Add application to host  
+    .PARAMETER id
+    Id of host to application to
+    .PARAMETER Application
+    Application to add to host
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
+#>
+function Global:Add-OciApplicationByHost {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of object to update",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$True,
+                    Position=1,
+                    HelpMessage="Applications to update")][PSObject]$Application,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
+    }
+   
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
+ 
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
+        }
+ 
+        try {
+            $Body = ConvertTo-Json -InputObject $Application -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $Application = ParseApplications $Result
+        Write-Output $Application
+    }
+}
+
+<#
+    .SYNOPSIS
+    Remove application from host
+    .DESCRIPTION
+    Remove application from host
+    .PARAMETER id
+    Id of host to remove application from
+    .PARAMETER Application
+    Application to remove from host
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
+#>
+function Global:Remove-OciApplicationByHost {
+    [CmdletBinding()]
+ 
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of object to delete application from",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$True,
+                    Position=1,
+                    HelpMessage="Applications to remove from host")][PSObject]$Application,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+ 
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("computeResources","storageResources")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
+    }
+   
+    Process {
+        $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/applications/$($Application.id)"            
+ 
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
+        }
+ 
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        $Applications = ParseApplications $Result
+        Write-Output $Applications
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve the hosts from same cluster
+    .DESCRIPTION
+    Retrieve the hosts from same cluster
     .PARAMETER id
     Id of host to retrieve cluster hosts for
     .PARAMETER fromTime
