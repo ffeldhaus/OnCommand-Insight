@@ -218,6 +218,24 @@ function ConvertFrom-UnixTimestamp {
     }
 }
 
+# helper function to convert annotations to annotation values
+function ConvertTo-AnnotationValues {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True,
+                    HelpMessage="Timestamp to be converted.")][PSObject[]]$Annotations
+          )
+
+    PROCESS {
+        $AnnotationValues = $Annotations | ? { $_.label } | % { [PSCustomObject]@{rawValue=$_.rawValue;label=$_.label;isDerived=$false;annotationAssignment="MANUAL";definition=$_} | Add-Member -MemberType AliasProperty -Name displayValue -Value rawValue -PassThru }
+        Write-Output $AnnotationValues
+    }
+}
+
 ### Parsing Functions
 
 function ParseExceptionBody($Response) {
@@ -770,8 +788,14 @@ function ParseApplications($Applications) {
 function ParseAnnotations($Annotations) {
     $Annotations = @($Annotations)
     foreach ($Annotation in $Annotations) {
-
         Write-Output $Annotation
+    }
+}
+
+function ParseAnnotationValues($AnnotationValues) {
+    $AnnotationValues = @($AnnotationValues)
+    foreach ($AnnotationValue in $AnnotationValues) {
+        Write-Output $AnnotationValue
     }
 }
 
@@ -7266,11 +7290,11 @@ function Global:Remove-OciAnnotationsByDatastore {
         }
 
         if (!$Annotations) {
-            $Annotations = Get-OciAnnotationsByDatastore -id $id -definition
-        }
+            $Annotations = Get-OciAnnotationsByDatastore -id $id -definition -Server $Server
+        }      
  
         try {
-            $Body = ConvertTo-Json @($Annotations | % { @{definition=@{id=$_.definition.id}} } ) -Compress
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
@@ -7283,7 +7307,8 @@ function Global:Remove-OciAnnotationsByDatastore {
             $Result = ParseJsonString($Result.Trim())
         }
        
-        Write-Output $Result
+        $AnnotationValues = ParseAnnotationValues($Result)
+        Write-Output $AnnotationValues
     }
 }
 
@@ -7402,7 +7427,7 @@ function Global:Update-OciAnnotationsByDatastore {
         }
  
         try {
-            $Body = ConvertTo-Json @($Annotations | % { @{rawValue=$_.rawValue;definition=@{id=$_.definition.id}} } ) -Compress
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
@@ -7415,7 +7440,8 @@ function Global:Update-OciAnnotationsByDatastore {
             $Result = ParseJsonString($Result.Trim())
         }
 
-        Write-Output $Result
+        $AnnotationValues = ParseAnnotationValues($Result)
+        Write-Output $AnnotationValues
     }
 }
 
@@ -8202,13 +8228,13 @@ function Global:Get-OciDisk {
 
 <#
     .SYNOPSIS
-    Delete annotations from disk
+    Remove annotations from disk
     .DESCRIPTION
-    Delete annotations from disk 
+    Remove annotations from disk 
     .PARAMETER id
     Id of disk where annotations should be removed from
     .PARAMETER Annotations
-    Annotations to remove from disk
+    Annotations to remove
     .PARAMETER definition
     Return related Definition
     .PARAMETER server
@@ -8248,12 +8274,12 @@ function Global:Remove-OciAnnotationsByDisk {
             $Uri += "?expand=definition"
         }
 
-        if ($Annotations) {
-            $Annotations = Get-OciAnnotationsByDisk -id $id -definition
+        if (!$Annotations) {
+            $Annotations = Get-OciAnnotationsByDisk -id $id -definition -Server $Server
         }
  
         try {
-            $Body = ConvertTo-Json @( $Annotations | ? { $_ } | % { @{definition=@{id=$_.definition.id}} } ) -Compress
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Body $Body -Headers $Server.Headers
         }
@@ -8266,7 +8292,8 @@ function Global:Remove-OciAnnotationsByDisk {
             $Result = ParseJsonString($Result.Trim())
         }
 
-        Write-Output $Result
+        $AnnotationValues = ParseAnnotationValues($Result)
+        Write-Output $AnnotationValues
     }
 }
 
@@ -8379,7 +8406,7 @@ function Global:Update-OciAnnotationsByDisk {
         }        
  
         try {
-            $Body = ConvertTo-Json @( $Annotations | ? { $_ } | % { @{definition=@{id=$_.definition.id}} } ) -Compress
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
@@ -10880,11 +10907,13 @@ function Global:Get-OciHost {
 
 <#
     .SYNOPSIS
-    Delete annotations from host
+    Remove annotations from host
     .DESCRIPTION
-    Delete annotations from host             
+    Remove annotations from host             
     .PARAMETER id
-    Id of object to delete
+    Id of host to remove annotations from
+    .PARAMETER Annotations
+    Annotations to remove
     .PARAMETER definition
     Return related Definition
     .PARAMETER server
@@ -10901,9 +10930,12 @@ function Global:Remove-OciAnnotationsByHost {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Return related Definition")][PSObject[]]$annotations,
+                    HelpMessage="Annotations to remove")][PSObject[]]$annotations,
         [parameter(Mandatory=$False,
-                   Position=2,
+                    Position=2,
+                    HelpMessage="Return related Definition")][Switch]$definition,
+        [parameter(Mandatory=$False,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -10915,33 +10947,32 @@ function Global:Remove-OciAnnotationsByHost {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
- 
-            try {
-                if (!$Annotations) {
-                    $Annotations = Get-OciAnnotationsByHost -id $id -Server $Server
-                }
-                $Definitions = @()
-                foreach ($Annotation in $Annotations) {
-                    $Definitions += @{definition=@{id=$Annotation.id}} 
-                }
-                $Body = ConvertTo-Json $Definitions
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
+
+        if ($definition) {
+            $Uri += "?expand=definition"
+        }      
+
+        if (!$Annotations) {
+            $Annotations = Get-OciAnnotationsByHost -id $id -definition -Server $Server
         }
+ 
+        try {
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        $AnnotationValues = ParseAnnotationValues($Result)
+        Write-Output $AnnotationValues
     }
 }
 
@@ -10999,40 +11030,38 @@ function Global:Get-OciAnnotationsByHost {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/annotations"            
+        $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/annotations"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
         }
+ 
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $AnnotationValues = ParseAnnotationValues($Result)
+        Write-Output $AnnotationValues
     }
 }
 
@@ -11042,27 +11071,27 @@ function Global:Get-OciAnnotationsByHost {
     .DESCRIPTION
     Update annotations of host     
     .PARAMETER id
-    Id of object to update
+    Id of host to update
     .PARAMETER annotation
-    Annotation
-    .PARAMETER rawValue
-    Annotation value to set for host
+    Annotations to update
+    .PARAMETER definition
+    Return annotation definitions
 #>
-function Global:Update-OciAnnotationByHost {
+function Global:Update-OciAnnotationsByHost {
     [CmdletBinding()]
  
     PARAM (
         [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id of object to update",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+                   Position=0,
+                   HelpMessage="Id of object to update",
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$True,
-                    Position=1,
-                    HelpMessage="Annotation")][PSObject]$annotation,
-        [parameter(Mandatory=$True,
+                   Position=1,
+                   HelpMessage="Annotations to update")][PSObject[]]$Annotations,
+        [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="Annotation value to set for host")][String]$rawValue,
+                    HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -11076,64 +11105,44 @@ function Global:Update-OciAnnotationByHost {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
- 
-            try {
-                $Body = @"
-[
-    {
-        "rawValue": "$rawValue",
-        "definition": 
-            {
-                "id": "$($annotation.id)"
-            }
-    }
-]
-"@
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-           
-            Write-Output $Result
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
+
+        if ($expand) {
+            $Uri += "?$($Separator)expand=$expand"
         }
+ 
+        try {
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+           
+        $AnnotationValues = ParseAnnotationValues($Result)
+        Write-Output $AnnotationValues
     }
 }
 
 <#
     .SYNOPSIS
-    Bulk un-assign applications from asset
+    Remove applications from host
     .DESCRIPTION
-    Request body should contain a list of valid application ids, example: <br/>
-
-<pre>
-[
-    {
-        "id":"12345"
-    },
-    {
-        "id":"67890"
-    }
-]
-</pre>
-            
+    Remove applications from host
     .PARAMETER id
-    Id of object to update
-        .PARAMETER computeResources
-        Return list of related Compute resources
-        .PARAMETER storageResources
-        Return list of related Storage resources
+    Id of host to update
+    .PARAMETER computeResources
+    Return list of related Compute resources
+    .PARAMETER storageResources
+    Return list of related Storage resources
 #>
-function Global:Bulk-OciUnAssignApplicationsFromAsset {
+function Global:Remove-OciApplicationsByHost {
     [CmdletBinding()]
  
     PARAM (
@@ -11142,11 +11151,14 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
-                    Position=1,
-                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+        [parameter(Mandatory=$True,
+                   Position=1,
+                   HelpMessage="Applications to remove")][PSObject[]]$Applications,
         [parameter(Mandatory=$False,
                     Position=2,
+                    HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
+        [parameter(Mandatory=$False,
+                    Position=3,
                     HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
         [parameter(Mandatory=$False,
                    Position=3,
@@ -25824,7 +25836,7 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
         }    
         
         if (!$Annotations) {
-            $Annotations = Get-OciAnnotationsByVirtualMachine -id $id -definition
+            $Annotations = Get-OciAnnotationsByVirtualMachine -id $id -definition -Server $Server
         }
 
         try {
