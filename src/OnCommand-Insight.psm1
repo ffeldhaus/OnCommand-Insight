@@ -10697,7 +10697,7 @@ function Global:Get-OciHosts {
                 $Result = ParseJsonString($Result.Trim())
             }
 
-            $Hosts = ParseHosts($Result,$Server.Timezone)
+            $Hosts = ParseHosts $Result $Server.Timezone
 
             if ($Hosts) { Write-Output $Hosts }
 
@@ -11185,63 +11185,44 @@ function Global:Remove-OciApplicationsByHost {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
+        if ($expand) {
+            $Uri += "?expand=$expand"
         }
+ 
+        try {
+            $Body = ConvertTo-Json -InputObject @($Applications) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $Applications = ParseApplications($Result)
+        Write-Output $Applications
     }
 }
 
 <#
     .SYNOPSIS
-    Retrieve the applications of object
+    Retrieve the applications of host
     .DESCRIPTION
-    
+    Retrieve the applications of host
     .PARAMETER id
     Id of object to retrieve
-    .PARAMETER fromTime
-    Filter for time range, either in milliseconds or as DateTime
-    .PARAMETER toTime
-    Filter for time range, either in milliseconds or as DateTime
-    .PARAMETER expand
-    Expand parameter for underlying JSON object (e.g. expand=read,items)
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
     Return list of related Storage resources
 #>
-function Global:Get-OciByTypeAndId {
+function Global:Get-OciApplicationsByHost {
     [CmdletBinding()]
  
     PARAM (
@@ -11252,21 +11233,12 @@ function Global:Get-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
-                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
-        [parameter(Mandatory=$False,
-                    Position=2,
-                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
-        [parameter(Mandatory=$False,
-                    Position=3,
-                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
-        [parameter(Mandatory=$False,
-                    Position=4,
                     HelpMessage="Return list of related Compute resources")][Switch]$computeResources,
         [parameter(Mandatory=$False,
-                    Position=5,
+                    Position=2,
                     HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
         [parameter(Mandatory=$False,
-                   Position=6,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
  
@@ -11290,40 +11262,26 @@ function Global:Get-OciByTypeAndId {
     }
    
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
  
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
- 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
- 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
-            }
-
-            Write-Output $Result
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
         }
+ 
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+ 
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString($Result.Trim())
+        }
+
+        $Applications = ParseApplications($Result)
+        Write-Output $Applications
     }
 }
 
