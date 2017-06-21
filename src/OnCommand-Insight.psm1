@@ -31416,7 +31416,7 @@ function Global:Restore-OciBackup {
                 }
                 if ($i -eq 1440) { 
                     Write-Host ''
-                    throw 'Backup did not finish within 24 hours' 
+                    throw 'Restore did not finish within 24 hours' 
                 }
                 if ($Result.status -eq 'SUCCESSFUL') {
                     Write-Host "finished"
@@ -31428,6 +31428,9 @@ function Global:Restore-OciBackup {
                 elseif (($Result.currentStep.startTime | get-date) -ge $StartTime) {
                     $activity = $Result.currentStep.operationText
                     $status = $Result.components.name | select -last 1
+                    if (!$status) {
+                        $status = $Result.status
+                    }
                 }
                 switch ($Result.currentStep.phaseText) {
                     "Restoring" { $percentComplete = 20 }
