@@ -3,3 +3,5 @@ release/
 out/
 json/
 OnCommand-Insight-Examples.ps1
+demodb/
+installer/
