@@ -31353,6 +31353,8 @@ function Global:Restore-OciBackup {
         foreach ($FilePath in $FilePath) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/restore"
 
+            $FilePath = Get-Item $FilePath
+
             if (Test-Path $FilePath) {
                 Write-Host "Found local OCI Backup in $FilePath which will be restored"
                 
