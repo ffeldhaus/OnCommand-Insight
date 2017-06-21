@@ -55,7 +55,6 @@
     $Result = Invoke-RestMethod @UploadParams
 }
 
-
 <#
 .SYNOPSIS
 Generates a manifest for the module and bundles all of the module source files and manifest into a distributable ZIP file.
@@ -226,6 +225,23 @@ function Invoke-OciTests {
     if ($Result.FailedCount -gt 0) {
         Write-Error "Aborting due to test errors"
     }
+}
+
+function Install-OciServer {
+    $installerPath = Join-Path $PSScriptRoot 'installer'
+    $installerFile = Get-Item "$installerPath/*.msi" | select -first 1
+    $DataStamp = get-date -Format yyyyMMddTHHmmss
+    $logFile = Join-Path $installerPath ('{0}-{1}.log' -f $installerFile.BaseName,$DataStamp)
+    $MSIArguments = @(
+        "/i"
+        ('"{0}"' -f $installerFile.fullname)
+        "/qn"
+        "/norestart"
+        "/L*v"
+        "SKIP_SYSTEM_MEMORY_VALIDATION=1"
+        ('"{0}"' -f $logFile)
+    )
+    Start-Process "msiexec.exe" -ArgumentList $MSIArguments -Wait -verb RunAs
 }
 
 function Get-OciCmdlets {
