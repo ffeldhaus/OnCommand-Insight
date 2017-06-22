@@ -5,6 +5,12 @@ if (!$OciServerName) {
     $OciCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "admin",("admin123" | ConvertTo-SecureString -AsPlainText -Force)
 }
 
+# Constants
+
+$REGEX_STRING_HOSTNAME_IP = "([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*"
+$REGEX_HOSTNAME_IP = "^$REGEX_STRING_HOSTNAME_IP$"
+$REGEX_LIST_OF_HOSTNAME_IP = "^$REGEX_STRING_HOSTNAME_IP(,$REGEX_STRING_HOSTNAME_IP)*$"
+
 Write-Host "Running tests against OCI Server $OciServerName"
 
 ### functions for validating OCI objects
@@ -148,7 +154,7 @@ function ValidateDatasource {
             $Datasource.statusText | Should Match ".*"
             $Datasource.pollStatus | Should Match "[A-Z]+"
             $Datasource.vendor | Should Match ".+"
-            $Datasource.foundationIp | Should Match "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"
+            $Datasource.foundationIp | Should Match $REGEX_HOSTNAME_IP
             $Datasource.lastSuccessfullyAccquired | Should BeLessThan (Get-Date)
             if ($Datasource.resumeTime) {
                 $Datasource.resumeTime | Should BeGreaterThan (Get-Date)
@@ -225,7 +231,7 @@ function ValidateDatasourceTypePackage {
     )
 
         Process {
-            $DatasourcePackage.id | Should Match 'cloud|performance|hostvirtualization|storageperformance|foundation'
+            $DatasourcePackage.id | Should Match 'cloud|performance|hostvirtualization|storageperformance|foundation|integration'
             $DatasourcePackage.displayName | Should Match '.+'
             $DatasourcePackage.isMandatory | Should BeOfType Boolean
             $DatasourcePackage.attributes | ValidateDatasourceTypePackageAttribute
@@ -375,7 +381,7 @@ function ValidateDevice {
             $Device.id | Should BeGreaterThan 0
             $Device.name | Should Match '.+'
             $Device.simpleName | Should Match '.+'
-            $Device.ip | Should Match '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+,?)+'
+            $Device.ip | Should Match $REGEX_LIST_OF_HOSTNAME_IP
             $Device.type | Should Match 'SWITCH|STORAGE|HOST'
             $Device.wwn | Should Match '.*'
             $Device.description | Should Match '.+'
@@ -1006,7 +1012,7 @@ Describe "Datasource management" {
             $Datasources | Should Not BeNullOrEmpty
 
             foreach ($Datasource in $Datasources) {
-                $CurrentPollInterval = $Datasource.config.foundation.attributes.poll
+                $CurrentPollInterval = 0 + $Datasource.config.foundation.attributes.poll
                 $NewPollInterval = $CurrentPollInterval + 120
 
                 $Datasource.config.foundation.attributes.poll = $NewPollInterval
