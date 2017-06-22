@@ -254,7 +254,7 @@ function ParseExceptionBody($Response) {
     }
 }
 
-function ParseAcquisitionUnits($AcquisitionUnits) {
+function ParseAcquisitionUnits($AcquisitionUnits,$Timezone) {
     $AcquisitionUnits = @($AcquisitionUnits)
     foreach ($AcquisitionUnit in $AcquisitionUnits) {
         if ($AcquisitionUnit.nextLeaseRenewal) {
@@ -273,7 +273,7 @@ function ParseAcquisitionUnits($AcquisitionUnits) {
     }
 }
 
-function ParseActivePatches($ActivePatches) {
+function ParseActivePatches($ActivePatches,$Timezone) {
     $ActivePatches = @($ActivePatches)
     foreach ($ActivePatch in $ActivePatches) {
         if ($ActivePatch.createTime) {
@@ -287,7 +287,7 @@ function ParseActivePatches($ActivePatches) {
     }
 }
 
-function ParseDatasources($Datasources) {
+function ParseDatasources($Datasources,$Timezone) {
     $Datasources = @($Datasources)
     foreach ($Datasource in $Datasources) {
         if ($Datasource.lastSuccessfullyAcquired) {
@@ -298,25 +298,25 @@ function ParseDatasources($Datasources) {
             $Datasource.resumeTime = $Datasource.resumeTime | Get-Date
         }
         if ($Datasource.AcquisitionUnit) {
-            $Datasource.AcquisitionUnit = ParseAcquisitionUnits($Datasource.AcquisitionUnit)
+            $Datasource.AcquisitionUnit = ParseAcquisitionUnits $Datasource.AcquisitionUnit
         }
         if ($Datasource.Changes) {
-            $Datasource.Changes = ParseChanges($Datasource.Changes)
+            $Datasource.Changes = ParseChanges $Datasource.Changes
         }
         if ($Datasource.Events) {
-            $Datasource.Events = ParseEvents($Datasource.Events)
+            $Datasource.Events = ParseEvents $Datasource.Events
         }
         if ($Datasource.activePatch) {
-            $Datasource.activePatch = ParseActivePatches($Datasource.activePatch)
+            $Datasource.activePatch = ParseActivePatches $Datasource.activePatch
         }
         if ($Datasource.config) {
-            $Datasource.config = ParseDatasourceConfig($Datasource.config)
+            $Datasource.config = ParseDatasourceConfig $Datasource.config
         }
         Write-Output $Datasource
     }
 }
 
-function ParseDatasourceTypes($DatasourceTypes) {
+function ParseDatasourceTypes($DatasourceTypes,$Timezone) {
     $DatasourceTypes = @($DatasourceTypes)
     foreach ($DatasourceType in $DatasourceTypes) {
         Write-Output $DatasourceType
@@ -351,7 +351,7 @@ function ParseDatasourceConfig($DatasourceConfig) {
     }
 }
 
-function ParseChanges($Changes) {
+function ParseChanges($Changes,$Timezone) {
     $Changes = @($Changes)
     foreach ($Change in $Changes) {
         if ($Change.time) {
@@ -362,7 +362,7 @@ function ParseChanges($Changes) {
     }
 }
 
-function ParseEvents($Events) {
+function ParseEvents($Events,$Timezone) {
     $Events = @($Events)
     foreach ($Event in $Events) {
         if ($Event.StartTime) {
@@ -376,7 +376,7 @@ function ParseEvents($Events) {
     }
 }
 
-function ParseCertificates($Certificates) {
+function ParseCertificates($Certificates,$Timezone) {
     $Certificates = @($Certificates)
     foreach ($Certificate in $Certificates) {
         if ($Certificate.ExpirationDate) {
@@ -387,13 +387,13 @@ function ParseCertificates($Certificates) {
     }
 }
 
-function ParseLicenseStatus($LicenseStatus) {
+function ParseLicenseStatus($LicenseStatus,$Timezone) {
     $LicenseStatus.LicenseParts = ParseLicenses($LicenseStatus.LicenseParts)
 
     Write-Output $LicenseStatus
 }
 
-function ParseLicenses($Licenses) {
+function ParseLicenses($Licenses,$Timezone) {
     $Licenses = @($Licenses)
     foreach ($License in $Licenses) {
         if ($License.ExpirationDate) {
@@ -436,19 +436,19 @@ function ParseSwitches($Switches,$Timezone) {
             $Switch.performance = ParsePerformance $Switch.performance $Timezone
         }
         if ($Switch.fabric) {
-            $Switch.fabric = ParseFabrics($Switch.fabric)
+            $Switch.fabric = ParseFabrics $Switch.fabric
         }
         if ($Switch.ports) {
             $Switch.ports = ParsePorts $Switch.ports $Timezone
         }
         if ($Switch.annotations) {
-            $Switch.annotations = ParseAnnotations($Switch.annotations)
+            $Switch.annotations = ParseAnnotations $Switch.annotations
         }
         if ($Switch.datasources) {
-            $Switch.datasources = ParseDatasources($Switch.datasources)
+            $Switch.datasources = ParseDatasources $Switch.datasources
         }
         if ($Switch.applications) {
-            $Switch.applications = ParseApplications($Switch.applications)
+            $Switch.applications = ParseApplications $Switch.applications
         }
 
         Write-Output $Switch
@@ -602,10 +602,10 @@ function ParseVirtualMachines($VirtualMachines,$Timezone) {
             $VirtualMachine.performance = ParsePerformance $VirtualMachine.performance $Timezone
         }
         if ($VirtualMachine.vmdks) {
-            $VirtualMachine.vmdks = ParseVmdks($VirtualMachine.vmdks)
+            $VirtualMachine.vmdks = ParseVmdks $VirtualMachine.vmdks $Timezone
         }
         if ($VirtualMachine.host) {
-            $VirtualMachine.host = ParseHosts($VirtualMachine.host)
+            $VirtualMachine.host = ParseHosts $VirtualMachine.host $Timezone
         }
         if ($VirtualMachine.ports) {
             $VirtualMachine.ports = ParsePorts $VirtualMachine.ports $Timezone
@@ -614,19 +614,19 @@ function ParseVirtualMachines($VirtualMachines,$Timezone) {
             $VirtualMachine.dataStore = ParseDatastores $VirtualMachine.dataStore $Timezone
         }
         if ($VirtualMachine.applications) {
-            $VirtualMachine.applications = ParseApplications $VirtualMachine.applications
+            $VirtualMachine.applications = ParseApplications $VirtualMachine.applications $Timezone
         }
         if ($VirtualMachine.fileSystems) {
-            $VirtualMachine.fileSystems = ParseFileSystems($VirtualMachine.fileSystems)
+            $VirtualMachine.fileSystems = ParseFileSystems $VirtualMachine.fileSystems $Timezone
         }
         if ($VirtualMachine.storageResources) {
-            $VirtualMachine.storageResources = ParseStorageResources($VirtualMachine.storageResources)
+            $VirtualMachine.storageResources = ParseStorageResources $VirtualMachine.storageResources $Timezone
         }
         if ($VirtualMachine.annotations) {
-            $VirtualMachine.annotations = ParseAnnotations($VirtualMachine.annotations)
+            $VirtualMachine.annotations = ParseAnnotations $VirtualMachine.annotations $Timezone
         }
         if ($VirtualMachine.datasources) {
-            $VirtualMachine.datasources = ParseDatasources($VirtualMachine.datasources)
+            $VirtualMachine.datasources = ParseDatasources $VirtualMachine.datasources $Timezone
         }
 
         Write-Output $VirtualMachine
@@ -646,13 +646,13 @@ function ParseVmdks($Vmdks,$Timezone) {
             $vmdk.performance = ParsePerformance $vmdk.performance $Timezone
         }
         if ($vmdk.storageResources) {
-            $vmdk.storageResources = ParseStorageResources($vmdk.storageResources)
+            $vmdk.storageResources = ParseStorageResources $vmdk.storageResources $Timezone
         }
         if ($vmdk.annotations) {
-            $vmdk.annotations = ParseAnnotations($vmdk.annotations)
+            $vmdk.annotations = ParseAnnotations $vmdk.annotations $Timezone
         }
         if ($vmdk.datasources) {
-            $vmdk.datasources = ParseDatasources($vmdk.datasources)
+            $vmdk.datasources = ParseDatasources $vmdk.datasources $Timezone
         }
 
         Write-Output $vmdk
@@ -668,16 +668,16 @@ function ParseHosts($Hosts,$Timezone) {
             $HostInstance.performance = ParsePerformance $HostInstance.performance $Timezone
         }
         if ($HostInstance.storageResources) {
-            $HostInstance.storageResources = ParseStorageResources($HostInstance.storageResources)
+            $HostInstance.storageResources = ParseStorageResources $HostInstance.storageResources $Timezone
         }
         if ($HostInstance.fileSystems) {
-            $HostInstance.fileSystems = ParseFileSystems($HostInstance.fileSystems)
+            $HostInstance.fileSystems = ParseFileSystems $HostInstance.fileSystems $Timezone
         }
         if ($HostInstance.ports) {
             $HostInstance.ports = ParsePorts $HostInstance.ports $Timezone
         }
         if ($HostInstance.applications) {
-            $HostInstance.applications = ParseApplications($HostInstance.applications)
+            $HostInstance.applications = ParseApplications $HostInstance.applications $Timezone
         }
         if ($HostInstance.virtualMachines) {
             $HostInstance.virtualMachines = ParseVirtualMachines $HostInstance.virtualMachines $Timezone
@@ -686,36 +686,36 @@ function ParseHosts($Hosts,$Timezone) {
             $HostInstance.clusterHosts = ParseHosts $HostInstance.clusterHosts $Timezone
         }
         if ($HostInstance.annotations) {
-            $HostInstance.annotations = ParseAnnotations($HostInstance.annotations)
+            $HostInstance.annotations = ParseAnnotations $HostInstance.annotations $Timezone
         }
         if ($HostInstance.datasources) {
-            $HostInstance.datasources = ParseDatasources($HostInstance.datasources)
+            $HostInstance.datasources = ParseDatasources $HostInstance.datasources $Timezone
         }
 
         Write-Output $HostInstance
     }
 }
 
-function ParseTopologies($Topologies) {
+function ParseTopologies($Topologies,$Timezone) {
     foreach ($Topology in $Topologies) {
         if ($Topology.nodes) {
-            $Topology.nodes = ParseTopologyNodes($Topology.nodes)
+            $Topology.nodes = ParseTopologyNodes $Topology.nodes $Timezone
         }
         if ($Topology.links) {
-            $Topology.links = ParseTopologyLinks($Topology.links)
+            $Topology.links = ParseTopologyLinks $Topology.links $Timezone
         }
 
         Write-Output $Topology
     }
 }
 
-function ParseTopologyNodes($Nodes) {
+function ParseTopologyNodes($Nodes,$Timezone) {
     foreach ($Node in $Nodes) {
         Write-Output $Node
     }
 }
 
-function ParseTopologyLinks($Links) {
+function ParseTopologyLinks($Links,$Timezone) {
     foreach ($Link in $Links) {
         Write-Output $Link
     }
@@ -731,45 +731,45 @@ function ParsePorts($Ports,$Timezone) {
             $Port.performance = ParsePerformance $Port.performance $Timezone
         }
         if ($Port.device) {
-            $Port.device = ParseDevices($Port.device)
+            $Port.device = ParseDevices $Port.device $Timezone
         }
         if ($Port.fabrics) {
-            $Port.fabrics = ParseFabrics($Port.fabrics)
+            $Port.fabrics = ParseFabrics $Port.fabrics $Timezone
         }
         if ($Port.annotations) {
-            $Port.annotations = ParseAnnotations($Port.annotations)
+            $Port.annotations = ParseAnnotations $Port.annotations $Timezone
         }
         if ($Port.datasources) {
-            $Port.datasources = ParseDatasources($Port.datasources)
+            $Port.datasources = ParseDatasources $Port.datasources $Timezone
         }
         if ($Port.application) {
-            $Port.application = ParseApplication($Port.application)
+            $Port.application = ParseApplication $Port.application $Timezone
         }
 
         Write-Output $Port
     }
 }
 
-function ParseDevices($Device) {
+function ParseDevices($Device,$Timezone) {
     $Devices = @($Devices)
     foreach ($Device in $Devices) {
         if ($Device.performance) {
             $Device.performance = ParsePerformance $Device.performance $Timezone
         }
         if ($Device.device) {
-            $Device.device = ParseDevice($Device.device)
+            $Device.device = ParseDevice $Device.device $Timezone
         }
         if ($Device.fabrics) {
-            $Device.fabrics = ParseFabrics($Device.fabrics)
+            $Device.fabrics = ParseFabrics $Device.fabrics $Timezone
         }
         if ($Device.annotations) {
-            $Device.annotations = ParseAnnotations($Device.annotations)
+            $Device.annotations = ParseAnnotations $Device.annotations $Timezone
         }
         if ($Device.datasources) {
-            $Device.datasources = ParseDatasources($Device.datasources)
+            $Device.datasources = ParseDatasources $Device.datasources $Timezone
         }
         if ($Device.application) {
-            $Device.application = ParseApplication($Device.application)
+            $Device.application = ParseApplication $Device.application $Timezone
         }
 
         Write-Output $Device
@@ -809,28 +809,28 @@ function ParseComputeResources($ComputeResources,$Timezone) {
             $ComputeResource.performance = ParsePerformance $ComputeResource.performance $Timezone
         }
         if ($ComputeResource.storageResources) {
-            $ComputeResource.storageResources = ParseStorageResources($ComputeResource.storageResources)
+            $ComputeResource.storageResources = ParseStorageResources $ComputeResource.storageResources $Timezone
         }
         if ($ComputeResource.fileSystems) {
-            $ComputeResource.fileSystems = ParseFileSystems($ComputeResource.fileSystems)
+            $ComputeResource.fileSystems = ParseFileSystems $ComputeResource.fileSystems $Timezone
         }
         if ($ComputeResource.ports) {
             $ComputeResource.ports = ParsePorts $ComputeResource.ports $Timezone
         }
         if ($ComputeResource.applications) {
-            $ComputeResource.applications = ParseApplications($ComputeResource.applications)
+            $ComputeResource.applications = ParseApplications $ComputeResource.applications $Timezone
         }
         if ($ComputeResource.virtualMachines) {
             $ComputeResource.virtualMachines = ParseVirtualMachines $ComputeResource.virtualMachines $Timezone
         }
         if ($ComputeResource.clusterHosts) {
-            $ComputeResource.clusterHosts = ParseHosts($ComputeResource.clusterHosts)
+            $ComputeResource.clusterHosts = ParseHosts $ComputeResource.clusterHosts $Timezone
         }
         if ($ComputeResource.annotations) {
-            $ComputeResource.annotations = ParseAnnotations($ComputeResource.annotations)
+            $ComputeResource.annotations = ParseAnnotations $ComputeResource.annotations $Timezone
         }
         if ($ComputeResource.datasources) {
-            $ComputeResource.datasources = ParseDatasources($ComputeResource.datasources)
+            $ComputeResource.datasources = ParseDatasources $ComputeResource.datasources $Timezone
         }
 
         Write-Output $ComputeResource
@@ -850,22 +850,22 @@ function ParseStorageResources($StorageResources,$Timezone) {
             $StorageResource.computeResources = ParseComputeResources $StorageResource.computeResources $Timezone
         }
         if ($StorageResource.fileSystems) {
-            $StorageResource.fileSystems = ParseFileSystems($StorageResource.fileSystems)
+            $StorageResource.fileSystems = ParseFileSystems $StorageResource.fileSystems $Timezone
         }
         if ($StorageResource.storagePools) {
-            $StorageResource.storagePools = ParseStoragePools($StorageResource.storagePools)
+            $StorageResource.storagePools = ParseStoragePools $StorageResource.storagePools $Timezone
         }
         if ($StorageResource.applications) {
-            $StorageResource.applications = ParseApplications($StorageResource.applications)
+            $StorageResource.applications = ParseApplications $StorageResource.applications $Timezone
         }
         if ($StorageResource.virtualMachines) {
             $StorageResource.virtualMachines = ParseVirtualMachines $StorageResource.virtualMachines $Timezone
         }
         if ($StorageResource.annotations) {
-            $StorageResource.annotations = ParseAnnotations($StorageResource.annotations)
+            $StorageResource.annotations = ParseAnnotations $StorageResource.annotations $Timezone
         }
         if ($StorageResource.datasources) {
-            $StorageResource.datasources = ParseDatasources($StorageResource.datasources)
+            $StorageResource.datasources = ParseDatasources $StorageResource.datasources $Timezone
         }
 
         Write-Output $StorageResource
@@ -879,16 +879,16 @@ function ParseVolumes($Volumes,$Timezone) {
             $Volume.storage = ParseStorages $Volume.storage $Timezone
         }
         if ($Volume.computeResources) {
-            $Volume.computeResources = ParseComputeResources($Volume.computeResources)
+            $Volume.computeResources = ParseComputeResources $Volume.computeResources $Timezone
         }
         if ($Volume.storagePool) {
-            $Volume.storagePool = ParseStoragePools($Volume.storagePool)
+            $Volume.storagePool = ParseStoragePools $Volume.storagePool $Timezone
         }
         if ($Volume.virtualStoragePool) {
-            $Volume.virtualStoragePool = ParseStoragePools($Volume.virtualStoragePool)
+            $Volume.virtualStoragePool = ParseStoragePools $Volume.virtualStoragePool $Timezone
         }
         if ($Volume.qtrees) {
-            $Volume.qtrees = ParseAnnotations($Volume.qtrees)
+            $Volume.qtrees = ParseAnnotations $Volume.qtrees $Timezone
         }
         if ($Volume.internalVolume) {
             $Volume.internalVolume = ParseInternalVolumes $Volume.internalVolume $Timezone
@@ -897,7 +897,7 @@ function ParseVolumes($Volumes,$Timezone) {
             $Volume.dataStores = ParseDatastores $Volume.dataStores $Timezone
         }
         if ($Volume.annotations) {
-            $Volume.annotations = ParseAnnotations($Volume.annotations)
+            $Volume.annotations = ParseAnnotations $Volume.annotations $Timezone
         }
         if ($Volume.performance) {
             $Volume.performance = ParsePerformance $Volume.performance $Timezone
@@ -906,16 +906,16 @@ function ParseVolumes($Volumes,$Timezone) {
             $Volume.ports = ParsePorts $Volume.ports $Timezone
         }
         if ($Volume.storageNodes) {
-            $Volume.storageNodes = ParseStorageNodes($Volume.storageNodes)
+            $Volume.storageNodes = ParseStorageNodes $Volume.storageNodes $Timezone
         }
         if ($Volume.replicaSources) {
-            $Volume.replicaSources = ParseVolumes($Volume.replicaSources)
+            $Volume.replicaSources = ParseVolumes $Volume.replicaSources $Timezone
         }
         if ($Volume.applications) {
-            $Volume.applications = ParseApplications($Volume.applications)
+            $Volume.applications = ParseApplications $Volume.applications $Timezone
         }
         if ($Volume.datasources) {
-            $Volume.datasources = ParseDatasources($Volume.datasources)
+            $Volume.datasources = ParseDatasources $Volume.datasources $Timezone
         }
 
         Write-Output $Volume
@@ -929,45 +929,45 @@ function ParseInternalVolumes($InternalVolumes,$Timezone) {
             $InternalVolume.storage = ParseStorages $InternalVolume.storage $Timezone
         }
         if ($InternalVolume.computeResources) {
-            $InternalVolume.computeResources = ParseComputeResources($InternalVolume.computeResources)
+            $InternalVolume.computeResources = ParseComputeResources $InternalVolume.computeResources $Timezone
         }
         if ($InternalVolume.storagePool) {
-            $InternalVolume.storagePool = ParseStoragePools($InternalVolume.storagePool)
+            $InternalVolume.storagePool = ParseStoragePools $InternalVolume.storagePool $Timezone
         }
         if ($InternalVolume.performance) {
             $InternalVolume.performance = ParsePerformance $InternalVolume.performance $Timezone
         }
         if ($InternalVolume.volumes) {
-            $InternalVolume.volumes = ParseVolumes($InternalVolume.volumes)
+            $InternalVolume.volumes = ParseVolumes $InternalVolume.volumes $Timezone
         }
         if ($InternalVolume.storageNodes) {
-            $InternalVolume.storageNodes = ParseStorageNodes($InternalVolume.storageNodes)
+            $InternalVolume.storageNodes = ParseStorageNodes $InternalVolume.storageNodes $Timezone
         }
         if ($InternalVolume.datasources) {
-            $InternalVolume.datasources = ParseDatasources($InternalVolume.datasources)
+            $InternalVolume.datasources = ParseDatasources $InternalVolume.datasources $Timezone
         }
         if ($InternalVolume.datastores) {
             $InternalVolume.datastores = ParseDatastores $InternalVolume.datastores $Timezone
         }
         if ($InternalVolume.applications) {
-            $InternalVolume.applications = ParseApplications($InternalVolume.applications)
+            $InternalVolume.applications = ParseApplications $InternalVolume.applications $Timezone
         }
         if ($InternalVolume.annotations) {
-            $InternalVolume.annotations = ParseAnnotations($InternalVolume.annotations)
+            $InternalVolume.annotations = ParseAnnotations $InternalVolume.annotations $Timezone
         }
         if ($InternalVolume.qtrees) {
-            $InternalVolume.qtrees = ParseAnnotations($InternalVolume.qtrees)
+            $InternalVolume.qtrees = ParseAnnotations $InternalVolume.qtrees $Timezone
         }
 
         Write-Output $InternalVolume
     }
 }
 
-function ParseQtrees($Qtrees) {
+function ParseQtrees($Qtrees,$Timezone) {
     $Qtrees = @($Qtrees)
     foreach ($Qtree in $Qtrees) {
         if ($Qtree.quotaCapacity) {
-            $Qtree.quotaCapacity = ParseQuotaCapacities($Qtree.quotaCapacity)
+            $Qtree.quotaCapacity = ParseQuotaCapacities $Qtree.quotaCapacity $Timezone
         }
         if ($Qtree.storage) {
             $Qtree.storage = ParseStorages $Qtree.storage $Timezone
@@ -976,37 +976,37 @@ function ParseQtrees($Qtrees) {
             $Qtree.internalVolume = ParseInternalVolumes $Qtree.internalVolume $Timezone
         }
         if ($Qtree.shares) {
-            $Qtree.shares = ParseShares($Qtree.shares)
+            $Qtree.shares = ParseShares $Qtree.shares $Timezone
         }
         if ($Qtree.annotations) {
-            $Qtree.annotations = ParseAnnotations($Qtree.annotations)
+            $Qtree.annotations = ParseAnnotations $Qtree.annotations $Timezone
         }
         if ($Qtree.applications) {
-            $Qtree.applications = ParseApplications($Qtree.applications)
+            $Qtree.applications = ParseApplications $Qtree.applications $Timezone
         }
         if ($Qtree.volumes) {
-            $Qtree.volumes = ParseVolumes($Qtree.volumes)
+            $Qtree.volumes = ParseVolumes $Qtree.volumes $Timezone
         }
 
         Write-Output $Qtree
     }
 }
 
-function ParseQuotaCapacities($QuotaCapacities) {
+function ParseQuotaCapacities($QuotaCapacities,$Timezone) {
     $QuotaCapacities = @($QuotaCapacities)
     foreach ($QuotaCapacity in $QuotaCapacities) {
         Write-Output $QuotaCapacity
     }
 }
 
-function ParseShares($Qtrees) {
+function ParseShares($Shares,$Timezone) {
     $Shares = @($Shares)
     foreach ($Share in $Shares) {
         Write-Output $Share
     }
 }
 
-function ParseStoragePools($StoragePools) {
+function ParseStoragePools($StoragePools,$Timezone) {
     $StoragePools = @($StoragePools)
     foreach ($StoragePool in $StoragePools) {
         if ($StoragePool.performance) {
@@ -1016,25 +1016,25 @@ function ParseStoragePools($StoragePools) {
             $StoragePool.storage = ParseStorages $StoragePool.storage $Timezone
         }
         if ($StoragePool.disks) {
-            $StoragePool.disks = ParseDisks($StoragePool.disks)
+            $StoragePool.disks = ParseDisks $StoragePool.disks $Timezone
         }
         if ($StoragePool.storageResources) {
-            $StoragePool.storageResources = ParseStorageResources($StoragePool.storageResources)
+            $StoragePool.storageResources = ParseStorageResources $StoragePool.storageResources $Timezone
         }
         if ($StoragePool.internalVolumes) {
             $StoragePool.internalVolumes = ParseInternalVolumes $StoragePool.internalVolumes $Timezone
         }
         if ($StoragePool.volumes) {
-            $StoragePool.volumes = ParseVolumes($StoragePool.volumes)
+            $StoragePool.volumes = ParseVolumes $StoragePool.volumes $Timezone
         }
         if ($StoragePool.storageNodes) {
-            $StoragePool.storageNodes = ParseStorageNodes($StoragePool.storageNodes)
+            $StoragePool.storageNodes = ParseStorageNodes $StoragePool.storageNodes $Timezone
         }
         if ($StoragePool.datasources) {
-            $StoragePool.datasources = ParseDatasources($StoragePool.datasources)
+            $StoragePool.datasources = ParseDatasources $StoragePool.datasources $Timezone
         }
         if ($StoragePool.annotations) {
-            $StoragePool.annotations = ParseAnnotations($StoragePool.annotations)
+            $StoragePool.annotations = ParseAnnotations $StoragePool.annotations $Timezone
         }
 
         Write-Output $StoragePool
@@ -1048,40 +1048,40 @@ function ParseStorages($Storages, $Timezone) {
             $Storage.createTime = $Storage.createTime | Get-Date
         }
         if ($Storage.storageNodes) {
-            $Storage.storageNodes = ParseStorageNodes($Storage.storageNodes)
+            $Storage.storageNodes = ParseStorageNodes $Storage.storageNodes $Timezone
         }
         if ($Storage.storagePools) {
-            $Storage.storagePools = ParseStoragePools($Storage.storagePools)
+            $Storage.storagePools = ParseStoragePools $Storage.storagePools $Timezone
         }
         if ($Storage.storageResources) {
-            $Storage.storageResources = ParseStorageResources($Storage.storageResources)
+            $Storage.storageResources = ParseStorageResources $Storage.storageResources $Timezone
         }
         if ($Storage.internalVolumes) {
             $Storage.internalVolumes = ParseInternalVolumes $Storage.internalVolumes $Timezone
         }
         if ($Storage.volumes) {
-            $Storage.volumes = ParseVolumes($Storage.volumes)
+            $Storage.volumes = ParseVolumes $Storage.volumes $Timezone
         }
         if ($Storage.disks) {
-            $Storage.disks = ParseDisks($Storage.disks)
+            $Storage.disks = ParseDisks $Storage.disks $Timezone
         }
         if ($Storage.datasources) {
-            $Storage.datasources = ParseDatasources($Storage.datasources)
+            $Storage.datasources = ParseDatasources $Storage.datasources $Timezone
         }
         if ($Storage.ports) {
             $Storage.ports = ParsePorts $Storage.ports $Timezone
         }
         if ($Storage.annotations) {
-            $Storage.annotations = ParseAnnotations($Storage.annotations)
+            $Storage.annotations = ParseAnnotations $Storage.annotations $Timezone
         }
         if ($Storage.qtrees) {
-            $Storage.qtrees = ParseQtrees($Storage.qtrees)
+            $Storage.qtrees = ParseQtrees $Storage.qtrees $Timezone
         }
         if ($Storage.shares) {
-            $Storage.shares = ParseShares($Storage.shares)
+            $Storage.shares = ParseShares $Storage.shares $Timezone
         }
         if ($Storage.applications) {
-            $Storage.applications = ParseApplications($Storage.applications)
+            $Storage.applications = ParseApplications $Storage.applications $Timezone
         }
         if ($Storage.performance) {
             $Storage.performance = ParsePerformance $Storage.performance $Timezone
@@ -1091,7 +1091,7 @@ function ParseStorages($Storages, $Timezone) {
     }
 }
 
-function ParseStorageNodes($StorageNodes) {
+function ParseStorageNodes($StorageNodes,$Timezone) {
     $StorageNodes = @($StorageNodes)
     foreach ($StorageNode in $StorageNodes) {
         if ($StorageNode.performance) {
@@ -1102,7 +1102,7 @@ function ParseStorageNodes($StorageNodes) {
     }
 }
 
-function ParseDisks($Disks) {
+function ParseDisks($Disks,$Timezone) {
     $Disks = @($Disks)
     foreach ($Disk in $Disks) {
         if ($Disk.performance) {
@@ -1112,37 +1112,37 @@ function ParseDisks($Disks) {
             $Disk.storage = ParseStorages $Disk.storage $Timezone
         }
         if ($Disk.storageResources) {
-            $Disk.storageResources = ParseStorageResources($Disk.storageResources)
+            $Disk.storageResources = ParseStorageResources $Disk.storageResources $Timezone
         }
         if ($Disk.backendVolumes) {
-            $Disk.backendVolumes = ParseVolumes($Disk.backendVolumes)
+            $Disk.backendVolumes = ParseVolumes $Disk.backendVolumes $Timezone
         }
         if ($Disk.datasources) {
-            $Disk.datasources = ParseDatasources($Disk.datasources)
+            $Disk.datasources = ParseDatasources $Disk.datasources $Timezone
         }
         if ($Disk.annotations) {
-            $Disk.annotations = ParseAnnotations($Disk.annotations)
+            $Disk.annotations = ParseAnnotations $Disk.annotations $Timezone
         }
 
         Write-Output $Disk
     }
 }
 
-function ParseFabrics($Fabrics) {
+function ParseFabrics($Fabrics,$Timezone) {
     $Fabrics = @($Fabrics)
     foreach ($Fabric in $Fabrics) {
         if ($Fabric.datasources) {
-            $Fabric.datasources = ParseDatasources($Fabric.datasources)
+            $Fabric.datasources = ParseDatasources $Fabric.datasources $Timezone
         }
         if ($Fabric.switches) {
-            $Fabric.switches = ParseDatasources($Fabric.switches)
+            $Fabric.switches = ParseDatasources $Fabric.switches $Timezone
         }
 
         Write-Output $Fabric
     }
 }
 
-function ParsePatchStatus($PatchStatus) {
+function ParsePatchStatus($PatchStatus,$Timezone) {
     $PatchStatus = @($PatchStatus)
     foreach ($PatchStatus in $PatchStatus) {
         if ($PatchStatus.createTime) {
