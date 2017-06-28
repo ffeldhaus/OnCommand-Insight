@@ -6242,8 +6242,14 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
                     HelpMessage="Id of application to un-assign from assets",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+		[parameter(Mandatory=$True,
+                    Position=1,
+                    HelpMessage="Array of OCI Object IDs to remove from the Application.")][String[]]$Assets,
+		[parameter(Mandatory=$True,
+                    Position=2,
+                    HelpMessage="Type of OCI asset to update VirtualMachine, Host etc..")][String]$AssetType,
         [parameter(Mandatory=$False,
-                   Position=1,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
 
@@ -6268,6 +6274,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
 
     Process {
         $id = @($id)
+		$Targets = @($Assets)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
 
@@ -6288,13 +6295,11 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
             }
 
             try {
-                if ('DELETE' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
-                }
+				$Body = @{objectType=$AssetType;targets=$Targets} | ConvertTo-Json -Compress
+				$Body = $Body.Insert(0,'[')
+				$Body = $Body.Insert($Body.Length,']')
+                Write-Verbose "Body: "
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -6427,16 +6432,34 @@ function Global:Bulk-OciAssignApplicationToAssets {
         [parameter(Mandatory=$True,
                     Position=0,
                     HelpMessage="Id of application to assign to assets",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][Long[]]$id
+                    ValueFromPipeline=$False,
+                    ValueFromPipelineByPropertyName=$False)][Long[]]$id,
+		[parameter(Mandatory=$True,
+                    Position=1,
+                    HelpMessage="Array of OCI Object IDs to add the Application to.")][String[]]$Assets,
+		[parameter(Mandatory=$True,
+                    Position=2,
+                    HelpMessage="Type of OCI asset to update VirtualMachine, Host etc..")][String]$AssetType,
+		[parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
+<<<<<<< HEAD
+	
+     Begin {
+=======
 
     Begin {
+>>>>>>> 04540609fec2a940e5b36aa2da97f87bc7725d7d
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
+		if (!$assets) {
+            throw "No Assets specified!"
+        }
+		
         $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -6452,9 +6475,15 @@ function Global:Bulk-OciAssignApplicationToAssets {
 
     Process {
         $id = @($id)
+		$Targets = @($Assets)
         foreach ($id in $id) {
+<<<<<<< HEAD
+		    $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
+ 
+=======
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
 
+>>>>>>> 04540609fec2a940e5b36aa2da97f87bc7725d7d
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6472,14 +6501,12 @@ function Global:Bulk-OciAssignApplicationToAssets {
             }
 
             try {
-                if ('PATCH' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
+				$Body = @{objectType=$AssetType;targets=$Targets} | ConvertTo-Json -Compress
+				$Body = $Body.Insert(0,'[')
+				$Body = $Body.Insert($Body.Length,']')
+                Write-Verbose "Body: $Body"
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri  -Body $Body -Headers $Server.Headers -ContentType 'application/json'
                 }
-                else {
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers
-                }
-            }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
