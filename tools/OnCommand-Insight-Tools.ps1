@@ -73,7 +73,8 @@ function New-OciRelease {
         [Parameter(Mandatory = $false)][switch]$Major,
         [Parameter(Mandatory = $false)][switch]$Minor,
         [Parameter(Mandatory = $false)][switch]$Build,
-        [Parameter(Mandatory = $false)][switch]$Release
+        [Parameter(Mandatory = $false)][switch]$Release,
+        [Parameter(Mandatory = $true)][X509Certificate]$Certificate
     )
 
     $ErrorActionPreference = "Stop"
@@ -161,8 +162,7 @@ function New-OciRelease {
     Write-Host "Signing PowerShell files..."
 
     # Code Signing
-    $cert = Get-ChildItem cert:\CurrentUser\My -CodeSigningCert
-    Get-ChildItem $dst\*.ps*  | % { $_.FullName } | Set-AuthenticodeSignature -Certificate $cert -TimestampServer "http://timestamp.verisign.com/scripts/timestamp.dll" | Out-Null
+    Get-ChildItem $dst\*.ps*  | % { $_.FullName } | Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer "http://timestamp.comodoca.com/authenticode" | Out-Null
     
     Write-Host "Creating the release archive..."
 
