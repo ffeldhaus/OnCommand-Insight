@@ -24,22 +24,22 @@ if ($PSVersionTable.PSVersion.Major -lt 6) {
     # Functions necessary to parse JSON output from .NET serializer to PowerShell Objects
     function ParseItem($jsonItem) {
         if($jsonItem.PSObject.TypeNames -match "Array") {
-            return ParseJsonArray($jsonItem)
+            return ParseJsonArray -jsonArray $jsonItem
         }
         elseif($jsonItem.PSObject.TypeNames -match "Dictionary") {
-            return ParseJsonObject([HashTable]$jsonItem)
+            return ParseJsonObject -jsonObj [HashTable]$jsonItem
         }
         else {
             return $jsonItem
         }
     }
- 
+
     function ParseJsonObject($jsonObj) {
         $result = New-Object -TypeName PSCustomObject
         foreach ($key in $jsonObj.Keys) {
             $item = $jsonObj[$key]
             if ($item) {
-                $parsedItem = ParseItem $item
+                $parsedItem = ParseItem -jsonItem $item
             } else {
                 $parsedItem = $null
             }
@@ -47,22 +47,22 @@ if ($PSVersionTable.PSVersion.Major -lt 6) {
         }
         return $result
     }
- 
+
     function ParseJsonArray($jsonArray) {
         $result = @()
         $jsonArray | ForEach-Object {
-            $result += ,(ParseItem $_)
+            $result += ,(ParseItem -jsonItem $_)
         }
         return $result
     }
- 
+
     function ParseJsonString($json) {
         $config = $javaScriptSerializer.DeserializeObject($json)
         if ($config -is [Array]) {
-            return ParseJsonArray($config)       
+            return ParseJsonArray -jsonArray $config
         }
         else {
-            return ParseJsonObject($config)
+            return ParseJsonObject -jsonObj $config
         }
     }
 }
@@ -95,7 +95,7 @@ function global:Invoke-MultipartFormDataUpload
         Add-Type -AssemblyName System.Web
 
         $mimeType = [System.Web.MimeMapping]::GetMimeMapping($InFile)
-            
+
         if ($mimeType)
         {
             $ContentType = $mimeType
@@ -121,7 +121,7 @@ function global:Invoke-MultipartFormDataUpload
         $httpClient.Timeout = 864000000000
 
         $packageFileStream = New-Object System.IO.FileStream @($InFile, [System.IO.FileMode]::Open)
-        
+
 		$contentDispositionHeaderValue = New-Object System.Net.Http.Headers.ContentDispositionHeaderValue "form-data"
 	    $contentDispositionHeaderValue.Name = $Name
 		$contentDispositionHeaderValue.FileName = (Split-Path $InFile -leaf)
@@ -129,7 +129,7 @@ function global:Invoke-MultipartFormDataUpload
         $streamContent = New-Object System.Net.Http.StreamContent $packageFileStream
         $streamContent.Headers.ContentDisposition = $contentDispositionHeaderValue
         $streamContent.Headers.ContentType = New-Object System.Net.Http.Headers.MediaTypeHeaderValue $ContentType
-        
+
         $content = New-Object System.Net.Http.MultipartFormDataContent
         $content.Add($streamContent)
 
@@ -171,7 +171,7 @@ function global:Invoke-MultipartFormDataUpload
 # helper function to convert datetime to unix timestamp
 function ConvertTo-UnixTimestamp {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -181,7 +181,7 @@ function ConvertTo-UnixTimestamp {
     )
 
     BEGIN {
-        $epoch = Get-Date -Year 1970 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0  
+        $epoch = Get-Date -Year 1970 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0
     }
 
     PROCESS {
@@ -190,10 +190,10 @@ function ConvertTo-UnixTimestamp {
         foreach ($Date in $Date) {
                 $milliSeconds = [math]::truncate($Date.ToUniversalTime().Subtract($epoch).TotalMilliSeconds)
                 Write-Output $milliSeconds
-        }    
-    } 
+        }
+    }
 }
- 
+
 # helper function to convert unix timestamp to datetime
 function ConvertFrom-UnixTimestamp {
     [CmdletBinding()]
@@ -231,7 +231,7 @@ function ConvertTo-AnnotationValues {
           )
 
     PROCESS {
-        $AnnotationValues = $Annotations | ? { $_.label } | % { [PSCustomObject]@{rawValue=$_.rawValue;label=$_.label;isDerived=$false;annotationAssignment="MANUAL";definition=$_} | Add-Member -MemberType AliasProperty -Name displayValue -Value rawValue -PassThru }
+        $AnnotationValues = $Annotations | Where-Object { $_.label } | ForEach-Object { [PSCustomObject]@{rawValue=$_.rawValue;label=$_.label;isDerived=$false;annotationAssignment="MANUAL";definition=$_} | Add-Member -MemberType AliasProperty -Name displayValue -Value rawValue -PassThru }
         Write-Output $AnnotationValues
     }
 }
@@ -266,8 +266,8 @@ function ParseAcquisitionUnits($AcquisitionUnits,$Timezone) {
         }
 
         if ($AcquisitionUnit.datasources) {
-            $AcquisitionUnit.datasources = ParseDatasources($AcquisitionUnit.datasources)
-        } 
+            $AcquisitionUnit.datasources = ParseDatasources -Datasources $AcquisitionUnit.datasources -Timezone $Timezone
+        }
 
         Write-Output $AcquisitionUnit
     }
@@ -298,19 +298,19 @@ function ParseDatasources($Datasources,$Timezone) {
             $Datasource.resumeTime = $Datasource.resumeTime | Get-Date
         }
         if ($Datasource.AcquisitionUnit) {
-            $Datasource.AcquisitionUnit = ParseAcquisitionUnits $Datasource.AcquisitionUnit
+            $Datasource.AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Datasource.AcquisitionUnit
         }
         if ($Datasource.Changes) {
-            $Datasource.Changes = ParseChanges $Datasource.Changes
+            $Datasource.Changes = ParseChanges -Changes $Datasource.Changes
         }
         if ($Datasource.Events) {
-            $Datasource.Events = ParseEvents $Datasource.Events
+            $Datasource.Events = ParseEvents -Events $Datasource.Events
         }
         if ($Datasource.activePatch) {
-            $Datasource.activePatch = ParseActivePatches $Datasource.activePatch
+            $Datasource.activePatch = ParseActivePatches -ActivePatches $Datasource.activePatch
         }
         if ($Datasource.config) {
-            $Datasource.config = ParseDatasourceConfig $Datasource.config
+            $Datasource.config = ParseDatasourceConfig -DatasourceConfig $Datasource.config
         }
         Write-Output $Datasource
     }
@@ -326,8 +326,8 @@ function ParseDatasourceTypes($DatasourceTypes,$Timezone) {
 function ParseDatasourceConfig($DatasourceConfig) {
     $DatasourceConfig = @($DatasourceConfig)
     foreach ($DatasourceConfig in $DatasourceConfig) {
-        if ($DatasourceConfig.packages | ? { $_.id -eq "foundation" }) {
-            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "foundation" -Value { $this.packages | ? { $_.id -eq "foundation" } }
+        if ($DatasourceConfig.packages | Where-Object { $_.id -eq "foundation" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "foundation" -Value { $this.packages | Where-Object { $_.id -eq "foundation" } }
             if (!$DatasourceConfig.foundation.attributes.password) {
                 $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name password -Value "" -force
             }
@@ -335,17 +335,17 @@ function ParseDatasourceConfig($DatasourceConfig) {
                 $DatasourceConfig.foundation.attributes | Add-Member -MemberType NoteProperty -Name 'partner.password' -Value "" -force
             }
         }
-        if ($DatasourceConfig.packages | ? { $_.id -eq "storageperformance" }) {
-            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "storageperformance" -Value { $this.packages | ? { $_.id -eq "storageperformance" } }
+        if ($DatasourceConfig.packages | Where-Object { $_.id -eq "storageperformance" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "storageperformance" -Value { $this.packages | Where-Object { $_.id -eq "storageperformance" } }
         }
-        if ($DatasourceConfig.packages | ? { $_.id -eq "hostvirtualization" }) {
-            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "hostvirtualization" -Value { $this.packages | ? { $_.id -eq "hostvirtualization" } }
+        if ($DatasourceConfig.packages | Where-Object { $_.id -eq "hostvirtualization" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "hostvirtualization" -Value { $this.packages | Where-Object { $_.id -eq "hostvirtualization" } }
         }
-        if ($DatasourceConfig.packages | ? { $_.id -eq "performance" }) {
-            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "performance" -Value { $this.packages | ? { $_.id -eq "performance" } }
+        if ($DatasourceConfig.packages | Where-Object { $_.id -eq "performance" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "performance" -Value { $this.packages | Where-Object { $_.id -eq "performance" } }
         }
-        if ($DatasourceConfig.packages | ? { $_.id -eq "cloud" }) {
-            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "cloud" -Value { $this.packages | ? { $_.id -eq "cloud" } }
+        if ($DatasourceConfig.packages | Where-Object { $_.id -eq "cloud" }) {
+            $DatasourceConfig | Add-Member -MemberType ScriptProperty -Name "cloud" -Value { $this.packages | Where-Object { $_.id -eq "cloud" } }
         }
         Write-Output $DatasourceConfig
     }
@@ -388,7 +388,7 @@ function ParseCertificates($Certificates,$Timezone) {
 }
 
 function ParseLicenseStatus($LicenseStatus,$Timezone) {
-    $LicenseStatus.LicenseParts = ParseLicenses($LicenseStatus.LicenseParts)
+    $LicenseStatus.LicenseParts = ParseLicenses -Licenses $LicenseStatus.LicenseParts
 
     Write-Output $LicenseStatus
 }
@@ -419,7 +419,7 @@ function ParseDatastores($Datastores,$Timezone) {
     $Datastores = @($Datastores)
     foreach ($Datastore in $Datastores) {
         if ($Datastore.performance) {
-            $Datastore.performance = ParsePerformance $Datastore.performance $Timezone
+            $Datastore.performance = ParsePerformance -Performance $Datastore.performance -Timezone $Timezone
         }
 
         Write-Output $Datastore
@@ -433,22 +433,22 @@ function ParseSwitches($Switches,$Timezone) {
             $Switch.createTime = $Switch.createTime | Get-Date
         }
         if ($Switch.performance) {
-            $Switch.performance = ParsePerformance $Switch.performance $Timezone
+            $Switch.performance = ParsePerformance -Performance $Switch.performance -Timezone $Timezone
         }
         if ($Switch.fabric) {
-            $Switch.fabric = ParseFabrics $Switch.fabric
+            $Switch.fabric = ParseFabrics -Fabrics $Switch.fabric
         }
         if ($Switch.ports) {
-            $Switch.ports = ParsePorts $Switch.ports $Timezone
+            $Switch.ports = ParsePorts -Ports $Switch.ports -Timezone $Timezone
         }
         if ($Switch.annotations) {
-            $Switch.annotations = ParseAnnotations $Switch.annotations
+            $Switch.annotations = ParseAnnotations -Annotations $Switch.annotations
         }
         if ($Switch.datasources) {
-            $Switch.datasources = ParseDatasources $Switch.datasources
+            $Switch.datasources = ParseDatasources -Datasources $Switch.datasources
         }
         if ($Switch.applications) {
-            $Switch.applications = ParseApplications $Switch.applications
+            $Switch.applications = ParseApplications -Applications $Switch.applications
         }
 
         Write-Output $Switch
@@ -457,125 +457,125 @@ function ParseSwitches($Switches,$Timezone) {
 
 function ParsePerformance($Performance,$Timezone) {
     if ($Performance.accessed) {
-        $Performance.accessed.start = $Performance.accessed.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.accessed.end = $Performance.accessed.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.accessed.start = $Performance.accessed.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.accessed.end = $Performance.accessed.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.cacheHitRatio) {
         if ($Performance.cacheHitRatio.read) {
-            $Performance.cacheHitRatio.read.start = $Performance.cacheHitRatio.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-            $Performance.cacheHitRatio.read.end = $Performance.cacheHitRatio.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.read.start = $Performance.cacheHitRatio.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.read.end = $Performance.cacheHitRatio.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
         }
         if ($Performance.cacheHitRatio.write) {
-            $Performance.cacheHitRatio.write.start = $Performance.cacheHitRatio.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-            $Performance.cacheHitRatio.write.end = $Performance.cacheHitRatio.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.write.start = $Performance.cacheHitRatio.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.write.end = $Performance.cacheHitRatio.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
         }
         if ($Performance.cacheHitRatio.total) {
-            $Performance.cacheHitRatio.total.start = $Performance.cacheHitRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-            $Performance.cacheHitRatio.total.end = $Performance.cacheHitRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.total.start = $Performance.cacheHitRatio.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+            $Performance.cacheHitRatio.total.end = $Performance.cacheHitRatio.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
         }
     }
     if ($Performance.cpuUtilization) {
-        $Performance.cpuUtilization.total.start = $Performance.cpuUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.cpuUtilization.total.end = $Performance.cpuUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.cpuUtilization.total.start = $Performance.cpuUtilization.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.cpuUtilization.total.end = $Performance.cpuUtilization.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.diskIops) {
-        $Performance.diskIops.read.start = $Performance.diskIops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskIops.read.end = $Performance.diskIops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskIops.write.start = $Performance.diskIops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskIops.write.end = $Performance.diskIops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskIops.totalMax.start = $Performance.diskIops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskIops.totalMax.end = $Performance.diskIops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskIops.total.start = $Performance.diskIops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskIops.total.end = $Performance.diskIops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.read.start = $Performance.diskIops.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.read.end = $Performance.diskIops.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.write.start = $Performance.diskIops.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.write.end = $Performance.diskIops.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.totalMax.start = $Performance.diskIops.totalMax.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.totalMax.end = $Performance.diskIops.totalMax.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.total.start = $Performance.diskIops.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskIops.total.end = $Performance.diskIops.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.diskLatency) {
-        $Performance.diskLatency.read.start = $Performance.diskLatency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskLatency.read.end = $Performance.diskLatency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskLatency.write.start = $Performance.diskLatency.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskLatency.write.end = $Performance.diskLatency.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskLatency.total.start = $Performance.diskLatency.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskLatency.total.end = $Performance.diskLatency.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskLatency.totalMax.start = $Performance.diskLatency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskLatency.totalMax.end = $Performance.diskLatency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.read.start = $Performance.diskLatency.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.read.end = $Performance.diskLatency.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.write.start = $Performance.diskLatency.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.write.end = $Performance.diskLatency.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.total.start = $Performance.diskLatency.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.total.end = $Performance.diskLatency.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.totalMax.start = $Performance.diskLatency.totalMax.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskLatency.totalMax.end = $Performance.diskLatency.totalMax.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.diskThroughput) {
-        $Performance.diskThroughput.read.start = $Performance.diskThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskThroughput.read.end = $Performance.diskThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskThroughput.write.start = $Performance.diskThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskThroughput.write.end = $Performance.diskThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskThroughput.totalMax.start = $Performance.diskThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskThroughput.totalMax.end = $Performance.diskThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskThroughput.total.start = $Performance.diskThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.diskThroughput.total.end = $Performance.diskThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.read.start = $Performance.diskThroughput.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.read.end = $Performance.diskThroughput.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.write.start = $Performance.diskThroughput.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.write.end = $Performance.diskThroughput.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.totalMax.start = $Performance.diskThroughput.totalMax.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.totalMax.end = $Performance.diskThroughput.totalMax.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.total.start = $Performance.diskThroughput.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.diskThroughput.total.end = $Performance.diskThroughput.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.fcWeightedPortBalanceIndex) {
-        $Performance.fcWeightedPortBalanceIndex.start = $Performance.fcWeightedPortBalanceIndex.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.fcWeightedPortBalanceIndex.end = $Performance.fcWeightedPortBalanceIndex.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.fcWeightedPortBalanceIndex.start = $Performance.fcWeightedPortBalanceIndex.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.fcWeightedPortBalanceIndex.end = $Performance.fcWeightedPortBalanceIndex.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.iops) {
-        $Performance.iops.read.start = $Performance.iops.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.iops.read.end = $Performance.iops.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.iops.write.start = $Performance.iops.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.iops.write.end = $Performance.iops.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.iops.totalMax.start = $Performance.iops.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.iops.totalMax.end = $Performance.iops.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.iops.total.start = $Performance.iops.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.iops.total.end = $Performance.iops.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.read.start = $Performance.iops.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.read.end = $Performance.iops.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.write.start = $Performance.iops.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.write.end = $Performance.iops.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.totalMax.start = $Performance.iops.totalMax.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.totalMax.end = $Performance.iops.totalMax.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.total.start = $Performance.iops.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.iops.total.end = $Performance.iops.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.ipThroughput) {
-        $Performance.ipThroughput.read.start = $Performance.ipThroughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.ipThroughput.read.end = $Performance.ipThroughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.ipThroughput.write.start = $Performance.ipThroughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.ipThroughput.write.end = $Performance.ipThroughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.ipThroughput.totalMax.start = $Performance.ipThroughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.ipThroughput.totalMax.end = $Performance.ipThroughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.ipThroughput.total.start = $Performance.ipThroughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.ipThroughput.total.end = $Performance.ipThroughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.read.start = $Performance.ipThroughput.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.read.end = $Performance.ipThroughput.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.write.start = $Performance.ipThroughput.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.write.end = $Performance.ipThroughput.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.totalMax.start = $Performance.ipThroughput.totalMax.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.totalMax.end = $Performance.ipThroughput.totalMax.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.total.start = $Performance.ipThroughput.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.ipThroughput.total.end = $Performance.ipThroughput.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.latency) {
-        $Performance.latency.read.start = $Performance.latency.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.latency.read.end = $Performance.latency.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.latency.write.start = $Performance.latency.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.latency.write.end = $Performance.latency.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.latency.total.start = $Performance.latency.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.latency.total.end = $Performance.latency.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.latency.totalMax.start = $Performance.latency.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.latency.totalMax.end = $Performance.latency.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.read.start = $Performance.latency.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.read.end = $Performance.latency.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.write.start = $Performance.latency.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.write.end = $Performance.latency.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.total.start = $Performance.latency.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.total.end = $Performance.latency.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.totalMax.start = $Performance.latency.totalMax.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.latency.totalMax.end = $Performance.latency.totalMax.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.memoryUtilization) {
-        $Performance.memoryUtilization.total.start = $Performance.memoryUtilization.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.memoryUtilization.total.end = $Performance.memoryUtilization.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.memoryUtilization.total.start = $Performance.memoryUtilization.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.memoryUtilization.total.end = $Performance.memoryUtilization.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.partialBlocksRatio.total) {
-        $Performance.partialBlocksRatio.total.start = $Performance.partialBlocksRatio.total.start | ? { $_ } | ConvertFrom-UnixTimestamp
-        $Performance.partialBlocksRatio.total.end = $Performance.partialBlocksRatio.total.end | ? { $_ } | ConvertFrom-UnixTimestamp
+        $Performance.partialBlocksRatio.total.start = $Performance.partialBlocksRatio.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp
+        $Performance.partialBlocksRatio.total.end = $Performance.partialBlocksRatio.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp
     }
     if ($Performance.swapRate) {
-        $Performance.swapRate.inRate.start = $Performance.swapRate.inRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.swapRate.inRate.end = $Performance.swapRate.inRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.swapRate.outRate.start = $Performance.swapRate.outRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.swapRate.outRate.end = $Performance.swapRate.outRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.swapRate.totalMaxRate.start = $Performance.swapRate.totalMaxRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.swapRate.totalMaxRate.end = $Performance.swapRate.totalMaxRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.swapRate.totalRate.start = $Performance.swapRate.totalRate.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.swapRate.totalRate.end = $Performance.swapRate.totalRate.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.inRate.start = $Performance.swapRate.inRate.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.inRate.end = $Performance.swapRate.inRate.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.outRate.start = $Performance.swapRate.outRate.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.outRate.end = $Performance.swapRate.outRate.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalMaxRate.start = $Performance.swapRate.totalMaxRate.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalMaxRate.end = $Performance.swapRate.totalMaxRate.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalRate.start = $Performance.swapRate.totalRate.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.swapRate.totalRate.end = $Performance.swapRate.totalRate.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.throughput) {
-        $Performance.throughput.read.start = $Performance.throughput.read.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.throughput.read.end = $Performance.throughput.read.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.throughput.write.start = $Performance.throughput.write.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.throughput.write.end = $Performance.throughput.write.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.throughput.totalMax.start = $Performance.throughput.totalMax.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.throughput.totalMax.end = $Performance.throughput.totalMax.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.throughput.total.start = $Performance.throughput.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.throughput.total.end = $Performance.throughput.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.read.start = $Performance.throughput.read.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.read.end = $Performance.throughput.read.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.write.start = $Performance.throughput.write.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.write.end = $Performance.throughput.write.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.totalMax.start = $Performance.throughput.totalMax.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.totalMax.end = $Performance.throughput.totalMax.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.total.start = $Performance.throughput.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.throughput.total.end = $Performance.throughput.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.writePending.total) {
-        $Performance.writePending.total.start = $Performance.writePending.total.start | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
-        $Performance.writePending.total.end = $Performance.writePending.total.end | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.writePending.total.start = $Performance.writePending.total.start | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
+        $Performance.writePending.total.end = $Performance.writePending.total.end | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone
     }
     if ($Performance.history) {
-        $Performance.history = ParsePerformanceHistory $Performance.history $Timezone
+        $Performance.history = ParsePerformanceHistory -PerformanceHistory $Performance.history -Timezone $Timezone
     }
 
     Write-Output $Performance
@@ -585,12 +585,12 @@ function ParsePerformanceHistory($PerformanceHistory,$Timezone) {
     if ($PerformanceHistory[0].count -eq 2) {
         $PerformanceHistory = foreach ($entry in $PerformanceHistory) {
             if ($entry[1] -replace ' ','') {
-                $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | ? { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone) -PassThru
+                $entry[1] | Add-Member -MemberType NoteProperty -Name timestamp -Value ($entry[0] | Where-Object { $_ } | ConvertFrom-UnixTimestamp -Timezone $Timezone) -PassThru
             }
         }
     }
     Write-Output $PerformanceHistory
-} 
+}
 
 function ParseVirtualMachines($VirtualMachines,$Timezone) {
     $VirtualMachines = @($VirtualMachines)
@@ -599,37 +599,44 @@ function ParseVirtualMachines($VirtualMachines,$Timezone) {
             $VirtualMachine.createTime = $VirtualMachine.createTime | Get-Date
         }
         if ($VirtualMachine.performance) {
-            $VirtualMachine.performance = ParsePerformance $VirtualMachine.performance $Timezone
+            $VirtualMachine.performance = ParsePerformance -Performance $VirtualMachine.performance -Timezone $Timezone
         }
         if ($VirtualMachine.vmdks) {
-            $VirtualMachine.vmdks = ParseVmdks $VirtualMachine.vmdks $Timezone
+            $VirtualMachine.vmdks = ParseVmdks -Vmdks $VirtualMachine.vmdks $Timezone
         }
         if ($VirtualMachine.host) {
-            $VirtualMachine.host = ParseHosts $VirtualMachine.host $Timezone
+            $VirtualMachine.host = ParseHosts -Hosts $VirtualMachine.host $Timezone
         }
         if ($VirtualMachine.ports) {
-            $VirtualMachine.ports = ParsePorts $VirtualMachine.ports $Timezone
+            $VirtualMachine.ports = ParsePorts -Ports $VirtualMachine.ports -Timezone $Timezone
         }
         if ($VirtualMachine.dataStore) {
-            $VirtualMachine.dataStore = ParseDatastores $VirtualMachine.dataStore $Timezone
+            $VirtualMachine.dataStore = ParseDatastores -Datastores $VirtualMachine.dataStore -Timezone $Timezone
         }
         if ($VirtualMachine.applications) {
-            $VirtualMachine.applications = ParseApplications $VirtualMachine.applications $Timezone
+            $VirtualMachine.applications = ParseApplications -Applications $VirtualMachine.applications
         }
         if ($VirtualMachine.fileSystems) {
-            $VirtualMachine.fileSystems = ParseFileSystems $VirtualMachine.fileSystems $Timezone
+            $VirtualMachine.fileSystems = ParseFileSystems -FileSystems $VirtualMachine.fileSystems
         }
         if ($VirtualMachine.storageResources) {
-            $VirtualMachine.storageResources = ParseStorageResources $VirtualMachine.storageResources $Timezone
+            $VirtualMachine.storageResources = ParseStorageResources -StorageResources $VirtualMachine.storageResources
         }
         if ($VirtualMachine.annotations) {
-            $VirtualMachine.annotations = ParseAnnotations $VirtualMachine.annotations $Timezone
+            $VirtualMachine.annotations = ParseAnnotations -Annotations $VirtualMachine.annotations
         }
         if ($VirtualMachine.datasources) {
-            $VirtualMachine.datasources = ParseDatasources $VirtualMachine.datasources $Timezone
+            $VirtualMachine.datasources = ParseDatasources -Datasources $VirtualMachine.datasources
         }
 
         Write-Output $VirtualMachine
+    }
+}
+
+function ParseFilesystems($FileSystems,$Timezone) {
+    $FileSystems = @($FileSystems)
+    foreach ($FileSystem in $FileSystems) {
+        Write-Output $FileSystem
     }
 }
 
@@ -637,22 +644,22 @@ function ParseVmdks($Vmdks,$Timezone) {
     $Vmdks = @($Vmdks)
     foreach ($Vmdk in $Vmdks) {
         if ($vmdk.dataStore) {
-            $vmdk.dataStore = ParseDatastores $vmdk.dataStore $Timezone
+            $vmdk.dataStore = ParseDatastores -Datastores $vmdk.dataStore -Timezone $Timezone
         }
         if ($vmdk.virtualMachine) {
-            $vmdk.virtualMachine = ParseVirtualMachines $vmdk.virtualMachine $Timezone
+            $vmdk.virtualMachine = ParseVirtualMachines -VirtualMachines $vmdk.virtualMachine -Timezone $Timezone
         }
         if ($vmdk.performance) {
-            $vmdk.performance = ParsePerformance $vmdk.performance $Timezone
+            $vmdk.performance = ParsePerformance -Performance $vmdk.performance -Timezone $Timezone
         }
         if ($vmdk.storageResources) {
-            $vmdk.storageResources = ParseStorageResources $vmdk.storageResources $Timezone
+            $vmdk.storageResources = ParseStorageResources -StorageResources $vmdk.storageResources
         }
         if ($vmdk.annotations) {
-            $vmdk.annotations = ParseAnnotations $vmdk.annotations $Timezone
+            $vmdk.annotations = ParseAnnotations -Annotations $vmdk.annotations
         }
         if ($vmdk.datasources) {
-            $vmdk.datasources = ParseDatasources $vmdk.datasources $Timezone
+            $vmdk.datasources = ParseDatasources -Datasources $vmdk.datasources
         }
 
         Write-Output $vmdk
@@ -665,31 +672,31 @@ function ParseHosts($Hosts,$Timezone) {
             $HostInstance.createTime = $HostInstance.createTime | Get-Date
         }
         if ($HostInstance.performance) {
-            $HostInstance.performance = ParsePerformance $HostInstance.performance $Timezone
+            $HostInstance.performance = ParsePerformance -Performance $HostInstance.performance -Timezone $Timezone
         }
         if ($HostInstance.storageResources) {
-            $HostInstance.storageResources = ParseStorageResources $HostInstance.storageResources $Timezone
+            $HostInstance.storageResources = ParseStorageResources -StorageResources $HostInstance.storageResources
         }
         if ($HostInstance.fileSystems) {
-            $HostInstance.fileSystems = ParseFileSystems $HostInstance.fileSystems $Timezone
+            $HostInstance.fileSystems = ParseFileSystems -FileSystems $HostInstance.fileSystems
         }
         if ($HostInstance.ports) {
-            $HostInstance.ports = ParsePorts $HostInstance.ports $Timezone
+            $HostInstance.ports = ParsePorts -Ports $HostInstance.ports -Timezone $Timezone
         }
         if ($HostInstance.applications) {
-            $HostInstance.applications = ParseApplications $HostInstance.applications $Timezone
+            $HostInstance.applications = ParseApplications -Applications $HostInstance.applications
         }
         if ($HostInstance.virtualMachines) {
-            $HostInstance.virtualMachines = ParseVirtualMachines $HostInstance.virtualMachines $Timezone
+            $HostInstance.virtualMachines = ParseVirtualMachines -VirtualMachines $HostInstance.virtualMachines -Timezone $Timezone
         }
         if ($HostInstance.clusterHosts) {
-            $HostInstance.clusterHosts = ParseHosts $HostInstance.clusterHosts $Timezone
+            $HostInstance.clusterHosts = ParseHosts -Hosts $HostInstance.clusterHosts -Timezone $Timezone
         }
         if ($HostInstance.annotations) {
-            $HostInstance.annotations = ParseAnnotations $HostInstance.annotations $Timezone
+            $HostInstance.annotations = ParseAnnotations -Annotations $HostInstance.annotations
         }
         if ($HostInstance.datasources) {
-            $HostInstance.datasources = ParseDatasources $HostInstance.datasources $Timezone
+            $HostInstance.datasources = ParseDatasources -Datasources $HostInstance.datasources
         }
 
         Write-Output $HostInstance
@@ -699,10 +706,10 @@ function ParseHosts($Hosts,$Timezone) {
 function ParseTopologies($Topologies,$Timezone) {
     foreach ($Topology in $Topologies) {
         if ($Topology.nodes) {
-            $Topology.nodes = ParseTopologyNodes $Topology.nodes $Timezone
+            $Topology.nodes = ParseTopologyNodes -Nodes $Topology.nodes
         }
         if ($Topology.links) {
-            $Topology.links = ParseTopologyLinks $Topology.links $Timezone
+            $Topology.links = ParseTopologyLinks -Links $Topology.links
         }
 
         Write-Output $Topology
@@ -725,25 +732,25 @@ function ParsePorts($Ports,$Timezone) {
     $Ports = @($Ports)
     foreach ($Port in $Ports) {
         if ($Port.connectedPorts) {
-            $Port.connectedPorts = ParsePorts $Port.connectedPorts $Timezone
+            $Port.connectedPorts = ParsePorts -Ports $Port.connectedPorts -Timezone $Timezone
         }
         if ($Port.performance) {
-            $Port.performance = ParsePerformance $Port.performance $Timezone
+            $Port.performance = ParsePerformance -Performance $Port.performance -Timezone $Timezone
         }
         if ($Port.device) {
-            $Port.device = ParseDevices $Port.device $Timezone
+            $Port.device = ParseDevices -Devices $Port.device
         }
         if ($Port.fabrics) {
-            $Port.fabrics = ParseFabrics $Port.fabrics $Timezone
+            $Port.fabrics = ParseFabrics -Fabrics $Port.fabrics
         }
         if ($Port.annotations) {
-            $Port.annotations = ParseAnnotations $Port.annotations $Timezone
+            $Port.annotations = ParseAnnotations -Annotations $Port.annotations
         }
         if ($Port.datasources) {
-            $Port.datasources = ParseDatasources $Port.datasources $Timezone
+            $Port.datasources = ParseDatasources -Datasources $Port.datasources
         }
         if ($Port.application) {
-            $Port.application = ParseApplication $Port.application $Timezone
+            $Port.application = ParseApplication -Application $Port.application
         }
 
         Write-Output $Port
@@ -754,22 +761,22 @@ function ParseDevices($Device,$Timezone) {
     $Devices = @($Devices)
     foreach ($Device in $Devices) {
         if ($Device.performance) {
-            $Device.performance = ParsePerformance $Device.performance $Timezone
+            $Device.performance = ParsePerformance -Performance $Device.performance -Timezone $Timezone
         }
         if ($Device.device) {
-            $Device.device = ParseDevice $Device.device $Timezone
+            $Device.device = ParseDevice -Device $Device.device
         }
         if ($Device.fabrics) {
-            $Device.fabrics = ParseFabrics $Device.fabrics $Timezone
+            $Device.fabrics = ParseFabrics -Fabrics $Device.fabrics
         }
         if ($Device.annotations) {
-            $Device.annotations = ParseAnnotations $Device.annotations $Timezone
+            $Device.annotations = ParseAnnotations -Annotations $Device.annotations
         }
         if ($Device.datasources) {
-            $Device.datasources = ParseDatasources $Device.datasources $Timezone
+            $Device.datasources = ParseDatasources -Datasources $Device.datasources
         }
         if ($Device.application) {
-            $Device.application = ParseApplication $Device.application $Timezone
+            $Device.application = ParseApplication -Application $Device.application
         }
 
         Write-Output $Device
@@ -806,31 +813,31 @@ function ParseComputeResources($ComputeResources,$Timezone) {
             $ComputeResource.createTime = $ComputeResource.createTime | Get-Date
         }
         if ($ComputeResource.performance) {
-            $ComputeResource.performance = ParsePerformance $ComputeResource.performance $Timezone
+            $ComputeResource.performance = ParsePerformance -Performance $ComputeResource.performance -Timezone $Timezone
         }
         if ($ComputeResource.storageResources) {
-            $ComputeResource.storageResources = ParseStorageResources $ComputeResource.storageResources $Timezone
+            $ComputeResource.storageResources = ParseStorageResources -StorageResources $ComputeResource.storageResources
         }
         if ($ComputeResource.fileSystems) {
-            $ComputeResource.fileSystems = ParseFileSystems $ComputeResource.fileSystems $Timezone
+            $ComputeResource.fileSystems = ParseFileSystems -FileSystems $ComputeResource.fileSystems
         }
         if ($ComputeResource.ports) {
-            $ComputeResource.ports = ParsePorts $ComputeResource.ports $Timezone
+            $ComputeResource.ports = ParsePorts -Ports $ComputeResource.ports -Timezone $Timezone
         }
         if ($ComputeResource.applications) {
-            $ComputeResource.applications = ParseApplications $ComputeResource.applications $Timezone
+            $ComputeResource.applications = ParseApplications -Applications $ComputeResource.applications
         }
         if ($ComputeResource.virtualMachines) {
-            $ComputeResource.virtualMachines = ParseVirtualMachines $ComputeResource.virtualMachines $Timezone
+            $ComputeResource.virtualMachines = ParseVirtualMachines -VirtualMachines $ComputeResource.virtualMachines -Timezone $Timezone
         }
         if ($ComputeResource.clusterHosts) {
-            $ComputeResource.clusterHosts = ParseHosts $ComputeResource.clusterHosts $Timezone
+            $ComputeResource.clusterHosts = ParseHosts -Hosts $ComputeResource.clusterHosts
         }
         if ($ComputeResource.annotations) {
-            $ComputeResource.annotations = ParseAnnotations $ComputeResource.annotations $Timezone
+            $ComputeResource.annotations = ParseAnnotations -Annotations $ComputeResource.annotations
         }
         if ($ComputeResource.datasources) {
-            $ComputeResource.datasources = ParseDatasources $ComputeResource.datasources $Timezone
+            $ComputeResource.datasources = ParseDatasources -Datasources $ComputeResource.datasources
         }
 
         Write-Output $ComputeResource
@@ -844,28 +851,28 @@ function ParseStorageResources($StorageResources,$Timezone) {
             $StorageResource.createTime = $StorageResource.createTime | Get-Date
         }
         if ($StorageResource.performance) {
-            $StorageResource.performance = ParsePerformance $StorageResource.performance $Timezone
+            $StorageResource.performance = ParsePerformance -Performance $StorageResource.performance -Timezone $Timezone
         }
         if ($StorageResource.computeResources) {
-            $StorageResource.computeResources = ParseComputeResources $StorageResource.computeResources $Timezone
+            $StorageResource.computeResources = ParseComputeResources -ComputeResources $StorageResource.computeResources -Timezone $Timezone
         }
         if ($StorageResource.fileSystems) {
-            $StorageResource.fileSystems = ParseFileSystems $StorageResource.fileSystems $Timezone
+            $StorageResource.fileSystems = ParseFileSystems -FileSystems $StorageResource.fileSystems
         }
         if ($StorageResource.storagePools) {
-            $StorageResource.storagePools = ParseStoragePools $StorageResource.storagePools $Timezone
+            $StorageResource.storagePools = ParseStoragePools -StoragePools $StorageResource.storagePools
         }
         if ($StorageResource.applications) {
-            $StorageResource.applications = ParseApplications $StorageResource.applications $Timezone
+            $StorageResource.applications = ParseApplications -Applications $StorageResource.applications
         }
         if ($StorageResource.virtualMachines) {
-            $StorageResource.virtualMachines = ParseVirtualMachines $StorageResource.virtualMachines $Timezone
+            $StorageResource.virtualMachines = ParseVirtualMachines -VirtualMachines $StorageResource.virtualMachines -Timezone $Timezone
         }
         if ($StorageResource.annotations) {
-            $StorageResource.annotations = ParseAnnotations $StorageResource.annotations $Timezone
+            $StorageResource.annotations = ParseAnnotations -Annotations $StorageResource.annotations
         }
         if ($StorageResource.datasources) {
-            $StorageResource.datasources = ParseDatasources $StorageResource.datasources $Timezone
+            $StorageResource.datasources = ParseDatasources -Datasources $StorageResource.datasources
         }
 
         Write-Output $StorageResource
@@ -876,46 +883,46 @@ function ParseVolumes($Volumes,$Timezone) {
     $Volumes = @($Volumes)
     foreach ($Volume in $Volumes) {
         if ($Volume.storage) {
-            $Volume.storage = ParseStorages $Volume.storage $Timezone
+            $Volume.storage = ParseStorages -Storages $Volume.storage -Timezone $Timezone
         }
         if ($Volume.computeResources) {
-            $Volume.computeResources = ParseComputeResources $Volume.computeResources $Timezone
+            $Volume.computeResources = ParseComputeResources -ComputeResources $Volume.computeResources
         }
         if ($Volume.storagePool) {
-            $Volume.storagePool = ParseStoragePools $Volume.storagePool $Timezone
+            $Volume.storagePool = ParseStoragePools -StoragePools $Volume.storagePool
         }
         if ($Volume.virtualStoragePool) {
-            $Volume.virtualStoragePool = ParseStoragePools $Volume.virtualStoragePool $Timezone
+            $Volume.virtualStoragePool = ParseStoragePools -StoragePools $Volume.virtualStoragePool
         }
         if ($Volume.qtrees) {
-            $Volume.qtrees = ParseAnnotations $Volume.qtrees $Timezone
+            $Volume.qtrees = ParseAnnotations -Annotations $Volume.qtrees
         }
         if ($Volume.internalVolume) {
-            $Volume.internalVolume = ParseInternalVolumes $Volume.internalVolume $Timezone
+            $Volume.internalVolume = ParseInternalVolumes -InternalVolumes $Volume.internalVolume -Timezone $Timezone
         }
         if ($Volume.dataStores) {
-            $Volume.dataStores = ParseDatastores $Volume.dataStores $Timezone
+            $Volume.dataStores = ParseDatastores -Datastores $Volume.dataStores -Timezone $Timezone
         }
         if ($Volume.annotations) {
-            $Volume.annotations = ParseAnnotations $Volume.annotations $Timezone
+            $Volume.annotations = ParseAnnotations -Annotations $Volume.annotations
         }
         if ($Volume.performance) {
-            $Volume.performance = ParsePerformance $Volume.performance $Timezone
+            $Volume.performance = ParsePerformance -Performance $Volume.performance -Timezone $Timezone
         }
         if ($Volume.ports) {
-            $Volume.ports = ParsePorts $Volume.ports $Timezone
+            $Volume.ports = ParsePorts -Ports $Volume.ports -Timezone $Timezone
         }
         if ($Volume.storageNodes) {
-            $Volume.storageNodes = ParseStorageNodes $Volume.storageNodes $Timezone
+            $Volume.storageNodes = ParseStorageNodes -StorageNodes $Volume.storageNodes
         }
         if ($Volume.replicaSources) {
-            $Volume.replicaSources = ParseVolumes $Volume.replicaSources $Timezone
+            $Volume.replicaSources = ParseVolumes -Volumes $Volume.replicaSources
         }
         if ($Volume.applications) {
-            $Volume.applications = ParseApplications $Volume.applications $Timezone
+            $Volume.applications = ParseApplications -Applications $Volume.applications
         }
         if ($Volume.datasources) {
-            $Volume.datasources = ParseDatasources $Volume.datasources $Timezone
+            $Volume.datasources = ParseDatasources -Datasources $Volume.datasources
         }
 
         Write-Output $Volume
@@ -926,37 +933,37 @@ function ParseInternalVolumes($InternalVolumes,$Timezone) {
     $InternalVolumes = @($InternalVolumes)
     foreach ($InternalVolume in $InternalVolumes) {
         if ($InternalVolume.storage) {
-            $InternalVolume.storage = ParseStorages $InternalVolume.storage $Timezone
+            $InternalVolume.storage = ParseStorages -Storages $InternalVolume.storage -Timezone $Timezone
         }
         if ($InternalVolume.computeResources) {
-            $InternalVolume.computeResources = ParseComputeResources $InternalVolume.computeResources $Timezone
+            $InternalVolume.computeResources = ParseComputeResources -ComputeResources $InternalVolume.computeResources
         }
         if ($InternalVolume.storagePool) {
-            $InternalVolume.storagePool = ParseStoragePools $InternalVolume.storagePool $Timezone
+            $InternalVolume.storagePool = ParseStoragePools -StoragePools $InternalVolume.storagePool
         }
         if ($InternalVolume.performance) {
-            $InternalVolume.performance = ParsePerformance $InternalVolume.performance $Timezone
+            $InternalVolume.performance = ParsePerformance -Performance $InternalVolume.performance -Timezone $Timezone
         }
         if ($InternalVolume.volumes) {
-            $InternalVolume.volumes = ParseVolumes $InternalVolume.volumes $Timezone
+            $InternalVolume.volumes = ParseVolumes -Volumes $InternalVolume.volumes
         }
         if ($InternalVolume.storageNodes) {
-            $InternalVolume.storageNodes = ParseStorageNodes $InternalVolume.storageNodes $Timezone
+            $InternalVolume.storageNodes = ParseStorageNodes -StorageNodes $InternalVolume.storageNodes
         }
         if ($InternalVolume.datasources) {
-            $InternalVolume.datasources = ParseDatasources $InternalVolume.datasources $Timezone
+            $InternalVolume.datasources = ParseDatasources -Datasources $InternalVolume.datasources
         }
         if ($InternalVolume.datastores) {
-            $InternalVolume.datastores = ParseDatastores $InternalVolume.datastores $Timezone
+            $InternalVolume.datastores = ParseDatastores -Datastores $InternalVolume.datastores -Timezone $Timezone
         }
         if ($InternalVolume.applications) {
-            $InternalVolume.applications = ParseApplications $InternalVolume.applications $Timezone
+            $InternalVolume.applications = ParseApplications -Applications $InternalVolume.applications
         }
         if ($InternalVolume.annotations) {
-            $InternalVolume.annotations = ParseAnnotations $InternalVolume.annotations $Timezone
+            $InternalVolume.annotations = ParseAnnotations -Annotations $InternalVolume.annotations
         }
         if ($InternalVolume.qtrees) {
-            $InternalVolume.qtrees = ParseAnnotations $InternalVolume.qtrees $Timezone
+            $InternalVolume.qtrees = ParseAnnotations -Annotations $InternalVolume.qtrees
         }
 
         Write-Output $InternalVolume
@@ -967,25 +974,25 @@ function ParseQtrees($Qtrees,$Timezone) {
     $Qtrees = @($Qtrees)
     foreach ($Qtree in $Qtrees) {
         if ($Qtree.quotaCapacity) {
-            $Qtree.quotaCapacity = ParseQuotaCapacities $Qtree.quotaCapacity $Timezone
+            $Qtree.quotaCapacity = ParseQuotaCapacities -QuotaCapacities $Qtree.quotaCapacity
         }
         if ($Qtree.storage) {
-            $Qtree.storage = ParseStorages $Qtree.storage $Timezone
+            $Qtree.storage = ParseStorages -Storages $Qtree.storage -Timezone $Timezone
         }
         if ($Qtree.internalVolume) {
-            $Qtree.internalVolume = ParseInternalVolumes $Qtree.internalVolume $Timezone
+            $Qtree.internalVolume = ParseInternalVolumes -InternalVolumes $Qtree.internalVolume -Timezone $Timezone
         }
         if ($Qtree.shares) {
-            $Qtree.shares = ParseShares $Qtree.shares $Timezone
+            $Qtree.shares = ParseShares -Shares $Qtree.shares
         }
         if ($Qtree.annotations) {
-            $Qtree.annotations = ParseAnnotations $Qtree.annotations $Timezone
+            $Qtree.annotations = ParseAnnotations -Annotations $Qtree.annotations
         }
         if ($Qtree.applications) {
-            $Qtree.applications = ParseApplications $Qtree.applications $Timezone
+            $Qtree.applications = ParseApplications -Applications $Qtree.applications
         }
         if ($Qtree.volumes) {
-            $Qtree.volumes = ParseVolumes $Qtree.volumes $Timezone
+            $Qtree.volumes = ParseVolumes -Volumes $Qtree.volumes
         }
 
         Write-Output $Qtree
@@ -999,7 +1006,7 @@ function ParseQuotaCapacities($QuotaCapacities,$Timezone) {
     }
 }
 
-function ParseShares($Shares,$Timezone) {
+function ParseShares($Shares) {
     $Shares = @($Shares)
     foreach ($Share in $Shares) {
         Write-Output $Share
@@ -1010,31 +1017,31 @@ function ParseStoragePools($StoragePools,$Timezone) {
     $StoragePools = @($StoragePools)
     foreach ($StoragePool in $StoragePools) {
         if ($StoragePool.performance) {
-            $StoragePool.performance = ParsePerformance $StoragePool.performance $Timezone
+            $StoragePool.performance = ParsePerformance -Performance $StoragePool.performance -Timezone $Timezone
         }
         if ($StoragePool.storage) {
-            $StoragePool.storage = ParseStorages $StoragePool.storage $Timezone
+            $StoragePool.storage = ParseStorages -Storages $StoragePool.storage -Timezone $Timezone
         }
         if ($StoragePool.disks) {
-            $StoragePool.disks = ParseDisks $StoragePool.disks $Timezone
+            $StoragePool.disks = ParseDisks -Disks $StoragePool.disks
         }
         if ($StoragePool.storageResources) {
-            $StoragePool.storageResources = ParseStorageResources $StoragePool.storageResources $Timezone
+            $StoragePool.storageResources = ParseStorageResources -StorageResources $StoragePool.storageResources
         }
         if ($StoragePool.internalVolumes) {
-            $StoragePool.internalVolumes = ParseInternalVolumes $StoragePool.internalVolumes $Timezone
+            $StoragePool.internalVolumes = ParseInternalVolumes -InternalVolumes $StoragePool.internalVolumes -Timezone $Timezone
         }
         if ($StoragePool.volumes) {
-            $StoragePool.volumes = ParseVolumes $StoragePool.volumes $Timezone
+            $StoragePool.volumes = ParseVolumes -Volumes $StoragePool.volumes
         }
         if ($StoragePool.storageNodes) {
-            $StoragePool.storageNodes = ParseStorageNodes $StoragePool.storageNodes $Timezone
+            $StoragePool.storageNodes = ParseStorageNodes -StorageNodes $StoragePool.storageNodes
         }
         if ($StoragePool.datasources) {
-            $StoragePool.datasources = ParseDatasources $StoragePool.datasources $Timezone
+            $StoragePool.datasources = ParseDatasources -Datasources $StoragePool.datasources
         }
         if ($StoragePool.annotations) {
-            $StoragePool.annotations = ParseAnnotations $StoragePool.annotations $Timezone
+            $StoragePool.annotations = ParseAnnotations -Annotations $StoragePool.annotations
         }
 
         Write-Output $StoragePool
@@ -1048,43 +1055,43 @@ function ParseStorages($Storages, $Timezone) {
             $Storage.createTime = $Storage.createTime | Get-Date
         }
         if ($Storage.storageNodes) {
-            $Storage.storageNodes = ParseStorageNodes $Storage.storageNodes $Timezone
+            $Storage.storageNodes = ParseStorageNodes -StorageNodes $Storage.storageNodes
         }
         if ($Storage.storagePools) {
-            $Storage.storagePools = ParseStoragePools $Storage.storagePools $Timezone
+            $Storage.storagePools = ParseStoragePools -StoragePools $Storage.storagePools
         }
         if ($Storage.storageResources) {
-            $Storage.storageResources = ParseStorageResources $Storage.storageResources $Timezone
+            $Storage.storageResources = ParseStorageResources -StorageResources $Storage.storageResources
         }
         if ($Storage.internalVolumes) {
-            $Storage.internalVolumes = ParseInternalVolumes $Storage.internalVolumes $Timezone
+            $Storage.internalVolumes = ParseInternalVolumes -InternalVolumes $Storage.internalVolumes -Timezone $Timezone
         }
         if ($Storage.volumes) {
-            $Storage.volumes = ParseVolumes $Storage.volumes $Timezone
+            $Storage.volumes = ParseVolumes -Volumes $Storage.volumes
         }
         if ($Storage.disks) {
-            $Storage.disks = ParseDisks $Storage.disks $Timezone
+            $Storage.disks = ParseDisks -Disks $Storage.disks
         }
         if ($Storage.datasources) {
-            $Storage.datasources = ParseDatasources $Storage.datasources $Timezone
+            $Storage.datasources = ParseDatasources -Datasources $Storage.datasources
         }
         if ($Storage.ports) {
-            $Storage.ports = ParsePorts $Storage.ports $Timezone
+            $Storage.ports = ParsePorts -Ports $Storage.ports -Timezone $Timezone
         }
         if ($Storage.annotations) {
-            $Storage.annotations = ParseAnnotations $Storage.annotations $Timezone
+            $Storage.annotations = ParseAnnotations -Annotations $Storage.annotations
         }
         if ($Storage.qtrees) {
-            $Storage.qtrees = ParseQtrees $Storage.qtrees $Timezone
+            $Storage.qtrees = ParseQtrees -Qtrees $Storage.qtrees
         }
         if ($Storage.shares) {
-            $Storage.shares = ParseShares $Storage.shares $Timezone
+            $Storage.shares = ParseShares -Shares $Storage.shares
         }
         if ($Storage.applications) {
-            $Storage.applications = ParseApplications $Storage.applications $Timezone
+            $Storage.applications = ParseApplications -Applications $Storage.applications
         }
         if ($Storage.performance) {
-            $Storage.performance = ParsePerformance $Storage.performance $Timezone
+            $Storage.performance = ParsePerformance -Performance $Storage.performance -Timezone $Timezone
         }
 
         Write-Output $Storage
@@ -1095,7 +1102,7 @@ function ParseStorageNodes($StorageNodes,$Timezone) {
     $StorageNodes = @($StorageNodes)
     foreach ($StorageNode in $StorageNodes) {
         if ($StorageNode.performance) {
-            $StorageNode.performance = ParsePerformance $StorageNode.performance $Timezone
+            $StorageNode.performance = ParsePerformance -Performance $StorageNode.performance -Timezone $Timezone
         }
 
         Write-Output $StorageNode
@@ -1106,22 +1113,22 @@ function ParseDisks($Disks,$Timezone) {
     $Disks = @($Disks)
     foreach ($Disk in $Disks) {
         if ($Disk.performance) {
-            $Disk.performance = ParsePerformance $Disk.performance $Timezone
+            $Disk.performance = ParsePerformance -Performance $Disk.performance -Timezone $Timezone
         }
         if ($Disk.storage) {
-            $Disk.storage = ParseStorages $Disk.storage $Timezone
+            $Disk.storage = ParseStorages -Storages $Disk.storage -Timezone $Timezone
         }
         if ($Disk.storageResources) {
-            $Disk.storageResources = ParseStorageResources $Disk.storageResources $Timezone
+            $Disk.storageResources = ParseStorageResources -StorageResources $Disk.storageResources
         }
         if ($Disk.backendVolumes) {
-            $Disk.backendVolumes = ParseVolumes $Disk.backendVolumes $Timezone
+            $Disk.backendVolumes = ParseVolumes -Volumes $Disk.backendVolumes
         }
         if ($Disk.datasources) {
-            $Disk.datasources = ParseDatasources $Disk.datasources $Timezone
+            $Disk.datasources = ParseDatasources -Datasources $Disk.datasources
         }
         if ($Disk.annotations) {
-            $Disk.annotations = ParseAnnotations $Disk.annotations $Timezone
+            $Disk.annotations = ParseAnnotations -Annotations $Disk.annotations
         }
 
         Write-Output $Disk
@@ -1132,10 +1139,10 @@ function ParseFabrics($Fabrics,$Timezone) {
     $Fabrics = @($Fabrics)
     foreach ($Fabric in $Fabrics) {
         if ($Fabric.datasources) {
-            $Fabric.datasources = ParseDatasources $Fabric.datasources $Timezone
+            $Fabric.datasources = ParseDatasources -Datasources $Fabric.datasources
         }
         if ($Fabric.switches) {
-            $Fabric.switches = ParseDatasources $Fabric.switches $Timezone
+            $Fabric.switches = ParseSwitches -Switches $Fabric.switches
         }
 
         Write-Output $Fabric
@@ -1171,20 +1178,20 @@ function ParsePatchStatus($PatchStatus,$Timezone) {
 #>
 function Global:Get-OciMetadata {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/uiserver/webui/v1/metadata"
 
@@ -1192,12 +1199,12 @@ function Global:Get-OciMetadata {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim
         }
 
         # TODO: Implement parsing
@@ -1219,7 +1226,7 @@ Timezone   : (UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna
 #>
 function global:Connect-OciServer {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -1246,11 +1253,11 @@ function global:Connect-OciServer {
                    Position=6,
                    HelpMessage="Timeout value for HTTP connections. Defaults to 600 seconds.")][Int]$Timeout
     )
- 
+
     $EncodedAuthorization = [System.Text.Encoding]::UTF8.GetBytes($Credential.UserName + ':' + $Credential.GetNetworkCredential().Password)
     $EncodedPassword = [System.Convert]::ToBase64String($EncodedAuthorization)
     $Headers = @{"Authorization"="Basic $($EncodedPassword)"}
- 
+
     # check if untrusted SSL certificates should be ignored
     if ($Insecure) {
         if ($PSVersionTable.PSVersion.Major -lt 6) {
@@ -1281,7 +1288,7 @@ function global:Connect-OciServer {
         }
     }
     catch {}
- 
+
     if ($HTTPS -or !$HTTP) {
         Try {
             $BaseURI = "https://$Name"
@@ -1289,7 +1296,7 @@ function global:Connect-OciServer {
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             if ($_.Exception.Message -match "Unauthorized") {
                 Write-Error "Authorization for $BaseURI/rest/v1/login with user $($Credential.UserName) failed"
                 return
@@ -1314,8 +1321,8 @@ function global:Connect-OciServer {
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
-            if ($_.Exception.Message -match "Unauthorized") {                
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            if ($_.Exception.Message -match "Unauthorized") {
                 Write-Error "Authorization for $BaseURI/rest/v1/login with user $($Credential.UserName) failed"
                 return
             }
@@ -1329,10 +1336,10 @@ function global:Connect-OciServer {
     if (!$Timezone) {
         $Timezone = [System.TimeZoneInfo]::Local
     }
-    
+
     if ($Timezone -isnot [System.TimeZoneInfo]) {
         if ([System.TimeZoneInfo]::GetSystemTimeZones().Id -contains $Timezone) {
-            $Timezone = [System.TimeZoneInfo]::GetSystemTimeZones() | ? { $_.Id -contains $Timezone }
+            $Timezone = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object { $_.Id -contains $Timezone }
         }
         else {
             Write-Warning "Timezone $Timezone is not supported by this system. Setting Timezone to $([System.TimeZoneInfo]::Local)"
@@ -1343,7 +1350,7 @@ function global:Connect-OciServer {
     if (!$Timeout) {
         $Timeout = 600
     }
- 
+
     $Server = [PSCustomObject]@{Name=$Name;
                             BaseURI=$BaseURI;
                             Credential=$Credential;
@@ -1352,11 +1359,11 @@ function global:Connect-OciServer {
                             Timezone=$Timezone;
                             Timeout=$Timeout;
                             Session=$Session}
- 
+
     if (!$Transient) {
         Set-Variable -Name CurrentOciServer -Value $Server -Scope Global
     }
- 
+
     return $Server
 }
 
@@ -1376,7 +1383,7 @@ function global:Connect-OciServer {
 #>
 function global:Import-OciServerCertificate {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
@@ -1404,7 +1411,7 @@ function global:Import-OciServerCertificate {
             throw "Administrator privilige required to store certificate in LocalMachine certificate store"
         }
     }
-   
+
     Process {
         $Request = [Net.HttpWebRequest]::Create($Uri)
         $Request.Method = "OPTIONS"
@@ -1414,7 +1421,7 @@ function global:Import-OciServerCertificate {
         }
         catch {
         }
- 
+
         if (!$Request.ServicePoint.Certificate) {
             Write-Error "No Certificate returned for $Uri"
         }
@@ -1456,7 +1463,7 @@ function global:Import-OciServerCertificate {
 #>
 function global:Remove-OciServerCertificate {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
@@ -1484,7 +1491,7 @@ function global:Remove-OciServerCertificate {
             throw "Administrator privilige required to remove certificate from LocalMachine certificate store"
         }
     }
-   
+
     Process {
         $Request = [Net.HttpWebRequest]::Create($Uri)
         $Request.Method = "OPTIONS"
@@ -1494,7 +1501,7 @@ function global:Remove-OciServerCertificate {
         }
         catch {
         }
- 
+
         if (!$Request.ServicePoint.Certificate) {
             Write-Error "No Certificate returned for $Uri"
         }
@@ -1536,7 +1543,7 @@ function global:Remove-OciServerCertificate {
 #>
 function Global:Get-OciAcquisitionUnits {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -1548,7 +1555,7 @@ function Global:Get-OciAcquisitionUnits {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -1567,7 +1574,7 @@ function Global:Get-OciAcquisitionUnits {
             }
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits"
 
@@ -1579,15 +1586,15 @@ function Global:Get-OciAcquisitionUnits {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim
         }
 
-        $AcquisitionUnits = ParseAcquisitionUnits($Result)
+        $AcquisitionUnits = ParseAcquisitionUnits -AcquisitionUnits $Result
         Write-Output $AcquisitionUnits
     }
 }
@@ -1608,7 +1615,7 @@ function Global:Get-OciAcquisitionUnits {
 #>
 function Global:Get-OciAcquisitionUnit {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -1625,7 +1632,7 @@ function Global:Get-OciAcquisitionUnit {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -1644,29 +1651,29 @@ function Global:Get-OciAcquisitionUnit {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $($Server.BaseUri) + "/rest/v1/admin/acquisitionUnits/$id"            
- 
+            $Uri = $($Server.BaseUri) + "/rest/v1/admin/acquisitionUnits/$id"
+
             if ($expand) {
                 $Uri += "?expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
 
-            $AcquisitionUnit = ParseAcquisitionUnits($Result)
+            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result
             Write-Output $AcquisitionUnit
         }
     }
@@ -1702,7 +1709,7 @@ function Global:Get-OciAcquisitionUnit {
 #>
 function Global:Get-OciDatasourcesByAcquisitionUnit {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -1740,7 +1747,7 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
                    Position=10,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -1759,29 +1766,29 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/datasources"
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Datasources = ParseDatasources($Result)
+            $Datasources = ParseDatasources -Datasources $Result
             Write-Output $Datasources
         }
     }
@@ -1799,7 +1806,7 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
 #>
 function Global:Restart-OciAcquisitionUnit {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -1810,32 +1817,32 @@ function Global:Restart-OciAcquisitionUnit {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/acquisitionUnits/$id/restart"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-       
-            $AcquisitionUnit = ParseAcquisitionUnits($Result)
+
+            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result
             Write-Output $AcquisitionUnit
         }
     }
@@ -1853,38 +1860,38 @@ function Global:Restart-OciAcquisitionUnit {
 #>
 function Global:Get-OciCertificates {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/certificates"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-       
-            $Certificates = ParseCertificates($Result)
+
+            $Certificates = ParseCertificates -Certificates $Result
             Write-Output $Certificates
         }
     }
@@ -1915,7 +1922,7 @@ To create from existing certificate file create a multi part request with the at
 #>
 function Global:Add-OciCertificate {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -1937,34 +1944,34 @@ function Global:Add-OciCertificate {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/certificates"
- 
+
             try {
                 $Body = ConvertTo-Json @{"host"=$HostName;"port"=$Port} -Compress
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-       
-            $Certificate = ParseCertificate($Result)
+
+            $Certificate = ParseCertificate -Certificate $Result
             Write-Output $Certificate
         }
     }
@@ -1982,36 +1989,36 @@ function Global:Add-OciCertificate {
 #>
 function Global:Get-OciDatasourceTypes {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/datasourceTypes"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim
         }
-       
-        $DatasourceTypes = ParseDatasourceTypes($Result)
+
+        $DatasourceTypes = ParseDatasourceTypes -DatasourceTypes $Result
         Write-Output $DatasourceTypes
     }
 }
@@ -2028,7 +2035,7 @@ function Global:Get-OciDatasourceTypes {
 #>
 function Global:Get-OciDatasourceType {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -2039,32 +2046,32 @@ function Global:Get-OciDatasourceType {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/datasourceTypes/$id"      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/admin/datasourceTypes/$id"
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-           
-            $DatasourceType = ParseDatasourceTypes($Result)
+
+            $DatasourceType = ParseDatasourceTypes -DatasourceTypes $Result
             Write-Output $DatasourceType
         }
     }
@@ -2098,7 +2105,7 @@ function Global:Get-OciDatasourceType {
 #>
 function Global:Get-OciDatasources {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -2131,7 +2138,7 @@ function Global:Get-OciDatasources {
                    Position=9,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -2150,29 +2157,29 @@ function Global:Get-OciDatasources {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
- 
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-           
-            $Datasources = ParseDatasources($Result)
+
+            $Datasources = ParseDatasources -Datasources $Result
             Write-Output $Datasources
         }
     }
@@ -2182,9 +2189,9 @@ function Global:Get-OciDatasources {
     .SYNOPSIS
     New Data Source
     .DESCRIPTION
-    Create new Data Source from type definition  
+    Create new Data Source from type definition
     .PARAMETER type
-    Datasource type 
+    Datasource type
     .PARAMETER name
     Name of the datasource
     .PARAMETER acquisitionUnit
@@ -2194,7 +2201,7 @@ function Global:Get-OciDatasources {
 #>
 function Global:New-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2209,18 +2216,18 @@ function Global:New-OciDatasource {
                     HelpMessage="Datasource acquisition unit",
                     ValueFromPipelineByPropertyName=$True)][PSObject]$acquisitionUnit
     )
-   
+
     Process {
-        
+
         $Datasource = [PSCustomObject]@{name=$Name;acquisitionUnit=[PSCustomObject]@{}}
 
         $Datasource | Add-Member -MemberType NoteProperty -Name "config" -Value ([PSCustomObject]@{})
-        
+
         if ($acquisitionUnit -is [int]) {
             $Datasource.acquisitionUnit | Add-Member -MemberType NoteProperty -Name "id" -value $acquisitionUnit
         }
         elseif ($acquisitionUnit.id) {
-            $Datasource.acquisitionUnit = $acquisitionUnit | select -property id
+            $Datasource.acquisitionUnit = $acquisitionUnit | Select-Object -Property id
         }
 
         $Datasource.config | Add-Member -MemberType NoteProperty -Name "dsTypeId" -Value $type.id
@@ -2230,7 +2237,7 @@ function Global:New-OciDatasource {
 
         # if no packages are specified, enable all packages of specified type
         if ($packages) {
-            $type.packages = $type.packages | ? { $packages -match $_.id }
+            $type.packages = $type.packages | Where-Object { $packages -match $_.id }
         }
 
         foreach ($package in $type.packages) {
@@ -2242,8 +2249,8 @@ function Global:New-OciDatasource {
             $Datasource.config.packages += $package
         }
 
-        # parse datasource to make sure that script properties are created 
-        $Datasource = ParseDatasources($Datasource)
+        # parse datasource to make sure that script properties are created
+        $Datasource = ParseDatasources -Datasources $Datasource
         Write-Output $Datasource
     }
 }
@@ -2252,7 +2259,7 @@ function Global:New-OciDatasource {
     .SYNOPSIS
     Add Data Source
     .DESCRIPTION
-    Add Data Source    
+    Add Data Source
     .PARAMETER name
     Datasource name
     .PARAMETER acquisitionUnit
@@ -2264,7 +2271,7 @@ function Global:New-OciDatasource {
 #>
 function Global:Add-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2282,48 +2289,48 @@ function Global:Add-OciDatasource {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/datasources"
- 
+
         try {
             $Body = @{}
-            if ($Name) { 
-                $Body.name = $Name 
+            if ($Name) {
+                $Body.name = $Name
             }
             if ($acquisitionUnit) {
                 if ($acquisitionUnit -is [int]) {
                     $Body.acquisitionUnit = @{id=$acquisitionUnit}
                 }
                 elseif ($acquisitionUnit.id) {
-                    $Body.acquisitionUnit = $acquisitionUnit | select -property id
+                    $Body.acquisitionUnit = $acquisitionUnit | Select-Object -Property id
                 }
             }
             if ($config) {
-                $ConfigScriptProperties = $config.PSObject.Members | ? { $_.MemberType -eq "ScriptProperty" } | % { $_.Name }
-                $Body.config = $config | Select -Property * -ExcludeProperty $ConfigScriptProperties
+                $ConfigScriptProperties = $config.PSObject.Members | Where-Object { $_.MemberType -eq "ScriptProperty" } | ForEach-Object { $_.Name }
+                $Body.config = $config | Select-Object -Property * -ExcludeProperty $ConfigScriptProperties
                 $Uri += "?expand=config"
             }
             $Body = $Body | ConvertTo-Json -Depth 10
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             if ($Result.toString().startsWith('{')) {
-                $Result = ParseJsonString($Result)
+                $Result = ParseJsonString -json $Result
             }
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
-       
-        $Datasource = ParseDatasources($Result)
+
+        $Datasource = ParseDatasources -Datasources $Result
         Write-Output $Datasource
     }
 }
@@ -2356,7 +2363,7 @@ function Global:Add-OciDatasource {
 #>
 function Global:Remove-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2367,32 +2374,32 @@ function Global:Remove-OciDatasource {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-           
-            $Datasource = ParseDatasources($Result)
+
+            $Datasource = ParseDatasources -Datasources $Result
             Write-Output $Datasource
         }
     }
@@ -2428,7 +2435,7 @@ function Global:Remove-OciDatasource {
 #>
 function Global:Get-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2466,7 +2473,7 @@ function Global:Get-OciDatasource {
                    Position=10,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -2485,29 +2492,29 @@ function Global:Get-OciDatasource {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
- 
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-       
-            $Datasource = ParseDatasources($Result)
+
+            $Datasource = ParseDatasources -Datasources $Result
             Write-Output $Datasource
         }
     }
@@ -2531,7 +2538,7 @@ function Global:Get-OciDatasource {
 #>
 function Global:Update-OciDataSource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2553,49 +2560,49 @@ function Global:Update-OciDataSource {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id"
- 
+
         try {
             $Body = @{}
-            if ($Name) { 
-                $Body.name = $Name 
+            if ($Name) {
+                $Body.name = $Name
             }
-            if ($acquisitionUnit) { 
-                $Body.acquisitionUnit = $acquisitionUnit | select -property id
+            if ($acquisitionUnit) {
+                $Body.acquisitionUnit = $acquisitionUnit | Select-Object -Property id
             }
             if ($config) {
-                $ConfigScriptProperties = $config.PSObject.Members | ? { $_.MemberType -eq "ScriptProperty" } | % { $_.Name }
+                $ConfigScriptProperties = $config.PSObject.Members | Where-Object { $_.MemberType -eq "ScriptProperty" } | ForEach-Object { $_.Name }
                 if (!$config.foundation.attributes.password) {
                     $config.foundation.attributes.PSObject.Properties.Remove('password')
                 }
                 if (!$config.foundation.attributes.'partner.password') {
                     $config.foundation.attributes.PSObject.Properties.Remove('partner.password')
                 }
-                $Body.config = $config | Select -Property * -ExcludeProperty $ConfigScriptProperties
+                $Body.config = $config | Select-Object -Property * -ExcludeProperty $ConfigScriptProperties
                 $Uri += "?expand=config"
             }
             $Body = $Body | ConvertTo-Json -Depth 10
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             if ($Result.toString().startsWith('{')) {
-                $Result = ParseJsonString($Result)
+                $Result = ParseJsonString -json $Result
             }
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
-       
-        $Datasource = ParseDatasources($Result)
+
+        $Datasource = ParseDatasources -Datasources $Result
         if ($Datasource.config.packages) {
             $config.packages = $Datasource.config.packages
         }
@@ -2619,7 +2626,7 @@ function Global:Update-OciDataSource {
 #>
 function Global:Get-OciAcquisitionUnitByDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2636,7 +2643,7 @@ function Global:Get-OciAcquisitionUnitByDatasource {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -2655,30 +2662,30 @@ function Global:Get-OciAcquisitionUnitByDatasource {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $($Server.BaseUri) + "/rest/v1/admin/datasources/$id/acquisitionUnit"
- 
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
 
-            $AcquisitionUnit = ParseAcquisitionUnits($Result)
-           
+            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result
+
             Write-Output $AcquisitionUnit
         }
     }
@@ -2700,7 +2707,7 @@ function Global:Get-OciAcquisitionUnitByDatasource {
 #>
 function Global:Get-OciActivePatchByDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2717,7 +2724,7 @@ function Global:Get-OciActivePatchByDatasource {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -2736,29 +2743,29 @@ function Global:Get-OciActivePatchByDatasource {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/activePatch"
- 
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-           
-            $ActivePatch = ParseActivePatches($Result)
+
+            $ActivePatch = ParseActivePatches -ActivePatches $Result
             Write-Output $ActivePatch
         }
     }
@@ -2780,7 +2787,7 @@ function Global:Get-OciActivePatchByDatasource {
 #>
 function Global:Get-OciDatasourceChanges {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2797,7 +2804,7 @@ function Global:Get-OciDatasourceChanges {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -2816,7 +2823,7 @@ function Global:Get-OciDatasourceChanges {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -2825,20 +2832,20 @@ function Global:Get-OciDatasourceChanges {
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim
             }
-           
-            $Change = ParseChanges($Result)
+
+            $Change = ParseChanges -Changes $Result
             Write-Output $Change
         }
     }
@@ -2856,7 +2863,7 @@ function Global:Get-OciDatasourceChanges {
 #>
 function Global:Get-OciDatasourceConfiguration {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2867,32 +2874,32 @@ function Global:Get-OciDatasourceConfiguration {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/config"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-            
-            $DatasourceConfiguration = ParseDatasourceConfig($Result)
+
+            $DatasourceConfiguration = ParseDatasourceConfig -DatasourceConfig $Result
             Write-Output $DatasourceConfiguration
         }
     }
@@ -2910,7 +2917,7 @@ function Global:Get-OciDatasourceConfiguration {
 #>
 function Global:Get-OciDatasourceDevices {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2921,31 +2928,31 @@ function Global:Get-OciDatasourceDevices {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/devices"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -2965,7 +2972,7 @@ function Global:Get-OciDatasourceDevices {
 #>
 function Global:Get-OciDatasourceEvents {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -2979,7 +2986,7 @@ function Global:Get-OciDatasourceEvents {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -2998,28 +3005,28 @@ function Global:Get-OciDatasourceEvents {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/events"
- 
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -3037,7 +3044,7 @@ function Global:Get-OciDatasourceEvents {
 #>
 function Global:Get-OciDatasourceEventDetails {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3048,32 +3055,32 @@ function Global:Get-OciDatasourceEventDetails {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/events/$id/details"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-          
-            $Events = ParseEvents($Result)
+
+            $Events = ParseEvents -Events $Result
             Write-Output $Events
         }
     }
@@ -3091,7 +3098,7 @@ function Global:Get-OciDatasourceEventDetails {
 #>
 function Global:Get-OciDatasourceNote {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3102,31 +3109,31 @@ function Global:Get-OciDatasourceNote {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/note"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-          
+
             Write-Output $Result
         }
     }
@@ -3146,7 +3153,7 @@ function Global:Get-OciDatasourceNote {
 #>
 function Global:Update-OciDatasourceNote {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3160,31 +3167,31 @@ function Global:Update-OciDatasourceNote {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/note"
- 
+
         try {
             $Body = @{value=$value} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3201,7 +3208,7 @@ function Global:Update-OciDatasourceNote {
 #>
 function Global:Get-OciDatasourcePackageStatus {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3212,31 +3219,31 @@ function Global:Get-OciDatasourcePackageStatus {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/packages"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-          
+
             Write-Output $Result
         }
     }
@@ -3254,7 +3261,7 @@ function Global:Get-OciDatasourcePackageStatus {
 #>
 function Global:Poll-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3265,31 +3272,31 @@ function Global:Poll-OciDatasource {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/poll"
- 
+
         try {
             $Body = ""
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3308,7 +3315,7 @@ function Global:Poll-OciDatasource {
 #>
 function Global:Suspend-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3322,31 +3329,31 @@ function Global:Suspend-OciDatasource {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/postpone"
- 
+
         try {
             $Body = @{days=$days} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3361,7 +3368,7 @@ function Global:Suspend-OciDatasource {
 #>
 function Global:Resume-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3372,17 +3379,17 @@ function Global:Resume-OciDatasource {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/resume"         
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/resume"
+
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
             $Separator = ''
@@ -3398,7 +3405,7 @@ function Global:Resume-OciDatasource {
                 $Uri += "$($Separator)expand=$expand"
             }
         }
- 
+
         try {
             if ('POST' -match 'PUT|POST') {
                 Write-Verbose "Body: "
@@ -3409,14 +3416,14 @@ function Global:Resume-OciDatasource {
             }
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3433,7 +3440,7 @@ function Global:Resume-OciDatasource {
 #>
 function Global:Test-OciDatasource {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -3444,31 +3451,31 @@ function Global:Test-OciDatasource {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/datasources/$id/test"
+
         try {
             $Body = ""
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3485,35 +3492,35 @@ function Global:Test-OciDatasource {
 #>
 function Global:Get-OciLdapConfiguration {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-        
+
         # add empty password to directoryLookup as this is not returned from OCI Server and is required for passing object to Update-OciLdapConfiguration
         $Result.directoryLookup | Add-Member -MemberType NoteProperty -Name password -Value "" -ErrorAction SilentlyContinue
 
@@ -3530,7 +3537,7 @@ function Global:Get-OciLdapConfiguration {
 #>
 function Global:Update-OciLdapConfiguration {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -3552,17 +3559,17 @@ function Global:Update-OciLdapConfiguration {
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"           
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/ldap"
+
         try {
             $Input = @{"isEnabled"=$isEnabled;
                         "directoryLookup"=$DirectoryLookup;
@@ -3573,14 +3580,14 @@ function Global:Update-OciLdapConfiguration {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3593,7 +3600,7 @@ function Global:Update-OciLdapConfiguration {
 #>
 function Global:Test-OciLdapConfiguration {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -3611,31 +3618,31 @@ function Global:Test-OciLdapConfiguration {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/ldap/test"
+
         try {
             $Body = ConvertTo-Json -InputObject @{"server"=$LdapServer;"userName"=$UserName;"password"=$Password} -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3652,37 +3659,37 @@ function Global:Test-OciLdapConfiguration {
 #>
 function Global:Get-OciLicenses {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/license"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $LicenseStatus = ParseLicenseStatus($Result)
-           
+        $LicenseStatus = ParseLicenseStatus -LicenseStatus $Result
+
         Write-Output $LicenseStatus
     }
 }
@@ -3699,7 +3706,7 @@ function Global:Get-OciLicenses {
 #>
 function Global:Update-OciLicenses {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -3708,31 +3715,31 @@ function Global:Update-OciLicenses {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/license"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/license"
+
         try {
             $Body = $Licenses | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3741,7 +3748,7 @@ function Global:Update-OciLicenses {
     .SYNOPSIS
     Replace license information
     .DESCRIPTION
-    Replace license information     
+    Replace license information
     .PARAMETER Licenses
     List of OCI Licenses
     .PARAMETER server
@@ -3749,7 +3756,7 @@ function Global:Update-OciLicenses {
 #>
 function Global:Replace-OciLicenses {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -3758,31 +3765,31 @@ function Global:Replace-OciLicenses {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/license"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/license"
+
         try {
             $Body = $Licenses | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -3803,7 +3810,7 @@ function Global:Replace-OciLicenses {
 #>
 function Global:Get-OciPatches {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -3815,7 +3822,7 @@ function Global:Get-OciPatches {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -3834,27 +3841,27 @@ function Global:Get-OciPatches {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/patches"        
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
+
         if ($expand) {
             $Uri += "?$($Separator)expand=$expand"
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $PatchStatus = ParsePatchStatus($Result)
+
+        $PatchStatus = ParsePatchStatus -PatchStatus $Result
         Write-Output $PatchStatus
     }
 }
@@ -3869,7 +3876,7 @@ function Global:Get-OciPatches {
 #>
 function Global:Add-OciPatch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3881,7 +3888,7 @@ function Global:Add-OciPatch {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -3900,23 +3907,23 @@ function Global:Add-OciPatch {
             }
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/patches"
- 
+
         try {
             $Result = Invoke-MultipartFormDataUpload -InFile $patchFile -Name "patchFile" -Uri $Uri -Header $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $PatchStatus = ParsePatchStatus($Result)
+
+        $PatchStatus = ParsePatchStatus -PatchStatus $Result
         Write-Output $PatchStatus
     }
 }
@@ -3937,7 +3944,7 @@ function Global:Add-OciPatch {
 #>
 function Global:Get-OciPatch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -3954,7 +3961,7 @@ function Global:Get-OciPatch {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -3973,26 +3980,26 @@ function Global:Get-OciPatch {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
+
         if ($expand) {
             $Uri += "?$($Separator)expand=$expand"
         }
- 
-        try {               
+
+        try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-          
+
         Write-Output $Result
     }
 }
@@ -4011,7 +4018,7 @@ function Global:Get-OciPatch {
 #>
 function Global:Update-OciPatch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4028,7 +4035,7 @@ function Global:Update-OciPatch {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -4047,10 +4054,10 @@ function Global:Update-OciPatch {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id"
+
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
             $Separator = ''
@@ -4066,20 +4073,20 @@ function Global:Update-OciPatch {
                 $Uri += "$($Separator)expand=$expand"
             }
         }
- 
+
         try {
             $Result = Invoke-MultipartFormDataUpload -InFile $patchFile -Name "patchFile" -Uri $Uri -Header $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $PatchStatus = ParsePatchStatus($Result)
+
+        $PatchStatus = ParsePatchStatus -PatchStatus $Result
         Write-Output $PatchStatus
     }
 }
@@ -4096,7 +4103,7 @@ function Global:Update-OciPatch {
 #>
 function Global:Approve-OciPatch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4107,31 +4114,31 @@ function Global:Approve-OciPatch {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/approve"
+
         try {
             $Body = ""
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -4150,7 +4157,7 @@ function Global:Approve-OciPatch {
 #>
 function Global:Get-OciPatchDatasourceConclusions {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4164,33 +4171,33 @@ function Global:Get-OciPatchDatasourceConclusions {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/datasourceConclusions"
- 
+
         if ($expand) {
             $Uri += "?$($Separator)expand=$expand"
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -4199,7 +4206,7 @@ function Global:Get-OciPatchDatasourceConclusions {
     .SYNOPSIS
     Update one patch note
     .DESCRIPTION
-    Update one patch note  
+    Update one patch note
     .PARAMETER id
     ID of patch to update
     .PARAMETER note
@@ -4209,7 +4216,7 @@ function Global:Get-OciPatchDatasourceConclusions {
 #>
 function Global:Update-OciPatchNote {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4223,31 +4230,31 @@ function Global:Update-OciPatchNote {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/note"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/note"
+
         try {
             $Body = @{value=$value} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -4264,7 +4271,7 @@ function Global:Update-OciPatchNote {
 #>
 function Global:Rollback-OciPatch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4275,7 +4282,7 @@ function Global:Rollback-OciPatch {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -4294,12 +4301,12 @@ function Global:Rollback-OciPatch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/rollback"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/admin/patches/$id/rollback"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -4315,7 +4322,7 @@ function Global:Rollback-OciPatch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('POST' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -4326,14 +4333,14 @@ function Global:Rollback-OciPatch {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -4351,20 +4358,20 @@ function Global:Rollback-OciPatch {
 #>
 function Global:Get-OciUsers {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/users"
 
@@ -4372,15 +4379,15 @@ function Global:Get-OciUsers {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Users = ParseUsers($Result)
+        $Users = ParseUsers -Users $Result
         Write-Output $Users
     }
 }
@@ -4400,19 +4407,19 @@ function Global:Get-OciUsers {
     "insightRole": "USER",
     "isActive": false
 }
-</pre>      
+</pre>
     .PARAMETER server
     OCI Server to connect to
 #>
 function Global:Add-OciUsers {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -4431,12 +4438,12 @@ function Global:Add-OciUsers {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/users"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/admin/users"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -4452,7 +4459,7 @@ function Global:Add-OciUsers {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('POST' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -4463,14 +4470,14 @@ function Global:Add-OciUsers {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -4486,36 +4493,36 @@ function Global:Add-OciUsers {
 #>
 function Global:Get-OciCurrentUser {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/users/current"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-        
-        $User = ParseUsers($Result)
+
+        $User = ParseUsers -Users $Result
         Write-Output $User
     }
 }
@@ -4525,7 +4532,7 @@ function Global:Get-OciCurrentUser {
     .SYNOPSIS
     Delete one user
     .DESCRIPTION
-    
+
     .PARAMETER id
     The id of user to delete
     .PARAMETER server
@@ -4533,7 +4540,7 @@ function Global:Get-OciCurrentUser {
 #>
 function Global:Remove-OciUser {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4544,7 +4551,7 @@ function Global:Remove-OciUser {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -4563,12 +4570,12 @@ function Global:Remove-OciUser {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -4584,7 +4591,7 @@ function Global:Remove-OciUser {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('DELETE' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -4595,14 +4602,14 @@ function Global:Remove-OciUser {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -4620,7 +4627,7 @@ function Global:Remove-OciUser {
 #>
 function Global:Get-OciUser {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4631,32 +4638,32 @@ function Global:Get-OciUser {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $User = ParseUsers($Result)
+            $User = ParseUsers -Users $Result
             Write-Output $User
         }
     }
@@ -4677,7 +4684,7 @@ function Global:Get-OciUser {
     "isActive": false
 }
 </pre>
-            
+
     .PARAMETER id
     The id of user to update
     .PARAMETER server
@@ -4685,7 +4692,7 @@ function Global:Get-OciUser {
 #>
 function Global:Update-OciUser {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4696,7 +4703,7 @@ function Global:Update-OciUser {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -4715,12 +4722,12 @@ function Global:Update-OciUser {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/admin/users/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -4736,7 +4743,7 @@ function Global:Update-OciUser {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('PUT' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -4747,14 +4754,14 @@ function Global:Update-OciUser {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -4772,35 +4779,35 @@ function Global:Update-OciUser {
 #>
 function Global:Get-OciAnnotations {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/annotations"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -4823,7 +4830,7 @@ function Global:Get-OciAnnotations {
 #>
 function Global:Add-OciAnnotation {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=1,
@@ -4841,19 +4848,19 @@ function Global:Add-OciAnnotation {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations"
- 
+
             if ($type -match "ENUM" -and -not $enumValues) {
                 throw "$type specified, but no enumValues provided"
             }
@@ -4864,14 +4871,14 @@ function Global:Add-OciAnnotation {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -4890,7 +4897,7 @@ function Global:Add-OciAnnotation {
 #>
 function Global:Remove-OciAnnotation {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4901,32 +4908,32 @@ function Global:Remove-OciAnnotation {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
- 
+
             try {
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -4944,7 +4951,7 @@ function Global:Remove-OciAnnotation {
 #>
 function Global:Get-OciAnnotation {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -4955,32 +4962,32 @@ function Global:Get-OciAnnotation {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Annotation = ParseAnnotations($Result)
+            $Annotation = ParseAnnotations -Annotations $Result
             Write-Output $Annotation
         }
     }
@@ -5013,7 +5020,7 @@ function Global:Get-OciAnnotation {
     ]
 }
 </pre>
-        
+
     .PARAMETER id
     Id or name of annotation definition to update
     .PARAMETER server
@@ -5021,7 +5028,7 @@ function Global:Get-OciAnnotation {
 #>
 function Global:Update-OciAnnotation {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5032,19 +5039,19 @@ function Global:Update-OciAnnotation {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
- 
+
             try {
                 if ('PATCH' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -5055,14 +5062,14 @@ function Global:Update-OciAnnotation {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -5072,7 +5079,7 @@ function Global:Update-OciAnnotation {
     .SYNOPSIS
     Remove object annotation values in bulk by annotation
     .DESCRIPTION
-    Remove object annotation values in bulk by annotation    
+    Remove object annotation values in bulk by annotation
     .PARAMETER id
     Id or name of annotation to remove values from
     .PARAMETER objectType
@@ -5084,7 +5091,7 @@ function Global:Update-OciAnnotation {
 #>
 function Global:Remove-OciAnnotationValues {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5101,14 +5108,14 @@ function Global:Remove-OciAnnotationValues {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -5125,7 +5132,7 @@ function Global:Remove-OciAnnotationValues {
             try {
                 foreach ($item in $items) {
                     $objectType = $item.objectType
-                    $targets = $item.values.targets | % { $_ -split '/' | select -last 1 }
+                    $targets = $item.values.targets | ForEach-Object { $_ -split '/' | Select-Object -last 1 }
                     if ($targets) {
                         $Body = ConvertTo-Json @(@{objectType=$objectType;targets=$targets}) -Compress -Depth 4
                         Write-Verbose "Body: $Body"
@@ -5134,14 +5141,14 @@ function Global:Remove-OciAnnotationValues {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -5159,7 +5166,7 @@ function Global:Remove-OciAnnotationValues {
 #>
 function Global:Get-OciAnnotationValues {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5170,31 +5177,31 @@ function Global:Get-OciAnnotationValues {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -5204,7 +5211,7 @@ function Global:Get-OciAnnotationValues {
     .SYNOPSIS
     Update object annotations in bulk by annotation
     .DESCRIPTION
-    Update object annotations in bulk by annotation     
+    Update object annotations in bulk by annotation
     .PARAMETER id
     Id or name of annotation definition to update
     .PARAMETER objectType
@@ -5218,7 +5225,7 @@ function Global:Get-OciAnnotationValues {
 #>
 function Global:Update-OciAnnotationValues {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5238,14 +5245,14 @@ function Global:Update-OciAnnotationValues {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -5257,14 +5264,14 @@ function Global:Update-OciAnnotationValues {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -5284,7 +5291,7 @@ function Global:Update-OciAnnotationValues {
 #>
 function Global:Get-OciAnnotationValuesByObjectType {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5298,31 +5305,31 @@ function Global:Get-OciAnnotationValuesByObjectType {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/$objectType"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -5345,7 +5352,7 @@ function Global:Get-OciAnnotationValuesByObjectType {
 #>
 function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5362,7 +5369,7 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -5381,12 +5388,12 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/{objectType}/{value}"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/{objectType}/{value}"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -5402,7 +5409,7 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('GET' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -5413,14 +5420,14 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -5448,7 +5455,7 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
 #>
 function Global:Get-OciApplications {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -5469,7 +5476,7 @@ function Global:Get-OciApplications {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -5488,11 +5495,11 @@ function Global:Get-OciApplications {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications"            
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications"
 
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
@@ -5509,20 +5516,20 @@ function Global:Get-OciApplications {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Applications = ParseApplications($Result)
+
+            $Applications = ParseApplications -Applications $Result
             Write-Output $Applications
         }
     }
@@ -5548,7 +5555,7 @@ function Global:Get-OciApplications {
 #>
 function Global:Add-OciApplication {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5572,7 +5579,7 @@ function Global:Add-OciApplication {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -5594,7 +5601,7 @@ function Global:Add-OciApplication {
 
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/applications"
- 
+
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
             $Separator = ''
@@ -5610,7 +5617,7 @@ function Global:Add-OciApplication {
                 $Uri += "$($Separator)expand=$expand"
             }
         }
- 
+
         try {
             if ($businessEntity) {
                 $Body = ConvertTo-Json @{name=$name;priority=$priority;businessEntity=@{id=$businessEntity};ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
@@ -5622,15 +5629,15 @@ function Global:Add-OciApplication {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $Application = ParseApplications($Result)
+
+        $Application = ParseApplications -Applications $Result
         Write-Output $Application
     }
 }
@@ -5675,7 +5682,7 @@ function Global:Add-OciApplication {
     }
 ]
 </pre>
-            
+
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
@@ -5685,7 +5692,7 @@ function Global:Add-OciApplication {
 #>
 function Global:Remove-OciApplicationsFromAssets {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -5697,7 +5704,7 @@ function Global:Remove-OciApplicationsFromAssets {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -5716,12 +5723,12 @@ function Global:Remove-OciApplicationsFromAssets {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"           
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -5737,7 +5744,7 @@ function Global:Remove-OciApplicationsFromAssets {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('DELETE' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -5748,14 +5755,14 @@ function Global:Remove-OciApplicationsFromAssets {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -5800,7 +5807,7 @@ function Global:Remove-OciApplicationsFromAssets {
         ]
     }
 ]
-</pre>     
+</pre>
     .PARAMETER computeResources
     Return list of related Compute resources
     .PARAMETER storageResources
@@ -5810,7 +5817,7 @@ function Global:Remove-OciApplicationsFromAssets {
 #>
 function Global:Add-OciApplicationsToAssets {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -5822,7 +5829,7 @@ function Global:Add-OciApplicationsToAssets {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -5841,12 +5848,12 @@ function Global:Add-OciApplicationsToAssets {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"           
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/assets"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -5862,7 +5869,7 @@ function Global:Add-OciApplicationsToAssets {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('PATCH' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -5873,14 +5880,14 @@ function Global:Add-OciApplicationsToAssets {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -5902,7 +5909,7 @@ function Global:Add-OciApplicationsToAssets {
 #>
 function Global:Remove-OciApplication {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -5919,7 +5926,7 @@ function Global:Remove-OciApplication {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -5938,12 +5945,12 @@ function Global:Remove-OciApplication {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -5959,20 +5966,20 @@ function Global:Remove-OciApplication {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Application = ParseApplications($Result)
+
+            $Application = ParseApplications -Applications $Result
             Write-Output $Application
         }
     }
@@ -6000,7 +6007,7 @@ function Global:Remove-OciApplication {
 #>
 function Global:Get-OciApplication {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6026,7 +6033,7 @@ function Global:Get-OciApplication {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -6045,12 +6052,12 @@ function Global:Get-OciApplication {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
-                      
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6066,20 +6073,20 @@ function Global:Get-OciApplication {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-            
-            $Application = ParseApplications($Result)
+
+            $Application = ParseApplications -Applications $Result
             Write-Output $Application
         }
     }
@@ -6089,9 +6096,9 @@ function Global:Get-OciApplication {
     .SYNOPSIS
     Update an application
     .DESCRIPTION
-    Update an application  
+    Update an application
     .PARAMETER id
-    Id of application to update 
+    Id of application to update
     .PARAMETER priority
     Application priority (Critical, High, Medium or Low). Default is Medium.
     .PARAMETER businessEntity
@@ -6105,7 +6112,7 @@ function Global:Get-OciApplication {
 #>
 function Global:Update-OciApplication {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6131,7 +6138,7 @@ function Global:Update-OciApplication {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -6150,12 +6157,12 @@ function Global:Update-OciApplication {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6171,7 +6178,7 @@ function Global:Update-OciApplication {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ($businessEntity) {
                     $Body = ConvertTo-Json @{name=$name;priority=$priority;businessEntity=@{id=$businessEntity};ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
@@ -6183,15 +6190,15 @@ function Global:Update-OciApplication {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Application = ParseApplications($Result)
+
+            $Application = ParseApplications -Applications $Result
             Write-Output $Application
         }
     }
@@ -6222,7 +6229,7 @@ function Global:Update-OciApplication {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of application to un-assign from assets
     .PARAMETER server
@@ -6230,7 +6237,7 @@ function Global:Update-OciApplication {
 #>
 function Global:Bulk-OciUnAssignApplicationFromAssets {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6241,7 +6248,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -6260,12 +6267,12 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"           
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6281,7 +6288,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('DELETE' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -6292,14 +6299,14 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -6321,7 +6328,7 @@ function Global:Bulk-OciUnAssignApplicationFromAssets {
 #>
 function Global:Get-OciAssetsByApplication {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6338,19 +6345,19 @@ function Global:Get-OciAssetsByApplication {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6366,19 +6373,19 @@ function Global:Get-OciAssetsByApplication {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -6409,7 +6416,7 @@ function Global:Get-OciAssetsByApplication {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of application to assign to assets
     .PARAMETER server
@@ -6417,7 +6424,7 @@ function Global:Get-OciAssetsByApplication {
 #>
 function Global:Bulk-OciAssignApplicationToAssets {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6425,7 +6432,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -6444,12 +6451,12 @@ function Global:Bulk-OciAssignApplicationToAssets {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6465,7 +6472,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 if ('PATCH' -match 'PUT|POST') {
                     Write-Verbose "Body: "
@@ -6476,14 +6483,14 @@ function Global:Bulk-OciAssignApplicationToAssets {
                 }
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -6517,7 +6524,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
 #>
 function Global:Get-OciComputeResourcesByApplication {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6552,7 +6559,7 @@ function Global:Get-OciComputeResourcesByApplication {
                    Position=9,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -6571,7 +6578,7 @@ function Global:Get-OciComputeResourcesByApplication {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -6592,20 +6599,20 @@ function Global:Get-OciComputeResourcesByApplication {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-            
-            $ComputeResources = ParseComputeResources($Result)
+
+            $ComputeResources = ParseComputeResources -ComputeResources $Result
             Write-Output $ComputeResources
         }
     }
@@ -6643,7 +6650,7 @@ function Global:Get-OciComputeResourcesByApplication {
 #>
 function Global:Get-OciStorageResourcesByApplication {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6684,7 +6691,7 @@ function Global:Get-OciStorageResourcesByApplication {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -6703,7 +6710,7 @@ function Global:Get-OciStorageResourcesByApplication {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -6724,20 +6731,20 @@ function Global:Get-OciStorageResourcesByApplication {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-            
-            $StorageResources = ParseStorageResources($Result)
+
+            $StorageResources = ParseStorageResources -StorageResources $Result
             Write-Output $StorageResources
         }
     }
@@ -6755,35 +6762,35 @@ function Global:Get-OciStorageResourcesByApplication {
 #>
 function Global:Get-OciBusinessEntities {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/businessEntities"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -6798,7 +6805,7 @@ function Global:Get-OciBusinessEntities {
 #>
 function Global:Add-OciBusinessEntity {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -6816,31 +6823,31 @@ function Global:Add-OciBusinessEntity {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/businessEntities"
- 
+
         try {
             $Body = @{tenant=$Tenant;lob=$LineOfBusiness;businessUnit=$BusinessUnit;project=$project} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'            
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -6857,7 +6864,7 @@ function Global:Add-OciBusinessEntity {
 #>
 function Global:Remove-OciBusinessEntity {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6868,29 +6875,29 @@ function Global:Remove-OciBusinessEntity {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/businessEntities/$id"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -6910,7 +6917,7 @@ function Global:Remove-OciBusinessEntity {
 #>
 function Global:Get-OciBusinessEntity {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -6921,31 +6928,31 @@ function Global:Get-OciBusinessEntity {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/businessEntities/$id"
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -6989,7 +6996,7 @@ function Global:Get-OciBusinessEntity {
 #>
 function Global:Get-OciDatastores {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -7010,14 +7017,14 @@ function Global:Get-OciDatastores {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -7028,7 +7035,7 @@ function Global:Get-OciDatastores {
             }
 
             $Uri = $($Server.BaseUri) + "/rest/v1/assets/dataStores"
-            
+
             $Uri += '?'
             $Separator = ''
             if ($limit) {
@@ -7042,26 +7049,26 @@ function Global:Get-OciDatastores {
             if ($expand) {
                 $Uri += "$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-            
-            $Datastores = ParseDatastores $Result $Timezone
-                  
+
+            $Datastores = ParseDatastores -Datastores $Result -Timezone $Timezone
+
             if ($Datastores) { Write-Output $Datastores }
 
             if ($FetchAll -and @($Datastores).Count -eq $Limit) {
                 $Offset += $Limit
-                Get-OciDatastores -fromTime $fromTime -toTime $toTime -performance:$performance -sort $sort -limit $limit -offset $offset -hosts:$hosts -vmdks:$vmdks -datasources:$datasources -storageResources:$storageResources -annotations:$annotations -Server $Server
+                Get-OciDatastores -fromTime $fromTime -toTime $toTime -limit $limit -offset $offset -Server $Server
             }
         }
     }
@@ -7077,35 +7084,35 @@ function Global:Get-OciDatastores {
 #>
 function Global:Get-OciDatastoreCount {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/count"
-      
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result.value
     }
 }
@@ -7142,7 +7149,7 @@ function Global:Get-OciDatastoreCount {
 #>
 function Global:Get-OciDatastore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7183,7 +7190,7 @@ function Global:Get-OciDatastore {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -7201,12 +7208,12 @@ function Global:Get-OciDatastore {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -7222,20 +7229,20 @@ function Global:Get-OciDatastore {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Datastore = ParseDatastores $Result $Timezone
+
+            $Datastore = ParseDatastores -Datastores $Result -Timezone $Timezone
             Write-Output $Datastore
         }
     }
@@ -7245,7 +7252,7 @@ function Global:Get-OciDatastore {
     .SYNOPSIS
     Delete annotations from object
     .DESCRIPTION
-    Delete annotations from object   
+    Delete annotations from object
     .PARAMETER id
     Id of datastore where annotation should be deleted
     .PARAMATER annotationId
@@ -7257,7 +7264,7 @@ function Global:Get-OciDatastore {
 #>
 function Global:Remove-OciAnnotationsByDatastore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7274,14 +7281,14 @@ function Global:Remove-OciAnnotationsByDatastore {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $CurrentOciServer.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
 
@@ -7291,23 +7298,23 @@ function Global:Remove-OciAnnotationsByDatastore {
 
         if (!$Annotations) {
             $Annotations = Get-OciAnnotationsByDatastore -id $id -definition -Server $Server
-        }      
- 
+        }
+
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-       
-        $AnnotationValues = ParseAnnotationValues($Result)
+
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
         Write-Output $AnnotationValues
     }
 }
@@ -7328,7 +7335,7 @@ function Global:Remove-OciAnnotationsByDatastore {
 #>
 function Global:Get-OciAnnotationsByDatastore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7345,35 +7352,35 @@ function Global:Get-OciAnnotationsByDatastore {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
+
         if ($definition) {
             $Uri += "?expand=definition"
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-            
-        $Annotations = ParseAnnotations($Result)
-            
+
+        $Annotations = ParseAnnotations -Annotations $Result
+
         Write-Output $Annotations
     }
 }
@@ -7382,7 +7389,7 @@ function Global:Get-OciAnnotationsByDatastore {
     .SYNOPSIS
     Update annotations for datastore
     .DESCRIPTION
-    Update annotations for datastore      
+    Update annotations for datastore
     .PARAMETER id
     Id of datastore to update
     .PARAMETER Annotations
@@ -7394,7 +7401,7 @@ function Global:Get-OciAnnotationsByDatastore {
 #>
 function Global:Update-OciAnnotationsByDatastore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7411,36 +7418,36 @@ function Global:Update-OciAnnotationsByDatastore {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/annotations"
+
         if ($definition) {
             $Uri += "?expand=definition"
         }
- 
+
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues($Result)
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
         Write-Output $AnnotationValues
     }
 }
@@ -7479,7 +7486,7 @@ function Global:Update-OciAnnotationsByDatastore {
 #>
 function Global:Get-OciDatasourcesByDataStore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7523,7 +7530,7 @@ function Global:Get-OciDatasourcesByDataStore {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -7542,12 +7549,12 @@ function Global:Get-OciDatasourcesByDataStore {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -7563,21 +7570,21 @@ function Global:Get-OciDatasourcesByDataStore {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-            
-            $Datasources = ParseDatasources($Result)
-            
+
+            $Datasources = ParseDatasources -Datasources $Result
+
             Write-Output $Datasources
         }
     }
@@ -7623,7 +7630,7 @@ function Global:Get-OciDatasourcesByDataStore {
 #>
 function Global:Get-OciHostsByDatastore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7673,7 +7680,7 @@ function Global:Get-OciHostsByDatastore {
                    Position=14,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -7692,12 +7699,12 @@ function Global:Get-OciHostsByDatastore {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -7713,21 +7720,21 @@ function Global:Get-OciHostsByDatastore {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Hosts = ParseHosts($Result,$Server.Timezone)
-            
+            $Hosts = ParseHosts -Hosts $Result -Timezone $Server.Timezone
+
             if ($Hosts) {
                 Write-Output $Hosts
             }
@@ -7755,7 +7762,7 @@ function Global:Get-OciHostsByDatastore {
 #>
 function Global:Get-OciDatastorePerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7775,19 +7782,19 @@ function Global:Get-OciDatastorePerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -7803,20 +7810,20 @@ function Global:Get-OciDatastorePerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -7854,7 +7861,7 @@ function Global:Get-OciDatastorePerformance {
 #>
 function Global:Get-OciStorageResourcesByDatastore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -7895,7 +7902,7 @@ function Global:Get-OciStorageResourcesByDatastore {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -7914,12 +7921,12 @@ function Global:Get-OciStorageResourcesByDatastore {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/storageResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/storageResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -7935,20 +7942,20 @@ function Global:Get-OciStorageResourcesByDatastore {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
-            $StorageResources = ParseStorageResources($Result)
+
+            $StorageResources = ParseStorageResources -StorageResources $Result
             Write-Output $StorageResources
         }
     }
@@ -7986,7 +7993,7 @@ function Global:Get-OciStorageResourcesByDatastore {
 #>
 function Global:Get-OciVmdksByDatastore {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8027,7 +8034,7 @@ function Global:Get-OciVmdksByDatastore {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -8046,12 +8053,12 @@ function Global:Get-OciVmdksByDatastore {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/vmdks"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/vmdks"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -8067,21 +8074,21 @@ function Global:Get-OciVmdksByDatastore {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Vmdks = ParseVmdks($Result,$Server.Timezone)
-           
+            $Vmdks = ParseVmdks -Vmdks $Result -Timezone $Server.Timezone
+
             Write-Output $Vmdks
         }
     }
@@ -8123,7 +8130,7 @@ function Global:Get-OciVmdksByDatastore {
 #>
 function Global:Get-OciDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8167,7 +8174,7 @@ function Global:Get-OciDisk {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -8186,12 +8193,12 @@ function Global:Get-OciDisk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -8207,20 +8214,20 @@ function Global:Get-OciDisk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Disks = ParseDisks($Result)
+
+            $Disks = ParseDisks -Disks $Result
             Write-Output $Disks
         }
     }
@@ -8230,7 +8237,7 @@ function Global:Get-OciDisk {
     .SYNOPSIS
     Remove annotations from disk
     .DESCRIPTION
-    Remove annotations from disk 
+    Remove annotations from disk
     .PARAMETER id
     Id of disk where annotations should be removed from
     .PARAMETER Annotations
@@ -8242,7 +8249,7 @@ function Global:Get-OciDisk {
 #>
 function Global:Remove-OciAnnotationsByDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8259,14 +8266,14 @@ function Global:Remove-OciAnnotationsByDisk {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
 
@@ -8277,22 +8284,22 @@ function Global:Remove-OciAnnotationsByDisk {
         if (!$Annotations) {
             $Annotations = Get-OciAnnotationsByDisk -id $id -definition -Server $Server
         }
- 
+
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Body $Body -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues($Result)
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
         Write-Output $AnnotationValues
     }
 }
@@ -8311,7 +8318,7 @@ function Global:Remove-OciAnnotationsByDisk {
 #>
 function Global:Get-OciAnnotationsByDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8325,34 +8332,34 @@ function Global:Get-OciAnnotationsByDisk {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"     
-        
+        $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
+
         if ($definition) {
             $Uri += "?expand=definition"
-        }       
- 
+        }
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Annotations = ParseAnnotations($Result)
+        $Annotations = ParseAnnotations -Annotations $Result
         Write-Output $Annotations
     }
 }
@@ -8361,7 +8368,7 @@ function Global:Get-OciAnnotationsByDisk {
     .SYNOPSIS
     Update annotations of disk
     .DESCRIPTION
-    Update annotations of disk      
+    Update annotations of disk
     .PARAMETER id
     Id of disk to update
     .PARAMETER Annotations
@@ -8373,7 +8380,7 @@ function Global:Get-OciAnnotationsByDisk {
 #>
 function Global:Update-OciAnnotationsByDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8390,32 +8397,32 @@ function Global:Update-OciAnnotationsByDisk {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"    
-        
+        $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/annotations"
+
         if ($definition) {
             $Uri += "?expand=definition"
-        }        
- 
+        }
+
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
-        $Annotations = ParseAnnotations($Result)
+
+        $Annotations = ParseAnnotations -Annotations $Result
         Write-Output $Annotations
     }
 }
@@ -8472,7 +8479,7 @@ function Global:Update-OciAnnotationsByDisk {
 #>
 function Global:Get-OciBackendVolumesByDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8543,7 +8550,7 @@ function Global:Get-OciBackendVolumesByDisk {
                    Position=21,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -8562,12 +8569,12 @@ function Global:Get-OciBackendVolumesByDisk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/backendVolumes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/backendVolumes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -8583,20 +8590,20 @@ function Global:Get-OciBackendVolumesByDisk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volumes = ParseVolumes($Result)
+            $Volumes = ParseVolumes -Volumes $Result
             Write-Output $Volumes
         }
     }
@@ -8636,7 +8643,7 @@ function Global:Get-OciBackendVolumesByDisk {
 #>
 function Global:Get-OciDatasourcesByDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8680,7 +8687,7 @@ function Global:Get-OciDatasourcesByDisk {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -8699,12 +8706,12 @@ function Global:Get-OciDatasourcesByDisk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -8720,20 +8727,20 @@ function Global:Get-OciDatasourcesByDisk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources($Result)
+            $Datasources = ParseDatasources -Datasources $Result
 
             Write-Output $Datasources
         }
@@ -8760,7 +8767,7 @@ function Global:Get-OciDatasourcesByDisk {
 #>
 function Global:Get-OciDiskPerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8783,7 +8790,7 @@ function Global:Get-OciDiskPerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -8802,12 +8809,12 @@ function Global:Get-OciDiskPerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -8823,20 +8830,20 @@ function Global:Get-OciDiskPerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -8880,7 +8887,7 @@ function Global:Get-OciDiskPerformance {
 #>
 function Global:Get-OciStoragePoolsByDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -8930,7 +8937,7 @@ function Global:Get-OciStoragePoolsByDisk {
                    Position=14,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -8949,12 +8956,12 @@ function Global:Get-OciStoragePoolsByDisk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storagePools"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storagePools"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -8970,20 +8977,20 @@ function Global:Get-OciStoragePoolsByDisk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StoragePools = ParseStoragePools($Result)
+            $StoragePools = ParseStoragePools -StoragePools $Result
             Write-Output $StoragePools
         }
     }
@@ -9021,7 +9028,7 @@ function Global:Get-OciStoragePoolsByDisk {
 #>
 function Global:Get-OciStorageResourcesByDisk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -9062,7 +9069,7 @@ function Global:Get-OciStorageResourcesByDisk {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -9081,12 +9088,12 @@ function Global:Get-OciStorageResourcesByDisk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/disks/$id/storageResources"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -9102,20 +9109,20 @@ function Global:Get-OciStorageResourcesByDisk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
-            $StorageResources = ParseStorageResources($Result)
+
+            $StorageResources = ParseStorageResources -StorageResources $Result
             Write-Output $StorageResources
         }
     }
@@ -9147,7 +9154,7 @@ function Global:Get-OciStorageResourcesByDisk {
 #>
 function Global:Get-OciFabrics {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -9174,7 +9181,7 @@ function Global:Get-OciFabrics {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -9193,7 +9200,7 @@ function Global:Get-OciFabrics {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -9203,8 +9210,8 @@ function Global:Get-OciFabrics {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics"
+
             $Uri += '?'
             $Separator = ''
             if ($fromTime) {
@@ -9226,20 +9233,20 @@ function Global:Get-OciFabrics {
             if ($expand) {
                 $Uri += "$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Fabrics = ParseFabrics($Result)
+            $Fabrics = ParseFabrics -Fabrics $Result
             if ($Fabrics)  { Write-Output $Fabrics }
 
             if ($FetchAll -and @($Fabrics).Count -eq $Limit) {
@@ -9260,35 +9267,35 @@ function Global:Get-OciFabrics {
 #>
 function Global:Get-OciFabricCount {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/count"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-       
+
         Write-Output $Result
     }
 }
@@ -9315,7 +9322,7 @@ function Global:Get-OciFabricCount {
 #>
 function Global:Get-OciFabric {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -9341,7 +9348,7 @@ function Global:Get-OciFabric {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -9360,12 +9367,12 @@ function Global:Get-OciFabric {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -9381,20 +9388,20 @@ function Global:Get-OciFabric {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Fabric = ParseFabrics($Result)
+            $Fabric = ParseFabrics -Fabrics $Result
             Write-Output $Fabric
         }
     }
@@ -9434,7 +9441,7 @@ function Global:Get-OciFabric {
 #>
 function Global:Get-OciDatasourcesByFabric {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -9478,7 +9485,7 @@ function Global:Get-OciDatasourcesByFabric {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -9497,12 +9504,12 @@ function Global:Get-OciDatasourcesByFabric {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -9518,20 +9525,20 @@ function Global:Get-OciDatasourcesByFabric {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Datasources = ParseDatasources($Result)
+
+            $Datasources = ParseDatasources -Datasources $Result
             Write-Output $Datasources
         }
     }
@@ -9577,7 +9584,7 @@ function Global:Get-OciDatasourcesByFabric {
 #>
 function Global:Get-OciPortsByFabric {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -9630,7 +9637,7 @@ function Global:Get-OciPortsByFabric {
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -9649,7 +9656,7 @@ function Global:Get-OciPortsByFabric {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -9659,7 +9666,7 @@ function Global:Get-OciPortsByFabric {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports"                      
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports"
 
             $Uri += '?'
             $Separator = ''
@@ -9686,20 +9693,20 @@ function Global:Get-OciPortsByFabric {
             if ($expand) {
                 $Uri += "$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Ports = ParsePorts($Result,$Server.Timezone)
+            $Ports = ParsePorts -Ports $Result -Timezone $Server.Timezone
             if ($Ports) { Write-Output $Ports }
 
             if ($FetchAll -and @($Ports).Count -eq $Limit) {
@@ -9726,7 +9733,7 @@ function Global:Get-OciPortsByFabric {
 #>
 function Global:Get-OciPortsByFabricCount {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -9743,7 +9750,7 @@ function Global:Get-OciPortsByFabricCount {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -9762,12 +9769,12 @@ function Global:Get-OciPortsByFabricCount {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports/count"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/ports/count"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -9783,17 +9790,17 @@ function Global:Get-OciPortsByFabricCount {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result.Value
@@ -9833,7 +9840,7 @@ function Global:Get-OciPortsByFabricCount {
 #>
 function Global:Get-OciSwitchesByFabric {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -9874,7 +9881,7 @@ function Global:Get-OciSwitchesByFabric {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -9893,12 +9900,12 @@ function Global:Get-OciSwitchesByFabric {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/switches"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fabrics/$id/switches"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -9914,20 +9921,20 @@ function Global:Get-OciSwitchesByFabric {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Switches = ParseSwitches($Result,$Server.Timezone)
+            $Switches = ParseSwitches -Switches $Result -Timezone $Server.Timezone
             Write-Output $Switches
         }
     }
@@ -9939,7 +9946,7 @@ function Global:Get-OciSwitchesByFabric {
     .SYNOPSIS
     Retrieve one file system
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of file system to retrieve
     .PARAMETER fromTime
@@ -9959,7 +9966,7 @@ function Global:Get-OciSwitchesByFabric {
 #>
 function Global:Get-OciFilesystem {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -9988,7 +9995,7 @@ function Global:Get-OciFilesystem {
                    Position=7,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -10007,12 +10014,12 @@ function Global:Get-OciFilesystem {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -10028,19 +10035,19 @@ function Global:Get-OciFilesystem {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -10050,7 +10057,7 @@ function Global:Get-OciFilesystem {
     .SYNOPSIS
     Retrieve compute resource for a file system
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of file system to retrieve the compute resource for
     .PARAMETER fromTime
@@ -10074,7 +10081,7 @@ function Global:Get-OciFilesystem {
 #>
 function Global:Get-OciComputeResourceByFileSystem {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -10109,7 +10116,7 @@ function Global:Get-OciComputeResourceByFileSystem {
                    Position=9,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -10128,12 +10135,12 @@ function Global:Get-OciComputeResourceByFileSystem {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/computeResource"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/computeResource"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -10149,17 +10156,17 @@ function Global:Get-OciComputeResourceByFileSystem {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -10171,7 +10178,7 @@ function Global:Get-OciComputeResourceByFileSystem {
     .SYNOPSIS
     Retrieve storage resources for a file system
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of file system to retrieve the storage resources for
     .PARAMETER fromTime
@@ -10199,7 +10206,7 @@ function Global:Get-OciComputeResourceByFileSystem {
 #>
 function Global:Get-OciStorageResorcesByFileSystem {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -10240,7 +10247,7 @@ function Global:Get-OciStorageResorcesByFileSystem {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -10259,12 +10266,12 @@ function Global:Get-OciStorageResorcesByFileSystem {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/storageResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/storageResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -10280,19 +10287,19 @@ function Global:Get-OciStorageResorcesByFileSystem {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -10302,7 +10309,7 @@ function Global:Get-OciStorageResorcesByFileSystem {
     .SYNOPSIS
     Retrieve VMDKs for a file system
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of file system to retrieve the VMDKs for
     .PARAMETER fromTime
@@ -10330,7 +10337,7 @@ function Global:Get-OciStorageResorcesByFileSystem {
 #>
 function Global:Get-OciVmdksByFileSystem {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -10371,7 +10378,7 @@ function Global:Get-OciVmdksByFileSystem {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -10390,12 +10397,12 @@ function Global:Get-OciVmdksByFileSystem {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/vmdks"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/fileSystems/$id/vmdks"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -10411,19 +10418,19 @@ function Global:Get-OciVmdksByFileSystem {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -10437,7 +10444,7 @@ function Global:Get-OciVmdksByFileSystem {
 #>
 function Global:Get-OciTopologyByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -10448,31 +10455,31 @@ function Global:Get-OciTopologyByHost {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/topology/Host/$id"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Topology = ParseTopologies($Result)
-          
+        $Topology = ParseTopologies -Topologies $Result
+
         Write-Output $Topology
     }
 }
@@ -10485,7 +10492,7 @@ function Global:Get-OciTopologyByHost {
 #>
 function Global:Get-OciTopologyByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -10496,31 +10503,31 @@ function Global:Get-OciTopologyByStorage {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/topology/Storage/$id"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Topology = ParseTopologies($Result)
-          
+        $Topology = ParseTopologies -Topologies $Result
+
         Write-Output $Topology
     }
 }
@@ -10531,7 +10538,7 @@ function Global:Get-OciTopologyByStorage {
     .SYNOPSIS
     Retrieve all hosts
     .DESCRIPTION
-    
+
     .PARAMETER fromTime
     Filter for time range, either in milliseconds or as DateTime
     .PARAMETER toTime
@@ -10571,7 +10578,7 @@ function Global:Get-OciTopologyByStorage {
 #>
 function Global:Get-OciHosts {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -10628,7 +10635,7 @@ function Global:Get-OciHosts {
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -10647,7 +10654,7 @@ function Global:Get-OciHosts {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -10657,8 +10664,8 @@ function Global:Get-OciHosts {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts"
+
             $Uri += '?'
             $Separator = ''
             if ($fromTime) {
@@ -10684,20 +10691,20 @@ function Global:Get-OciHosts {
             if ($expand) {
                 $Uri += "$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Hosts = ParseHosts $Result $Server.Timezone
+            $Hosts = ParseHosts -Hosts $Result -Timezone $Server.Timezone
 
             if ($Hosts) { Write-Output $Hosts }
 
@@ -10719,33 +10726,33 @@ function Global:Get-OciHosts {
 #>
 function Global:Get-OciHostCount {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/count"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         Write-Output $Result.Value
@@ -10792,7 +10799,7 @@ function Global:Get-OciHostCount {
 #>
 function Global:Get-OciHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -10845,7 +10852,7 @@ function Global:Get-OciHost {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -10864,10 +10871,10 @@ function Global:Get-OciHost {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id"
+
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
             $Separator = ''
@@ -10883,20 +10890,21 @@ function Global:Get-OciHost {
                 $Uri += "$($Separator)expand=$expand"
             }
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-            
-        $Hosts = ParseHosts $Result $Server.Timezone
+
+        $Hosts = ParseHosts -Hosts $Result -Timezone $Server.Timezone
+
         Write-Output $Hosts
     }
 }
@@ -10905,7 +10913,7 @@ function Global:Get-OciHost {
     .SYNOPSIS
     Remove annotations from host
     .DESCRIPTION
-    Remove annotations from host             
+    Remove annotations from host
     .PARAMETER id
     Id of host to remove annotations from
     .PARAMETER Annotations
@@ -10917,7 +10925,7 @@ function Global:Get-OciHost {
 #>
 function Global:Remove-OciAnnotationsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -10934,40 +10942,40 @@ function Global:Remove-OciAnnotationsByHost {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
 
         if ($definition) {
             $Uri += "?expand=definition"
-        }      
+        }
 
         if (!$Annotations) {
             $Annotations = Get-OciAnnotationsByHost -id $id -definition -Server $Server
         }
- 
+
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $AnnotationValues = ParseAnnotationValues($Result)
+
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
         Write-Output $AnnotationValues
     }
 }
@@ -10988,7 +10996,7 @@ function Global:Remove-OciAnnotationsByHost {
 #>
 function Global:Get-OciAnnotationsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11005,7 +11013,7 @@ function Global:Get-OciAnnotationsByHost {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11024,10 +11032,10 @@ function Global:Get-OciAnnotationsByHost {
             }
         }
     }
-   
+
     Process {
-        $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/annotations"            
- 
+        $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/annotations"
+
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
             $Separator = ''
@@ -11043,20 +11051,20 @@ function Global:Get-OciAnnotationsByHost {
                 $Uri += "$($Separator)expand=$expand"
             }
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues($Result)
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
         Write-Output $AnnotationValues
     }
 }
@@ -11065,7 +11073,7 @@ function Global:Get-OciAnnotationsByHost {
     .SYNOPSIS
     Update annotations of host
     .DESCRIPTION
-    Update annotations of host     
+    Update annotations of host
     .PARAMETER id
     Id of host to update
     .PARAMETER annotation
@@ -11075,7 +11083,7 @@ function Global:Get-OciAnnotationsByHost {
 #>
 function Global:Update-OciAnnotationsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -11092,36 +11100,36 @@ function Global:Update-OciAnnotationsByHost {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/annotations"
 
         if ($expand) {
             $Uri += "?$($Separator)expand=$expand"
         }
- 
+
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $AnnotationValues = ParseAnnotationValues($Result)
+
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
         Write-Output $AnnotationValues
     }
 }
@@ -11140,7 +11148,7 @@ function Global:Update-OciAnnotationsByHost {
 #>
 function Global:Remove-OciApplicationsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11160,7 +11168,7 @@ function Global:Remove-OciApplicationsByHost {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11179,10 +11187,10 @@ function Global:Remove-OciApplicationsByHost {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
+
         if ($expand) {
             $Uri += "?expand=$expand"
         }
@@ -11190,22 +11198,22 @@ function Global:Remove-OciApplicationsByHost {
         if (!$Applications) {
             $Applications = Get-OciApplicationsByHost -id $id -Server $Server
         }
- 
+
         try {
             $Body = ConvertTo-Json -InputObject @($Applications) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Applications = ParseApplications($Result)
+        $Applications = ParseApplications -Applications $Result
         Write-Output $Applications
     }
 }
@@ -11224,7 +11232,7 @@ function Global:Remove-OciApplicationsByHost {
 #>
 function Global:Get-OciApplicationsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11241,7 +11249,7 @@ function Global:Get-OciApplicationsByHost {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11260,27 +11268,27 @@ function Global:Get-OciApplicationsByHost {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
+
         if ($expand) {
             $Uri += "$($Separator)expand=$expand"
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Applications = ParseApplications $Result
+        $Applications = ParseApplications -Applications $Result
         if ($Applications) {
             Write-Output $Applications
         }
@@ -11291,7 +11299,7 @@ function Global:Get-OciApplicationsByHost {
     .SYNOPSIS
     Update Applications of host
     .DESCRIPTION
-    Update Applications of host     
+    Update Applications of host
     .PARAMETER id
     Id of host to update applications of
     .PARAMETER Applications
@@ -11303,7 +11311,7 @@ function Global:Get-OciApplicationsByHost {
 #>
 function Global:Update-OciApplicationsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11323,7 +11331,7 @@ function Global:Update-OciApplicationsByHost {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11342,29 +11350,29 @@ function Global:Update-OciApplicationsByHost {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
+
         if ($expand) {
             $Uri += "$($Separator)expand=$expand"
         }
- 
+
         try {
             $Body = ConvertTo-Json -InputObject @($Applications) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $Applications = ParseApplications $Result
+
+        $Applications = ParseApplications -Applications $Result
         Write-Output $Applications
     }
 }
@@ -11373,7 +11381,7 @@ function Global:Update-OciApplicationsByHost {
     .SYNOPSIS
     Add application to host
     .DESCRIPTION
-    Add application to host  
+    Add application to host
     .PARAMETER id
     Id of host to application to
     .PARAMETER Application
@@ -11385,7 +11393,7 @@ function Global:Update-OciApplicationsByHost {
 #>
 function Global:Add-OciApplicationByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11405,7 +11413,7 @@ function Global:Add-OciApplicationByHost {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11424,29 +11432,29 @@ function Global:Add-OciApplicationByHost {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/applications"
+
         if ($expand) {
             $Uri += "$($Separator)expand=$expand"
         }
- 
+
         try {
             $Body = ConvertTo-Json -InputObject $Application -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Application = ParseApplications $Result
+        $Application = ParseApplications -Applications $Result
         Write-Output $Application
     }
 }
@@ -11467,7 +11475,7 @@ function Global:Add-OciApplicationByHost {
 #>
 function Global:Remove-OciApplicationByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11487,7 +11495,7 @@ function Global:Remove-OciApplicationByHost {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11506,27 +11514,27 @@ function Global:Remove-OciApplicationByHost {
             }
         }
     }
-   
+
     Process {
-        $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/applications/$($Application.id)"            
- 
+        $Uri = $($Server.BaseUri) + "/rest/v1/assets/hosts/$id/applications/$($Application.id)"
+
         if ($expand) {
             $Uri += "$($Separator)expand=$expand"
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
-        $Applications = ParseApplications $Result
+
+        $Applications = ParseApplications -Applications $Result
         Write-Output $Applications
     }
 }
@@ -11569,7 +11577,7 @@ function Global:Remove-OciApplicationByHost {
 #>
 function Global:Get-OciClusterHostsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11622,7 +11630,7 @@ function Global:Get-OciClusterHostsByHost {
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11641,12 +11649,12 @@ function Global:Get-OciClusterHostsByHost {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/clusterHosts"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/clusterHosts"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -11662,17 +11670,17 @@ function Global:Get-OciClusterHostsByHost {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -11684,7 +11692,7 @@ function Global:Get-OciClusterHostsByHost {
     .SYNOPSIS
     Retrieve the data center of host
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
@@ -11696,7 +11704,7 @@ function Global:Get-OciClusterHostsByHost {
 #>
 function Global:Get-OciDataCenterByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11716,7 +11724,7 @@ function Global:Get-OciDataCenterByHost {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11735,12 +11743,12 @@ function Global:Get-OciDataCenterByHost {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/dataCenter"                     
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/dataCenter"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -11756,17 +11764,17 @@ function Global:Get-OciDataCenterByHost {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -11778,7 +11786,7 @@ function Global:Get-OciDataCenterByHost {
     .SYNOPSIS
     Retrieve datasources of a host.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of host to retrieve datasources for.
     .PARAMETER fromTime
@@ -11806,7 +11814,7 @@ function Global:Get-OciDataCenterByHost {
 #>
 function Global:Get-OciDatasourcesByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11850,7 +11858,7 @@ function Global:Get-OciDatasourcesByHost {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11869,12 +11877,12 @@ function Global:Get-OciDatasourcesByHost {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/datasources"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -11890,17 +11898,17 @@ function Global:Get-OciDatasourcesByHost {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -11912,7 +11920,7 @@ function Global:Get-OciDatasourcesByHost {
     .SYNOPSIS
     Retrieve the file systems of host
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of host to retrieve file systems for
     .PARAMETER fromTime
@@ -11930,7 +11938,7 @@ function Global:Get-OciDatasourcesByHost {
 #>
 function Global:Get-OciFileSystemsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -11959,7 +11967,7 @@ function Global:Get-OciFileSystemsByHost {
                    Position=7,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -11978,12 +11986,12 @@ function Global:Get-OciFileSystemsByHost {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/fileSystems"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/fileSystems"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -11999,17 +12007,17 @@ function Global:Get-OciFileSystemsByHost {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -12021,7 +12029,7 @@ function Global:Get-OciFileSystemsByHost {
     .SYNOPSIS
     Retrieve one host performance
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
@@ -12035,7 +12043,7 @@ function Global:Get-OciFileSystemsByHost {
 #>
 function Global:Get-OciHostPerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12058,7 +12066,7 @@ function Global:Get-OciHostPerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12077,12 +12085,12 @@ function Global:Get-OciHostPerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/performance"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12098,20 +12106,20 @@ function Global:Get-OciHostPerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -12121,7 +12129,7 @@ function Global:Get-OciHostPerformance {
     .SYNOPSIS
     Retrieve the ports of host
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of host to retrieve
     .PARAMETER fromTime
@@ -12149,7 +12157,7 @@ function Global:Get-OciHostPerformance {
 #>
 function Global:Get-OciPortsByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12193,7 +12201,7 @@ function Global:Get-OciPortsByHost {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12212,12 +12220,12 @@ function Global:Get-OciPortsByHost {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/ports"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/ports"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12233,17 +12241,17 @@ function Global:Get-OciPortsByHost {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -12255,7 +12263,7 @@ function Global:Get-OciPortsByHost {
     .SYNOPSIS
     Retrieve all storage resources by host
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of host to retrieve storage resources for
     .PARAMETER fromTime
@@ -12281,7 +12289,7 @@ function Global:Get-OciPortsByHost {
 #>
 function Global:Get-OciStorageResourcesByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12322,7 +12330,7 @@ function Global:Get-OciStorageResourcesByHost {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12341,12 +12349,12 @@ function Global:Get-OciStorageResourcesByHost {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/storageResources"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/storageResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12362,17 +12370,17 @@ function Global:Get-OciStorageResourcesByHost {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -12384,7 +12392,7 @@ function Global:Get-OciStorageResourcesByHost {
     .SYNOPSIS
     Retrieve the virtual machines of host
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of host to retrieve virtual machines  for
     .PARAMETER fromTime
@@ -12418,7 +12426,7 @@ function Global:Get-OciStorageResourcesByHost {
 #>
 function Global:Get-OciVirtualMachinesByHost {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12471,7 +12479,7 @@ function Global:Get-OciVirtualMachinesByHost {
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12489,14 +12497,14 @@ function Global:Get-OciVirtualMachinesByHost {
                 }
             }
         }
- 
+
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/hosts/$id/virtualMachines"
-            
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12512,17 +12520,17 @@ function Global:Get-OciVirtualMachinesByHost {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -12536,7 +12544,7 @@ function Global:Get-OciVirtualMachinesByHost {
     .SYNOPSIS
     Retrieve internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve
     .PARAMETER fromTime
@@ -12574,7 +12582,7 @@ function Global:Get-OciVirtualMachinesByHost {
 #>
 function Global:Get-OciInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12633,7 +12641,7 @@ function Global:Get-OciInternalVolume {
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12652,12 +12660,12 @@ function Global:Get-OciInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12673,20 +12681,20 @@ function Global:Get-OciInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $InternalVolume = ParseInternalVolumes $Result $Server.Timezone
+            $InternalVolume = ParseInternalVolumes -InternalVolumes $Result $Server.Timezone
             Write-Output $InternalVolume
         }
     }
@@ -12709,7 +12717,7 @@ function Global:Get-OciInternalVolume {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -12717,7 +12725,7 @@ function Global:Get-OciInternalVolume {
 #>
 function Global:Remove-OciAnnotationsByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12731,7 +12739,7 @@ function Global:Remove-OciAnnotationsByInternalVolume {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12750,12 +12758,12 @@ function Global:Remove-OciAnnotationsByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12771,21 +12779,21 @@ function Global:Remove-OciAnnotationsByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -12795,7 +12803,7 @@ function Global:Remove-OciAnnotationsByInternalVolume {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -12805,7 +12813,7 @@ function Global:Remove-OciAnnotationsByInternalVolume {
 #>
 function Global:Get-OciAnnotationsByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12822,7 +12830,7 @@ function Global:Get-OciAnnotationsByInternalVolume {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12841,12 +12849,12 @@ function Global:Get-OciAnnotationsByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12862,17 +12870,17 @@ function Global:Get-OciAnnotationsByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -12897,7 +12905,7 @@ function Global:Get-OciAnnotationsByInternalVolume {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -12905,7 +12913,7 @@ function Global:Get-OciAnnotationsByInternalVolume {
 #>
 function Global:Update-OciAnnotationsByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -12919,7 +12927,7 @@ function Global:Update-OciAnnotationsByInternalVolume {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -12938,12 +12946,12 @@ function Global:Update-OciAnnotationsByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -12959,19 +12967,19 @@ function Global:Update-OciAnnotationsByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -12983,7 +12991,7 @@ function Global:Update-OciAnnotationsByInternalVolume {
     .SYNOPSIS
     Bulk un-assign applications from internal volume
     .DESCRIPTION
-    Bulk un-assign applications from internal volume 
+    Bulk un-assign applications from internal volume
     .PARAMETER id
     Id of internal volume to update
     .PARAMETER computeResources
@@ -12993,7 +13001,7 @@ function Global:Update-OciAnnotationsByInternalVolume {
 #>
 function Global:Remove-OciApplicationsFromInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13015,7 +13023,7 @@ function Global:Remove-OciApplicationsFromInternalVolume {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13034,30 +13042,30 @@ function Global:Remove-OciApplicationsFromInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
-                $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
+                $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -13067,7 +13075,7 @@ function Global:Remove-OciApplicationsFromInternalVolume {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -13083,7 +13091,7 @@ function Global:Remove-OciApplicationsFromInternalVolume {
 #>
 function Global:Get-OciApplicationsByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13109,7 +13117,7 @@ function Global:Get-OciApplicationsByInternalVolume {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13128,12 +13136,12 @@ function Global:Get-OciApplicationsByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -13149,17 +13157,17 @@ function Global:Get-OciApplicationsByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -13171,7 +13179,7 @@ function Global:Get-OciApplicationsByInternalVolume {
     .SYNOPSIS
     Bulk assign applications to internal volume
     .DESCRIPTION
-    Bulk assign applications to internal volume     
+    Bulk assign applications to internal volume
     .PARAMETER id
     Id of object to update
     .PARAMETER applicationId
@@ -13183,7 +13191,7 @@ function Global:Get-OciApplicationsByInternalVolume {
 #>
 function Global:Add-OciApplicationsToInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13205,7 +13213,7 @@ function Global:Add-OciApplicationsToInternalVolume {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13224,29 +13232,29 @@ function Global:Add-OciApplicationsToInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         $applicationId = @($applicationId)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
-                $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
+                $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -13265,7 +13273,7 @@ function Global:Add-OciApplicationsToInternalVolume {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
     .PARAMETER applicationId
@@ -13277,7 +13285,7 @@ function Global:Add-OciApplicationsToInternalVolume {
 #>
 function Global:Update-OciApplicationsByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13297,7 +13305,7 @@ function Global:Update-OciApplicationsByInternalVolume {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13316,12 +13324,12 @@ function Global:Update-OciApplicationsByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -13337,19 +13345,19 @@ function Global:Update-OciApplicationsByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = "{ `"id`": `"$applicationId`" }"
                     Write-Verbose "Body: $Body"
                     $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -13373,7 +13381,7 @@ function Global:Update-OciApplicationsByInternalVolume {
 #>
 function Global:Remove-OciApplicationsByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13393,7 +13401,7 @@ function Global:Remove-OciApplicationsByInternalVolume {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13412,26 +13420,26 @@ function Global:Remove-OciApplicationsByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications/$appId"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/applications/$appId"
+
             if ($expand) {
                 $Uri += "?$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -13443,7 +13451,7 @@ function Global:Remove-OciApplicationsByInternalVolume {
     .SYNOPSIS
     Retrieve all compute resources for an internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve compute resources for
     .PARAMETER fromTime
@@ -13465,7 +13473,7 @@ function Global:Remove-OciApplicationsByInternalVolume {
 #>
 function Global:Get-OciComputeResourcesByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13500,7 +13508,7 @@ function Global:Get-OciComputeResourcesByInternalVolume {
                    Position=9,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13519,12 +13527,12 @@ function Global:Get-OciComputeResourcesByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/computeResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/computeResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -13540,19 +13548,19 @@ function Global:Get-OciComputeResourcesByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -13562,7 +13570,7 @@ function Global:Get-OciComputeResourcesByInternalVolume {
     .SYNOPSIS
     Retrieve all data stores for an internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve data stores for
     .PARAMETER fromTime
@@ -13588,7 +13596,7 @@ function Global:Get-OciComputeResourcesByInternalVolume {
 #>
 function Global:Get-OciDataStoresByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13629,7 +13637,7 @@ function Global:Get-OciDataStoresByInternalVolume {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13648,12 +13656,12 @@ function Global:Get-OciDataStoresByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/dataStores"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/dataStores"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -13669,17 +13677,17 @@ function Global:Get-OciDataStoresByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -13691,7 +13699,7 @@ function Global:Get-OciDataStoresByInternalVolume {
     .SYNOPSIS
     Retrieve the datasources for an internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve datasource for
     .PARAMETER fromTime
@@ -13719,7 +13727,7 @@ function Global:Get-OciDataStoresByInternalVolume {
 #>
 function Global:Get-OciDatasourcesByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13763,7 +13771,7 @@ function Global:Get-OciDatasourcesByInternalVolume {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13782,12 +13790,12 @@ function Global:Get-OciDatasourcesByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -13803,20 +13811,20 @@ function Global:Get-OciDatasourcesByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-            
-            $Datasources = ParseDatasources($Result)
+
+            $Datasources = ParseDatasources -Datasources $Result
             Write-Output $Datasources
         }
     }
@@ -13826,7 +13834,7 @@ function Global:Get-OciDatasourcesByInternalVolume {
     .SYNOPSIS
     Retrieve internal volume performance
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve
     .PARAMETER fromTime
@@ -13840,7 +13848,7 @@ function Global:Get-OciDatasourcesByInternalVolume {
 #>
 function Global:Get-OciInternalVolumePerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13863,7 +13871,7 @@ function Global:Get-OciInternalVolumePerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -13882,12 +13890,12 @@ function Global:Get-OciInternalVolumePerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -13903,20 +13911,20 @@ function Global:Get-OciInternalVolumePerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -13926,7 +13934,7 @@ function Global:Get-OciInternalVolumePerformance {
     .SYNOPSIS
     Retrieve qtrees for one internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve storage qtrees for
     .PARAMETER fromTime
@@ -13950,7 +13958,7 @@ function Global:Get-OciInternalVolumePerformance {
 #>
 function Global:Get-OciQtreesByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -13988,7 +13996,7 @@ function Global:Get-OciQtreesByInternalVolume {
                    Position=10,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14007,12 +14015,12 @@ function Global:Get-OciQtreesByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/qtrees"          
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/qtrees"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14028,20 +14036,20 @@ function Global:Get-OciQtreesByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Qtrees = ParseQtrees($Result)
+            $Qtrees = ParseQtrees -Qtrees $Result
             Write-Output $Qtrees
         }
     }
@@ -14051,7 +14059,7 @@ function Global:Get-OciQtreesByInternalVolume {
     .SYNOPSIS
     Retrieve all replica source internal volumes for an internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve replica source internal volumes for
     .PARAMETER fromTime
@@ -14089,7 +14097,7 @@ function Global:Get-OciQtreesByInternalVolume {
 #>
 function Global:Get-OciSourceInternalVolumesByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14148,7 +14156,7 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14167,12 +14175,12 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/replicaSources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/replicaSources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14188,19 +14196,19 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -14210,7 +14218,7 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
     .SYNOPSIS
     Retrieve all storage nodes for an internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve storage nodes for
     .PARAMETER fromTime
@@ -14238,7 +14246,7 @@ function Global:Get-OciSourceInternalVolumesByInternalVolume {
 #>
 function Global:Get-OciStorageNodesByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14282,7 +14290,7 @@ function Global:Get-OciStorageNodesByInternalVolume {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14301,12 +14309,12 @@ function Global:Get-OciStorageNodesByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/storageNodes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/storageNodes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14322,20 +14330,20 @@ function Global:Get-OciStorageNodesByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageNodes = ParseStorageNodes($Result)
+            $StorageNodes = ParseStorageNodes -StorageNodes $Result
             Write-Output $StorageNodes
         }
     }
@@ -14345,7 +14353,7 @@ function Global:Get-OciStorageNodesByInternalVolume {
     .SYNOPSIS
     Retrieve all volumes for an internal volume
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of internal volume to retrieve volumes for
     .PARAMETER fromTime
@@ -14391,7 +14399,7 @@ function Global:Get-OciStorageNodesByInternalVolume {
 #>
 function Global:Get-OciVolumesByInternalVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14462,7 +14470,7 @@ function Global:Get-OciVolumesByInternalVolume {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14481,12 +14489,12 @@ function Global:Get-OciVolumesByInternalVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/volumes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/internalVolumes/$id/volumes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14502,20 +14510,20 @@ function Global:Get-OciVolumesByInternalVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volues = ParseVolumes($Result)
+            $Volues = ParseVolumes -Volumes $Result
             Write-Output $Volumes
         }
     }
@@ -14527,7 +14535,7 @@ function Global:Get-OciVolumesByInternalVolume {
     .SYNOPSIS
     Retrieve one port
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of port to retrieve
     .PARAMETER expand
@@ -14555,7 +14563,7 @@ function Global:Get-OciVolumesByInternalVolume {
 #>
 function Global:Get-OciPort {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14599,7 +14607,7 @@ function Global:Get-OciPort {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14618,12 +14626,12 @@ function Global:Get-OciPort {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14639,17 +14647,17 @@ function Global:Get-OciPort {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -14674,7 +14682,7 @@ function Global:Get-OciPort {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -14682,7 +14690,7 @@ function Global:Get-OciPort {
 #>
 function Global:Remove-OciAnnotationsByPort {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14696,7 +14704,7 @@ function Global:Remove-OciAnnotationsByPort {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14715,12 +14723,12 @@ function Global:Remove-OciAnnotationsByPort {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14736,21 +14744,21 @@ function Global:Remove-OciAnnotationsByPort {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -14760,7 +14768,7 @@ function Global:Remove-OciAnnotationsByPort {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -14770,7 +14778,7 @@ function Global:Remove-OciAnnotationsByPort {
 #>
 function Global:Get-OciAnnotationsByPort {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14787,7 +14795,7 @@ function Global:Get-OciAnnotationsByPort {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14806,12 +14814,12 @@ function Global:Get-OciAnnotationsByPort {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14827,17 +14835,17 @@ function Global:Get-OciAnnotationsByPort {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -14862,7 +14870,7 @@ function Global:Get-OciAnnotationsByPort {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -14870,7 +14878,7 @@ function Global:Get-OciAnnotationsByPort {
 #>
 function Global:Update-get-Port {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14884,7 +14892,7 @@ function Global:Update-get-Port {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -14903,12 +14911,12 @@ function Global:Update-get-Port {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -14924,21 +14932,21 @@ function Global:Update-get-Port {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -14960,7 +14968,7 @@ function Global:Update-get-Port {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -14970,7 +14978,7 @@ function Global:Update-get-Port {
 #>
 function Global:Bulk-OciUnAssignApplicationsFromAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -14987,7 +14995,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15006,12 +15014,12 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15027,18 +15035,18 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -15050,7 +15058,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -15066,7 +15074,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
 #>
 function Global:Get-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15092,7 +15100,7 @@ function Global:Get-OciByTypeAndId {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15111,12 +15119,12 @@ function Global:Get-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15132,17 +15140,17 @@ function Global:Get-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -15166,7 +15174,7 @@ function Global:Get-OciByTypeAndId {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -15176,7 +15184,7 @@ function Global:Get-OciByTypeAndId {
 #>
 function Global:Bulk-OciAssignApplicationsToAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15193,7 +15201,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15212,12 +15220,12 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15233,19 +15241,19 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -15264,7 +15272,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -15274,7 +15282,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15291,7 +15299,7 @@ function Global:Update-OciByTypeAndId {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15310,12 +15318,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15331,19 +15339,19 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -15355,7 +15363,7 @@ function Global:Update-OciByTypeAndId {
     .SYNOPSIS
     Retrieve connected ports for one port
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of port to retrieve connected port for
     .PARAMETER expand
@@ -15383,7 +15391,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Get-OciConnectedPortsByPort {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15427,7 +15435,7 @@ function Global:Get-OciConnectedPortsByPort {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15446,12 +15454,12 @@ function Global:Get-OciConnectedPortsByPort {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/connectedPorts"           
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/connectedPorts"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15467,17 +15475,17 @@ function Global:Get-OciConnectedPortsByPort {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -15489,7 +15497,7 @@ function Global:Get-OciConnectedPortsByPort {
     .SYNOPSIS
     Retrieve datasources of a port.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of port to retrieve datasources for.
     .PARAMETER fromTime
@@ -15517,7 +15525,7 @@ function Global:Get-OciConnectedPortsByPort {
 #>
 function Global:Get-OciDatasourcesByPort {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15561,7 +15569,7 @@ function Global:Get-OciDatasourcesByPort {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15580,12 +15588,12 @@ function Global:Get-OciDatasourcesByPort {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15601,19 +15609,19 @@ function Global:Get-OciDatasourcesByPort {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -15623,7 +15631,7 @@ function Global:Get-OciDatasourcesByPort {
     .SYNOPSIS
     Retrieve one device for port
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of port to retrieve device
     .PARAMETER expand
@@ -15635,7 +15643,7 @@ function Global:Get-OciDatasourcesByPort {
 #>
 function Global:Get-OciDeviceByPort {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15655,7 +15663,7 @@ function Global:Get-OciDeviceByPort {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15674,12 +15682,12 @@ function Global:Get-OciDeviceByPort {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/device"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/device"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15695,19 +15703,19 @@ function Global:Get-OciDeviceByPort {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -15717,7 +15725,7 @@ function Global:Get-OciDeviceByPort {
     .SYNOPSIS
     Retrieve Fabric for port
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of port to retrieve fabric
     .PARAMETER expand
@@ -15733,7 +15741,7 @@ function Global:Get-OciDeviceByPort {
 #>
 function Global:Get-OciFabricsByPort {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15759,7 +15767,7 @@ function Global:Get-OciFabricsByPort {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15778,12 +15786,12 @@ function Global:Get-OciFabricsByPort {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/fabrics"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/fabrics"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15799,17 +15807,17 @@ function Global:Get-OciFabricsByPort {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -15821,7 +15829,7 @@ function Global:Get-OciFabricsByPort {
     .SYNOPSIS
     Retrieve one port performance
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of port to retrieve
     .PARAMETER expand
@@ -15835,7 +15843,7 @@ function Global:Get-OciFabricsByPort {
 #>
 function Global:Get-OciPortPerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15858,7 +15866,7 @@ function Global:Get-OciPortPerformance {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -15877,12 +15885,12 @@ function Global:Get-OciPortPerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/ports/$id/performance"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -15898,20 +15906,20 @@ function Global:Get-OciPortPerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -15923,7 +15931,7 @@ function Global:Get-OciPortPerformance {
     .SYNOPSIS
     Retrieve one Qtree
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of qtree to retrieve
     .PARAMETER fromTime
@@ -15947,7 +15955,7 @@ function Global:Get-OciPortPerformance {
 #>
 function Global:Get-OciQtree {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -15985,7 +15993,7 @@ function Global:Get-OciQtree {
                    Position=10,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16004,12 +16012,12 @@ function Global:Get-OciQtree {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16025,17 +16033,17 @@ function Global:Get-OciQtree {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -16060,7 +16068,7 @@ function Global:Get-OciQtree {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -16068,7 +16076,7 @@ function Global:Get-OciQtree {
 #>
 function Global:Remove-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16082,7 +16090,7 @@ function Global:Remove-OciByTypeAndId {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16101,12 +16109,12 @@ function Global:Remove-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16122,19 +16130,19 @@ function Global:Remove-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -16146,7 +16154,7 @@ function Global:Remove-OciByTypeAndId {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -16156,7 +16164,7 @@ function Global:Remove-OciByTypeAndId {
 #>
 function Global:Get-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16173,7 +16181,7 @@ function Global:Get-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16192,12 +16200,12 @@ function Global:Get-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16213,19 +16221,19 @@ function Global:Get-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-          
+
             Write-Output $Result
         }
     }
@@ -16248,7 +16256,7 @@ function Global:Get-OciByTypeAndId {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -16256,7 +16264,7 @@ function Global:Get-OciByTypeAndId {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16270,7 +16278,7 @@ function Global:Update-OciByTypeAndId {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16289,12 +16297,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"           
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16310,19 +16318,19 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -16346,7 +16354,7 @@ function Global:Update-OciByTypeAndId {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -16356,7 +16364,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Bulk-OciUnAssignApplicationsFromAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16373,7 +16381,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16392,12 +16400,12 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16413,19 +16421,19 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -16437,7 +16445,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -16453,7 +16461,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
 #>
 function Global:Get-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16479,7 +16487,7 @@ function Global:Get-OciByTypeAndId {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16498,12 +16506,12 @@ function Global:Get-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16519,17 +16527,17 @@ function Global:Get-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -16553,7 +16561,7 @@ function Global:Get-OciByTypeAndId {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -16563,7 +16571,7 @@ function Global:Get-OciByTypeAndId {
 #>
 function Global:Bulk-OciAssignApplicationsToAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16580,7 +16588,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16599,12 +16607,12 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16620,21 +16628,21 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -16651,7 +16659,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -16661,7 +16669,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16678,7 +16686,7 @@ function Global:Update-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16697,12 +16705,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16718,19 +16726,19 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -16742,7 +16750,7 @@ function Global:Update-OciByTypeAndId {
     .SYNOPSIS
     Delete application from object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to delete application from
     .PARAMETER appId
@@ -16754,7 +16762,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Remove-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16774,7 +16782,7 @@ function Global:Remove-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16793,12 +16801,12 @@ function Global:Remove-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications/$appId"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/applications/$appId"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16814,17 +16822,17 @@ function Global:Remove-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -16836,7 +16844,7 @@ function Global:Remove-OciByTypeAndId {
     .SYNOPSIS
     Retrieve internal volume for given qtree
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of qtree to retrieve internal volume for
     .PARAMETER fromTime
@@ -16874,7 +16882,7 @@ function Global:Remove-OciByTypeAndId {
 #>
 function Global:Get-OciInternalVolumeByQtree {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -16933,7 +16941,7 @@ function Global:Get-OciInternalVolumeByQtree {
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -16952,12 +16960,12 @@ function Global:Get-OciInternalVolumeByQtree {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/internalVolume"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/internalVolume"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -16973,19 +16981,19 @@ function Global:Get-OciInternalVolumeByQtree {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -16995,7 +17003,7 @@ function Global:Get-OciInternalVolumeByQtree {
     .SYNOPSIS
     Retrieve shares for one qtree
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of qtree to retrieve shares for
     .PARAMETER fromTime
@@ -17015,7 +17023,7 @@ function Global:Get-OciInternalVolumeByQtree {
 #>
 function Global:Get-OciSharesByQtree {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17047,7 +17055,7 @@ function Global:Get-OciSharesByQtree {
                    Position=8,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17066,12 +17074,12 @@ function Global:Get-OciSharesByQtree {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/shares"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/shares"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17087,17 +17095,17 @@ function Global:Get-OciSharesByQtree {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -17109,7 +17117,7 @@ function Global:Get-OciSharesByQtree {
     .SYNOPSIS
     Retrieve storage for given qtree
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of qtree to retrieve storage for
     .PARAMETER fromTime
@@ -17151,7 +17159,7 @@ function Global:Get-OciSharesByQtree {
 #>
 function Global:Get-OciStorageByQtree {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17216,7 +17224,7 @@ function Global:Get-OciStorageByQtree {
                    Position=19,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17235,12 +17243,12 @@ function Global:Get-OciStorageByQtree {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/storage"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/storage"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17256,20 +17264,20 @@ function Global:Get-OciStorageByQtree {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Storage = ParseStorages $Result $Server.Timezone
+            $Storage = ParseStorages -Storages $Result $Server.Timezone
             Write-Output $Storage
         }
     }
@@ -17279,7 +17287,7 @@ function Global:Get-OciStorageByQtree {
     .SYNOPSIS
     Retrieve volumes for one qtree
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of qtree to retrieve volumes for
     .PARAMETER fromTime
@@ -17325,7 +17333,7 @@ function Global:Get-OciStorageByQtree {
 #>
 function Global:Get-OciVolumesByQtree {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17396,7 +17404,7 @@ function Global:Get-OciVolumesByQtree {
                    Position=21,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17415,12 +17423,12 @@ function Global:Get-OciVolumesByQtree {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/volumes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/volumes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17436,20 +17444,20 @@ function Global:Get-OciVolumesByQtree {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volumes = ParseVolumes($Result)
+            $Volumes = ParseVolumes -Volumes $Result
             Write-Output $Volumes
         }
     }
@@ -17461,7 +17469,7 @@ function Global:Get-OciVolumesByQtree {
     .SYNOPSIS
     Retrieve one Share
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of share to retrieve
     .PARAMETER fromTime
@@ -17481,7 +17489,7 @@ function Global:Get-OciVolumesByQtree {
 #>
 function Global:Get-OciShare {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17513,7 +17521,7 @@ function Global:Get-OciShare {
                    Position=8,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17532,12 +17540,12 @@ function Global:Get-OciShare {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17553,17 +17561,17 @@ function Global:Get-OciShare {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -17588,7 +17596,7 @@ function Global:Get-OciShare {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -17596,7 +17604,7 @@ function Global:Get-OciShare {
 #>
 function Global:Remove-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17610,7 +17618,7 @@ function Global:Remove-OciByTypeAndId {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17629,12 +17637,12 @@ function Global:Remove-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17650,21 +17658,21 @@ function Global:Remove-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -17674,7 +17682,7 @@ function Global:Remove-OciByTypeAndId {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -17684,7 +17692,7 @@ function Global:Remove-OciByTypeAndId {
 #>
 function Global:Get-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17701,7 +17709,7 @@ function Global:Get-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17720,12 +17728,12 @@ function Global:Get-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17741,17 +17749,17 @@ function Global:Get-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -17776,7 +17784,7 @@ function Global:Get-OciByTypeAndId {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -17784,7 +17792,7 @@ function Global:Get-OciByTypeAndId {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17798,7 +17806,7 @@ function Global:Update-OciByTypeAndId {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17817,12 +17825,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17838,19 +17846,19 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -17874,7 +17882,7 @@ function Global:Update-OciByTypeAndId {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -17884,7 +17892,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Bulk-OciUnAssignApplicationsFromAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -17901,7 +17909,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -17920,12 +17928,12 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -17941,19 +17949,19 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -17965,7 +17973,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -17981,7 +17989,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
 #>
 function Global:Get-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18007,7 +18015,7 @@ function Global:Get-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18026,12 +18034,12 @@ function Global:Get-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18047,17 +18055,17 @@ function Global:Get-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -18081,7 +18089,7 @@ function Global:Get-OciByTypeAndId {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -18091,7 +18099,7 @@ function Global:Get-OciByTypeAndId {
 #>
 function Global:Bulk-OciAssignApplicationsToAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18108,7 +18116,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18127,12 +18135,12 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18148,21 +18156,21 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -18179,7 +18187,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -18189,7 +18197,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18206,7 +18214,7 @@ function Global:Update-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18225,12 +18233,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18246,19 +18254,19 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -18270,7 +18278,7 @@ function Global:Update-OciByTypeAndId {
     .SYNOPSIS
     Delete application from object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to delete application from
     .PARAMETER appId
@@ -18282,7 +18290,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Remove-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18302,7 +18310,7 @@ function Global:Remove-OciByTypeAndId {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18321,12 +18329,12 @@ function Global:Remove-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications/{appId}"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/applications/{appId}"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18342,17 +18350,17 @@ function Global:Remove-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -18364,7 +18372,7 @@ function Global:Remove-OciByTypeAndId {
     .SYNOPSIS
     Retrieve qtree for given share
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of share to retrieve qtree for
     .PARAMETER fromTime
@@ -18388,7 +18396,7 @@ function Global:Remove-OciByTypeAndId {
 #>
 function Global:Get-OciQtree {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18426,7 +18434,7 @@ function Global:Get-OciQtree {
                    Position=10,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18445,12 +18453,12 @@ function Global:Get-OciQtree {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/qtree"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/qtree"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18466,17 +18474,17 @@ function Global:Get-OciQtree {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -18530,7 +18538,7 @@ function Global:Get-OciQtree {
 #>
 function Global:Get-OciStorageByShare {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18595,7 +18603,7 @@ function Global:Get-OciStorageByShare {
                    Position=19,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18614,12 +18622,12 @@ function Global:Get-OciStorageByShare {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/storage"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/shares/$id/storage"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18635,17 +18643,17 @@ function Global:Get-OciStorageByShare {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -18659,7 +18667,7 @@ function Global:Get-OciStorageByShare {
     .SYNOPSIS
     Retrieve one storage node
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage node to retrieve
     .PARAMETER fromTime
@@ -18687,7 +18695,7 @@ function Global:Get-OciStorageByShare {
 #>
 function Global:Get-OciStorageNode {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18731,7 +18739,7 @@ function Global:Get-OciStorageNode {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18750,12 +18758,12 @@ function Global:Get-OciStorageNode {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18771,20 +18779,20 @@ function Global:Get-OciStorageNode {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageNodes = ParseStorageNodes($Result)
+            $StorageNodes = ParseStorageNodes -StorageNodes $Result
             Write-Output $StorageNodes
         }
     }
@@ -18807,7 +18815,7 @@ function Global:Get-OciStorageNode {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -18815,7 +18823,7 @@ function Global:Get-OciStorageNode {
 #>
 function Global:Remove-OciAnnotationsByStorageNode {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18829,7 +18837,7 @@ function Global:Remove-OciAnnotationsByStorageNode {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18848,12 +18856,12 @@ function Global:Remove-OciAnnotationsByStorageNode {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18869,19 +18877,19 @@ function Global:Remove-OciAnnotationsByStorageNode {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -18893,7 +18901,7 @@ function Global:Remove-OciAnnotationsByStorageNode {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -18903,7 +18911,7 @@ function Global:Remove-OciAnnotationsByStorageNode {
 #>
 function Global:Get-OciAnnotationsByStorageNode {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -18920,7 +18928,7 @@ function Global:Get-OciAnnotationsByStorageNode {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -18939,12 +18947,12 @@ function Global:Get-OciAnnotationsByStorageNode {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -18960,19 +18968,19 @@ function Global:Get-OciAnnotationsByStorageNode {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -18995,7 +19003,7 @@ function Global:Get-OciAnnotationsByStorageNode {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -19003,7 +19011,7 @@ function Global:Get-OciAnnotationsByStorageNode {
 #>
 function Global:Update-OciAnnotationsByStorageNode {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19017,7 +19025,7 @@ function Global:Update-OciAnnotationsByStorageNode {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19036,12 +19044,12 @@ function Global:Update-OciAnnotationsByStorageNode {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19057,19 +19065,19 @@ function Global:Update-OciAnnotationsByStorageNode {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -19081,7 +19089,7 @@ function Global:Update-OciAnnotationsByStorageNode {
     .SYNOPSIS
     Retrieve one storage node datasources
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage node to retrieve datasources for
     .PARAMETER fromTime
@@ -19109,7 +19117,7 @@ function Global:Update-OciAnnotationsByStorageNode {
 #>
 function Global:Get-OciDatasourcesByStorageNode {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19153,7 +19161,7 @@ function Global:Get-OciDatasourcesByStorageNode {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19172,12 +19180,12 @@ function Global:Get-OciDatasourcesByStorageNode {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19193,17 +19201,17 @@ function Global:Get-OciDatasourcesByStorageNode {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -19215,7 +19223,7 @@ function Global:Get-OciDatasourcesByStorageNode {
     .SYNOPSIS
     Retrieve one storage node performance
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage node to retrieve
     .PARAMETER fromTime
@@ -19229,7 +19237,7 @@ function Global:Get-OciDatasourcesByStorageNode {
 #>
 function Global:Get-OciStorageNodePerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19252,7 +19260,7 @@ function Global:Get-OciStorageNodePerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19271,12 +19279,12 @@ function Global:Get-OciStorageNodePerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19292,20 +19300,20 @@ function Global:Get-OciStorageNodePerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -19315,7 +19323,7 @@ function Global:Get-OciStorageNodePerformance {
     .SYNOPSIS
     Retrieve all ports by node
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage node to retrieve ports for
     .PARAMETER fromTime
@@ -19343,7 +19351,7 @@ function Global:Get-OciStorageNodePerformance {
 #>
 function Global:Get-OciPortsByStorageNode {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19387,7 +19395,7 @@ function Global:Get-OciPortsByStorageNode {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19406,12 +19414,12 @@ function Global:Get-OciPortsByStorageNode {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/ports"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/ports"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19427,17 +19435,17 @@ function Global:Get-OciPortsByStorageNode {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -19449,7 +19457,7 @@ function Global:Get-OciPortsByStorageNode {
     .SYNOPSIS
     Retrieve all storage pools by node
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage node to retrieve storage pool for
     .PARAMETER fromTime
@@ -19481,7 +19489,7 @@ function Global:Get-OciPortsByStorageNode {
 #>
 function Global:Get-OciStoragePoolsByNode {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19531,7 +19539,7 @@ function Global:Get-OciStoragePoolsByNode {
                    Position=14,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19550,12 +19558,12 @@ function Global:Get-OciStoragePoolsByNode {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/storagePools"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storageNodes/$id/storagePools"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19571,19 +19579,19 @@ function Global:Get-OciStoragePoolsByNode {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -19595,7 +19603,7 @@ function Global:Get-OciStoragePoolsByNode {
     .SYNOPSIS
     Retrieve one storage pool
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve
     .PARAMETER fromTime
@@ -19627,7 +19635,7 @@ function Global:Get-OciStoragePoolsByNode {
 #>
 function Global:Get-OciStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19677,7 +19685,7 @@ function Global:Get-OciStoragePool {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19696,12 +19704,12 @@ function Global:Get-OciStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19717,17 +19725,17 @@ function Global:Get-OciStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -19752,7 +19760,7 @@ function Global:Get-OciStoragePool {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -19760,7 +19768,7 @@ function Global:Get-OciStoragePool {
 #>
 function Global:Remove-OciAnnotationsByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19774,7 +19782,7 @@ function Global:Remove-OciAnnotationsByStoragePool {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19793,12 +19801,12 @@ function Global:Remove-OciAnnotationsByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"                       
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19814,21 +19822,21 @@ function Global:Remove-OciAnnotationsByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -19838,7 +19846,7 @@ function Global:Remove-OciAnnotationsByStoragePool {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -19848,7 +19856,7 @@ function Global:Remove-OciAnnotationsByStoragePool {
 #>
 function Global:Get-OciAnnotationsByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19865,7 +19873,7 @@ function Global:Get-OciAnnotationsByStoragePool {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19884,12 +19892,12 @@ function Global:Get-OciAnnotationsByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -19905,19 +19913,19 @@ function Global:Get-OciAnnotationsByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -19940,7 +19948,7 @@ function Global:Get-OciAnnotationsByStoragePool {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -19948,7 +19956,7 @@ function Global:Get-OciAnnotationsByStoragePool {
 #>
 function Global:Update-OciAnnotationsByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -19962,7 +19970,7 @@ function Global:Update-OciAnnotationsByStoragePool {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -19981,12 +19989,12 @@ function Global:Update-OciAnnotationsByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20002,19 +20010,19 @@ function Global:Update-OciAnnotationsByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -20026,7 +20034,7 @@ function Global:Update-OciAnnotationsByStoragePool {
     .SYNOPSIS
     Retrieve one storage pool datasources
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve datasources for
     .PARAMETER fromTime
@@ -20054,7 +20062,7 @@ function Global:Update-OciAnnotationsByStoragePool {
 #>
 function Global:Get-OciDatasourcesByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -20098,7 +20106,7 @@ function Global:Get-OciDatasourcesByStoragePool {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -20117,12 +20125,12 @@ function Global:Get-OciDatasourcesByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20138,17 +20146,17 @@ function Global:Get-OciDatasourcesByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -20160,7 +20168,7 @@ function Global:Get-OciDatasourcesByStoragePool {
     .SYNOPSIS
     Retrieve Disks for storage pool
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve disks for
     .PARAMETER fromTime
@@ -20188,7 +20196,7 @@ function Global:Get-OciDatasourcesByStoragePool {
 #>
 function Global:Get-OciDisksByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -20232,7 +20240,7 @@ function Global:Get-OciDisksByStoragePool {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -20251,12 +20259,12 @@ function Global:Get-OciDisksByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/disks"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20272,17 +20280,17 @@ function Global:Get-OciDisksByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -20294,7 +20302,7 @@ function Global:Get-OciDisksByStoragePool {
     .SYNOPSIS
     Retrieve internal volumes for storage pool
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve internal volumes for
     .PARAMETER fromTime
@@ -20332,7 +20340,7 @@ function Global:Get-OciDisksByStoragePool {
 #>
 function Global:Get-OciInternalVolumesByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -20391,7 +20399,7 @@ function Global:Get-OciInternalVolumesByStoragePool {
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -20410,12 +20418,12 @@ function Global:Get-OciInternalVolumesByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/internalVolumes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/internalVolumes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20431,17 +20439,17 @@ function Global:Get-OciInternalVolumesByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -20453,7 +20461,7 @@ function Global:Get-OciInternalVolumesByStoragePool {
     .SYNOPSIS
     Retrieve one storage pool performance
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve
     .PARAMETER fromTime
@@ -20467,7 +20475,7 @@ function Global:Get-OciInternalVolumesByStoragePool {
 #>
 function Global:Get-OciStoragePoolPerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -20490,7 +20498,7 @@ function Global:Get-OciStoragePoolPerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -20509,12 +20517,12 @@ function Global:Get-OciStoragePoolPerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20530,20 +20538,20 @@ function Global:Get-OciStoragePoolPerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -20553,7 +20561,7 @@ function Global:Get-OciStoragePoolPerformance {
     .SYNOPSIS
     Retrieve one storage pool storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve storage for
     .PARAMETER fromTime
@@ -20595,7 +20603,7 @@ function Global:Get-OciStoragePoolPerformance {
 #>
 function Global:Get-OciStorageByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -20660,7 +20668,7 @@ function Global:Get-OciStorageByStoragePool {
                    Position=19,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -20679,12 +20687,12 @@ function Global:Get-OciStorageByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storage"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storage"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20700,19 +20708,19 @@ function Global:Get-OciStorageByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -20722,7 +20730,7 @@ function Global:Get-OciStorageByStoragePool {
     .SYNOPSIS
     Retrieve storage nodes for storage pool
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve storage nodes for
     .PARAMETER fromTime
@@ -20750,7 +20758,7 @@ function Global:Get-OciStorageByStoragePool {
 #>
 function Global:Get-OciStorageNodesByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -20794,7 +20802,7 @@ function Global:Get-OciStorageNodesByStoragePool {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -20813,12 +20821,12 @@ function Global:Get-OciStorageNodesByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageNodes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageNodes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20834,17 +20842,17 @@ function Global:Get-OciStorageNodesByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -20856,7 +20864,7 @@ function Global:Get-OciStorageNodesByStoragePool {
     .SYNOPSIS
     Retrieve resources for storage pool
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve resources for
     .PARAMETER fromTime
@@ -20882,7 +20890,7 @@ function Global:Get-OciStorageNodesByStoragePool {
 #>
 function Global:Get-OciStorageResourcesByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -20923,7 +20931,7 @@ function Global:Get-OciStorageResourcesByStoragePool {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -20942,12 +20950,12 @@ function Global:Get-OciStorageResourcesByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/storageResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -20963,17 +20971,17 @@ function Global:Get-OciStorageResourcesByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -20985,7 +20993,7 @@ function Global:Get-OciStorageResourcesByStoragePool {
     .SYNOPSIS
     Retrieve volumes for storage pool
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage pool to retrieve volumes for
     .PARAMETER fromTime
@@ -21031,7 +21039,7 @@ function Global:Get-OciStorageResourcesByStoragePool {
 #>
 function Global:Get-OciVolumesByStoragePool {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -21102,7 +21110,7 @@ function Global:Get-OciVolumesByStoragePool {
                    Position=21,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -21121,12 +21129,12 @@ function Global:Get-OciVolumesByStoragePool {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storagePools/$id/volumes"
- 
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -21142,20 +21150,20 @@ function Global:Get-OciVolumesByStoragePool {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volumes = ParseVolumes($Result)
+            $Volumes = ParseVolumes -Volumes $Result
             Write-Output $Volumes
         }
     }
@@ -21213,7 +21221,7 @@ function Global:Get-OciVolumesByStoragePool {
 #>
 function Global:Get-OciStorages {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -21282,7 +21290,7 @@ function Global:Get-OciStorages {
                    Position=22,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -21301,7 +21309,7 @@ function Global:Get-OciStorages {
             }
         }
     }
-   
+
     Process {
         # OCI allows to only fetch maximum 50 items, thus we need to repeat the command if no limit is specified to fetch all items
         if ($Limit -eq 0) {
@@ -21309,8 +21317,8 @@ function Global:Get-OciStorages {
             $Limit = 50
         }
 
-        $Uri = $Server.BaseUri + "/rest/v1/assets/storages"                  
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/storages"
+
         $Uri += '?'
         $Separator = ''
         if ($fromTime) {
@@ -21336,20 +21344,20 @@ function Global:Get-OciStorages {
         if ($expand) {
             $Uri += "$($Separator)expand=$expand"
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-       
-        $Storages = ParseStorages($Result)
+
+        $Storages = ParseStorages -Storages $Result
         if ($Storages) { Write-Output $Storages }
 
         if ($FetchAll -and @($Storages).Count -eq $Limit) {
@@ -21363,40 +21371,40 @@ function Global:Get-OciStorages {
     .SYNOPSIS
     Retrieve total count of storages.
     .DESCRIPTION
-    
+
 
 #>
 function Global:Get-OciStorageCount {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/storages/count"
- 
+
             try {
                     $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -21408,7 +21416,7 @@ function Global:Get-OciStorageCount {
     .SYNOPSIS
     Retrieve one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve
     .PARAMETER fromTime
@@ -21450,7 +21458,7 @@ function Global:Get-OciStorageCount {
 #>
 function Global:Get-OciStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -21515,7 +21523,7 @@ function Global:Get-OciStorage {
                    Position=19,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -21534,10 +21542,10 @@ function Global:Get-OciStorage {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"
+
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
             $Separator = ''
@@ -21553,20 +21561,20 @@ function Global:Get-OciStorage {
                 $Uri += "$($Separator)expand=$expand"
             }
         }
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Storage = ParseStorages $Result $Server.Timezone
+        $Storage = ParseStorages -Storages $Result $Server.Timezone
         Write-Output $Storage
     }
 }
@@ -21588,7 +21596,7 @@ function Global:Get-OciStorage {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -21596,7 +21604,7 @@ function Global:Get-OciStorage {
 #>
 function Global:Remove-OciAnnotationsByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -21610,7 +21618,7 @@ function Global:Remove-OciAnnotationsByStorage {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -21629,12 +21637,12 @@ function Global:Remove-OciAnnotationsByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -21650,19 +21658,19 @@ function Global:Remove-OciAnnotationsByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -21674,7 +21682,7 @@ function Global:Remove-OciAnnotationsByStorage {
     .SYNOPSIS
     Retrieve annotations for object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -21684,7 +21692,7 @@ function Global:Remove-OciAnnotationsByStorage {
 #>
 function Global:Get-OciAnnotationsByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -21701,7 +21709,7 @@ function Global:Get-OciAnnotationsByStorage {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -21720,12 +21728,12 @@ function Global:Get-OciAnnotationsByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -21741,17 +21749,17 @@ function Global:Get-OciAnnotationsByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -21776,7 +21784,7 @@ function Global:Get-OciAnnotationsByStorage {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -21784,7 +21792,7 @@ function Global:Get-OciAnnotationsByStorage {
 #>
 function Global:Update-OciAnnotationsByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -21798,7 +21806,7 @@ function Global:Update-OciAnnotationsByStorage {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -21817,12 +21825,12 @@ function Global:Update-OciAnnotationsByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -21838,19 +21846,19 @@ function Global:Update-OciAnnotationsByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -21874,7 +21882,7 @@ function Global:Update-OciAnnotationsByStorage {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -21884,7 +21892,7 @@ function Global:Update-OciAnnotationsByStorage {
 #>
 function Global:Bulk-OciUnAssignApplicationsFromAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -21901,7 +21909,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -21920,12 +21928,12 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -21941,19 +21949,19 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -21965,7 +21973,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
     .SYNOPSIS
     Retrieve the applications of object
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER fromTime
@@ -21981,7 +21989,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
 #>
 function Global:Get-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22007,7 +22015,7 @@ function Global:Get-OciByTypeAndId {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22026,12 +22034,12 @@ function Global:Get-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22047,17 +22055,17 @@ function Global:Get-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -22081,7 +22089,7 @@ function Global:Get-OciByTypeAndId {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -22091,7 +22099,7 @@ function Global:Get-OciByTypeAndId {
 #>
 function Global:Bulk-OciAssignApplicationsToAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22108,7 +22116,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22127,12 +22135,12 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22148,19 +22156,19 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -22179,7 +22187,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -22189,7 +22197,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22206,7 +22214,7 @@ function Global:Update-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22225,12 +22233,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22246,21 +22254,21 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -22270,7 +22278,7 @@ function Global:Update-OciByTypeAndId {
     .SYNOPSIS
     Retrieve datasources of a storage.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve datasources for.
     .PARAMETER fromTime
@@ -22298,7 +22306,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Get-OciDatasourcesByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22342,7 +22350,7 @@ function Global:Get-OciDatasourcesByStorage {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22361,12 +22369,12 @@ function Global:Get-OciDatasourcesByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22382,19 +22390,19 @@ function Global:Get-OciDatasourcesByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -22404,7 +22412,7 @@ function Global:Get-OciDatasourcesByStorage {
     .SYNOPSIS
     Retrieve disks for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve disks for
     .PARAMETER fromTime
@@ -22432,7 +22440,7 @@ function Global:Get-OciDatasourcesByStorage {
 #>
 function Global:Get-OciDisksByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22476,7 +22484,7 @@ function Global:Get-OciDisksByStorage {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22495,12 +22503,12 @@ function Global:Get-OciDisksByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/disks"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/disks"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22516,17 +22524,17 @@ function Global:Get-OciDisksByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -22538,7 +22546,7 @@ function Global:Get-OciDisksByStorage {
     .SYNOPSIS
     Retrieve internal volumes for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve internal volumes for
     .PARAMETER fromTime
@@ -22576,7 +22584,7 @@ function Global:Get-OciDisksByStorage {
 #>
 function Global:Get-OciInternalVolumesByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22635,7 +22643,7 @@ function Global:Get-OciInternalVolumesByStorage {
                    Position=21,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22654,12 +22662,12 @@ function Global:Get-OciInternalVolumesByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/internalVolumes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/internalVolumes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22675,19 +22683,19 @@ function Global:Get-OciInternalVolumesByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-      
+
             Write-Output $Result
         }
     }
@@ -22697,7 +22705,7 @@ function Global:Get-OciInternalVolumesByStorage {
     .SYNOPSIS
     Retrieve one storage performance
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve
     .PARAMETER fromTime
@@ -22711,7 +22719,7 @@ function Global:Get-OciInternalVolumesByStorage {
 #>
 function Global:Get-OciStoragePerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22734,7 +22742,7 @@ function Global:Get-OciStoragePerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22753,12 +22761,12 @@ function Global:Get-OciStoragePerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22774,20 +22782,20 @@ function Global:Get-OciStoragePerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -22797,7 +22805,7 @@ function Global:Get-OciStoragePerformance {
     .SYNOPSIS
     Retrieve storage ports for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve storage ports for
     .PARAMETER fromTime
@@ -22825,7 +22833,7 @@ function Global:Get-OciStoragePerformance {
 #>
 function Global:Get-OciPortsByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22869,7 +22877,7 @@ function Global:Get-OciPortsByStorage {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22888,12 +22896,12 @@ function Global:Get-OciPortsByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/ports"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/ports"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22909,17 +22917,17 @@ function Global:Get-OciPortsByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -22931,13 +22939,13 @@ function Global:Get-OciPortsByStorage {
     .SYNOPSIS
     Retrieve protocols of a storage.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve protocols for.
 #>
 function Global:Get-OciProtocolsByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -22948,7 +22956,7 @@ function Global:Get-OciProtocolsByStorage {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -22967,12 +22975,12 @@ function Global:Get-OciProtocolsByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/protocols"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/protocols"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -22988,17 +22996,17 @@ function Global:Get-OciProtocolsByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -23010,7 +23018,7 @@ function Global:Get-OciProtocolsByStorage {
     .SYNOPSIS
     Retrieve storage qtrees for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve storage qtrees for
     .PARAMETER fromTime
@@ -23034,7 +23042,7 @@ function Global:Get-OciProtocolsByStorage {
 #>
 function Global:Get-OciQtreesByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -23072,7 +23080,7 @@ function Global:Get-OciQtreesByStorage {
                    Position=10,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -23091,12 +23099,12 @@ function Global:Get-OciQtreesByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/qtrees"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/qtrees"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -23112,17 +23120,17 @@ function Global:Get-OciQtreesByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -23134,7 +23142,7 @@ function Global:Get-OciQtreesByStorage {
     .SYNOPSIS
     Retrieve storage shares for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve storage shares for
     .PARAMETER fromTime
@@ -23154,7 +23162,7 @@ function Global:Get-OciQtreesByStorage {
 #>
 function Global:Get-OciSharesByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -23186,7 +23194,7 @@ function Global:Get-OciSharesByStorage {
                    Position=8,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -23205,12 +23213,12 @@ function Global:Get-OciSharesByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/shares"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/shares"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -23226,19 +23234,19 @@ function Global:Get-OciSharesByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -23248,7 +23256,7 @@ function Global:Get-OciSharesByStorage {
     .SYNOPSIS
     Retrieve storage nodes for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve storage nodes for
     .PARAMETER fromTime
@@ -23276,7 +23284,7 @@ function Global:Get-OciSharesByStorage {
 #>
 function Global:Get-OciStorageNodesByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -23320,7 +23328,7 @@ function Global:Get-OciStorageNodesByStorage {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -23339,12 +23347,12 @@ function Global:Get-OciStorageNodesByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageNodes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageNodes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -23360,19 +23368,19 @@ function Global:Get-OciStorageNodesByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -23382,7 +23390,7 @@ function Global:Get-OciStorageNodesByStorage {
     .SYNOPSIS
     Retrieve storage pools for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve storage pools for
     .PARAMETER fromTime
@@ -23414,7 +23422,7 @@ function Global:Get-OciStorageNodesByStorage {
 #>
 function Global:Get-OciStoragePoolsByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -23464,7 +23472,7 @@ function Global:Get-OciStoragePoolsByStorage {
                    Position=14,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -23483,12 +23491,12 @@ function Global:Get-OciStoragePoolsByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storagePools"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storagePools"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -23504,17 +23512,17 @@ function Global:Get-OciStoragePoolsByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -23526,7 +23534,7 @@ function Global:Get-OciStoragePoolsByStorage {
     .SYNOPSIS
     Retrieve storage resources for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve storage resources for
     .PARAMETER fromTime
@@ -23552,7 +23560,7 @@ function Global:Get-OciStoragePoolsByStorage {
 #>
 function Global:Get-OciStorageResourcesByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -23593,7 +23601,7 @@ function Global:Get-OciStorageResourcesByStorage {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -23612,12 +23620,12 @@ function Global:Get-OciStorageResourcesByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/storageResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -23633,17 +23641,17 @@ function Global:Get-OciStorageResourcesByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -23655,7 +23663,7 @@ function Global:Get-OciStorageResourcesByStorage {
     .SYNOPSIS
     Retrieve volumes for one storage
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of storage to retrieve volumes for
     .PARAMETER fromTime
@@ -23701,7 +23709,7 @@ function Global:Get-OciStorageResourcesByStorage {
 #>
 function Global:Get-OciVolumesByStorage {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -23772,7 +23780,7 @@ function Global:Get-OciVolumesByStorage {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -23791,12 +23799,12 @@ function Global:Get-OciVolumesByStorage {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/volumes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id/volumes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -23812,19 +23820,19 @@ function Global:Get-OciVolumesByStorage {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -23864,7 +23872,7 @@ function Global:Get-OciVolumesByStorage {
 #>
 function Global:Get-OciSwitches {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -23906,7 +23914,7 @@ function Global:Get-OciSwitches {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -23925,7 +23933,7 @@ function Global:Get-OciSwitches {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -23935,8 +23943,8 @@ function Global:Get-OciSwitches {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches"
+
             $Uri += '?'
             $Separator = ''
             if ($fromTime) {
@@ -23962,20 +23970,20 @@ function Global:Get-OciSwitches {
             if ($expand) {
                 $Uri += "$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Switches = ParseSwitches($Result,$Server.Timezone)
+            $Switches = ParseSwitches -Switches $Result -Timezone $Server.Timezone
             if ($Switches) { Write-Output $Switches }
 
             if ($FetchAll -and @($Switches).Count -eq $Limit) {
@@ -23990,38 +23998,38 @@ function Global:Get-OciSwitches {
     .SYNOPSIS
     Retrieve total count of switches.
     .DESCRIPTION
-    
+
 
 #>
 function Global:Get-OciSwitchCount {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/switches/count"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         Write-Output $Result.Value
@@ -24058,7 +24066,7 @@ function Global:Get-OciSwitchCount {
 #>
 function Global:Get-OciSwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24099,7 +24107,7 @@ function Global:Get-OciSwitch {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24118,12 +24126,12 @@ function Global:Get-OciSwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24139,20 +24147,20 @@ function Global:Get-OciSwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Switch = ParseSwitches($Result,$Server.Timezone)
+            $Switch = ParseSwitches -Switches $Result -Timezone $Server.Timezone
             Write-Output $Switch
         }
     }
@@ -24175,7 +24183,7 @@ function Global:Get-OciSwitch {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -24183,7 +24191,7 @@ function Global:Get-OciSwitch {
 #>
 function Global:Remove-OciAnnotationsBySwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24197,7 +24205,7 @@ function Global:Remove-OciAnnotationsBySwitch {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24216,12 +24224,12 @@ function Global:Remove-OciAnnotationsBySwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24237,21 +24245,21 @@ function Global:Remove-OciAnnotationsBySwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -24271,7 +24279,7 @@ function Global:Remove-OciAnnotationsBySwitch {
 #>
 function Global:Get-OciAnnotationsBySwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24288,7 +24296,7 @@ function Global:Get-OciAnnotationsBySwitch {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24307,12 +24315,12 @@ function Global:Get-OciAnnotationsBySwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24328,19 +24336,19 @@ function Global:Get-OciAnnotationsBySwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -24363,7 +24371,7 @@ function Global:Get-OciAnnotationsBySwitch {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -24371,7 +24379,7 @@ function Global:Get-OciAnnotationsBySwitch {
 #>
 function Global:Update-OciAnnotationsBySwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24385,7 +24393,7 @@ function Global:Update-OciAnnotationsBySwitch {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24404,12 +24412,12 @@ function Global:Update-OciAnnotationsBySwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24425,19 +24433,19 @@ function Global:Update-OciAnnotationsBySwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                     Write-Verbose "Body: $Body"
                     $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -24461,7 +24469,7 @@ function Global:Update-OciAnnotationsBySwitch {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -24471,7 +24479,7 @@ function Global:Update-OciAnnotationsBySwitch {
 #>
 function Global:Bulk-OciUnAssignApplicationsFromAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24488,7 +24496,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24507,12 +24515,12 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24528,19 +24536,19 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -24568,7 +24576,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
 #>
 function Global:Get-OciApplicationsBySwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24594,7 +24602,7 @@ function Global:Get-OciApplicationsBySwitch {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24613,12 +24621,12 @@ function Global:Get-OciApplicationsBySwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24634,19 +24642,19 @@ function Global:Get-OciApplicationsBySwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -24668,7 +24676,7 @@ function Global:Get-OciApplicationsBySwitch {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -24678,7 +24686,7 @@ function Global:Get-OciApplicationsBySwitch {
 #>
 function Global:Bulk-OciAssignApplicationsToAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24695,7 +24703,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24714,12 +24722,12 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24735,19 +24743,19 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -24766,7 +24774,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
     .PARAMETER computeResources
@@ -24776,7 +24784,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24793,7 +24801,7 @@ function Global:Update-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24812,12 +24820,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24833,19 +24841,19 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -24885,7 +24893,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Get-OciDatasourcesBySwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -24929,7 +24937,7 @@ function Global:Get-OciDatasourcesBySwitch {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -24948,12 +24956,12 @@ function Global:Get-OciDatasourcesBySwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -24969,20 +24977,20 @@ function Global:Get-OciDatasourcesBySwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources($Result)
+            $Datasources = ParseDatasources -Datasources $Result
             Write-Output $Datasources
         }
     }
@@ -24992,7 +25000,7 @@ function Global:Get-OciDatasourcesBySwitch {
     .SYNOPSIS
     Retrieve one fabric from switch
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of switch.
     .PARAMETER fromTime
@@ -25008,7 +25016,7 @@ function Global:Get-OciDatasourcesBySwitch {
 #>
 function Global:Get-OciFabricBySwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25034,7 +25042,7 @@ function Global:Get-OciFabricBySwitch {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -25053,12 +25061,12 @@ function Global:Get-OciFabricBySwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/fabric"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/fabric"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -25074,17 +25082,17 @@ function Global:Get-OciFabricBySwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -25096,7 +25104,7 @@ function Global:Get-OciFabricBySwitch {
     .SYNOPSIS
     Retrieve one switch performance.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of switch.
     .PARAMETER fromTime
@@ -25110,7 +25118,7 @@ function Global:Get-OciFabricBySwitch {
 #>
 function Global:Get-OciSwitchPerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25133,7 +25141,7 @@ function Global:Get-OciSwitchPerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -25152,12 +25160,12 @@ function Global:Get-OciSwitchPerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -25173,20 +25181,20 @@ function Global:Get-OciSwitchPerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -25196,7 +25204,7 @@ function Global:Get-OciSwitchPerformance {
     .SYNOPSIS
     Retrieve switch ports for one switch
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of switch to retrieve switch ports for
     .PARAMETER fromTime
@@ -25224,7 +25232,7 @@ function Global:Get-OciSwitchPerformance {
 #>
 function Global:Get-OciPortsBySwitch {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25268,7 +25276,7 @@ function Global:Get-OciPortsBySwitch {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -25287,12 +25295,12 @@ function Global:Get-OciPortsBySwitch {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/ports"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/switches/$id/ports"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -25308,17 +25316,17 @@ function Global:Get-OciPortsBySwitch {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -25370,7 +25378,7 @@ function Global:Get-OciPortsBySwitch {
 #>
 function Global:Get-OciVirtualMachines {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                     Position=0,
@@ -25427,7 +25435,7 @@ function Global:Get-OciVirtualMachines {
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -25446,7 +25454,7 @@ function Global:Get-OciVirtualMachines {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
@@ -25456,8 +25464,8 @@ function Global:Get-OciVirtualMachines {
                 $Limit = 50
             }
 
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines"
+
             $Uri += '?'
             $Separator = ''
             if ($fromTime) {
@@ -25483,20 +25491,20 @@ function Global:Get-OciVirtualMachines {
             if ($expand) {
                 $Uri += "$($Separator)expand=$expand"
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $VirtualMachines = ParseVirtualMachines($Result,$Server.Timezone)
+            $VirtualMachines = ParseVirtualMachines -VirtualMachines $Result -Timezone $Server.Timezone
             Write-Output $VirtualMachines
 
             if ($FetchAll -and @($VirtualMachines).Count -eq $Limit) {
@@ -25515,35 +25523,35 @@ function Global:Get-OciVirtualMachines {
 #>
 function Global:Get-OciVirtualMachineCount {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/count"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result.Value
     }
 }
@@ -25586,7 +25594,7 @@ function Global:Get-OciVirtualMachineCount {
 #>
 function Global:Get-OciVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25639,7 +25647,7 @@ function Global:Get-OciVirtualMachine {
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -25658,12 +25666,12 @@ function Global:Get-OciVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -25679,20 +25687,20 @@ function Global:Get-OciVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $VirtualMachine = ParseVirtualMachines($Result,$Server.Timezone)
+            $VirtualMachine = ParseVirtualMachines -VirtualMachines $Result -Timezone $Server.Timezone
             Write-Output $VirtualMachine
         }
     }
@@ -25702,7 +25710,7 @@ function Global:Get-OciVirtualMachine {
     .SYNOPSIS
     Remove annotations from virtual machine
     .DESCRIPTION
-    Remove annotations from virtual machine               
+    Remove annotations from virtual machine
     .PARAMETER id
     Id of object to delete
     .PARAMETER Annotations
@@ -25712,7 +25720,7 @@ function Global:Get-OciVirtualMachine {
 #>
 function Global:Remove-OciAnnotationsByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25729,35 +25737,35 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"    
-        
+        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
+
         if ($Definition) {
             $Uri += "?expand=definition"
-        }    
-        
+        }
+
         if (!$Annotations) {
             $Annotations = Get-OciAnnotationsByVirtualMachine -id $id -definition -Server $Server
         }
 
         try {
-            $Body = ConvertTo-Json @($Annotations | ? { $_.definition } | % { @{definition=@{id=$_.definition.id}} } ) -Compress
+            $Body = ConvertTo-Json @($Annotations | Where-Object { $_.definition } | ForEach-Object { @{definition=@{id=$_.definition.id}} } ) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
-       
+
         Write-Output $Result
     }
 }
@@ -25776,7 +25784,7 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
 #>
 function Global:Get-OciAnnotationsByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25793,31 +25801,31 @@ function Global:Get-OciAnnotationsByVirtualMachine {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"     
-            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
+
         if ($Definition) {
             $Uri += "?expand=definition"
-        }         
- 
+        }
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         Write-Output $Result
@@ -25828,7 +25836,7 @@ function Global:Get-OciAnnotationsByVirtualMachine {
     .SYNOPSIS
     Update Annotations of Virtual Machine
     .DESCRIPTION
-    Update Annotations of Virtual Machine  
+    Update Annotations of Virtual Machine
     .PARAMETER id
     Id of object to update
     .PARAMETER Annotations
@@ -25838,7 +25846,7 @@ function Global:Get-OciAnnotationsByVirtualMachine {
 #>
 function Global:Update-OciAnnotationsByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25855,35 +25863,35 @@ function Global:Update-OciAnnotationsByVirtualMachine {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"            
+        $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/annotations"
 
         if ($Definition) {
             $Uri += "?expand=definition"
-        } 
- 
+        }
+
         try {
-            $Body = ConvertTo-Json $($Annotations | % { @{rawValue=$_.rawValue;definition=@{id=$_.definition.id}} } ) -Compress
+            $Body = ConvertTo-Json $($Annotations | ForEach-Object { @{rawValue=$_.rawValue;definition=@{id=$_.definition.id}} } ) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
-           
+
         Write-Output $Result
     }
 }
@@ -25904,7 +25912,7 @@ function Global:Update-OciAnnotationsByVirtualMachine {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -25914,7 +25922,7 @@ function Global:Update-OciAnnotationsByVirtualMachine {
 #>
 function Global:Bulk-OciUnAssignApplicationsFromAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -25931,7 +25939,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -25950,12 +25958,12 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -25971,19 +25979,19 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -26011,7 +26019,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
 #>
 function Global:Get-OciApplicationsByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26037,7 +26045,7 @@ function Global:Get-OciApplicationsByVirtualMachine {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26056,12 +26064,12 @@ function Global:Get-OciApplicationsByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26077,17 +26085,17 @@ function Global:Get-OciApplicationsByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -26111,7 +26119,7 @@ function Global:Get-OciApplicationsByVirtualMachine {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -26121,7 +26129,7 @@ function Global:Get-OciApplicationsByVirtualMachine {
 #>
 function Global:Bulk-OciAssignApplicationsToAsset {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26138,7 +26146,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26157,12 +26165,12 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26178,19 +26186,19 @@ function Global:Bulk-OciAssignApplicationsToAsset {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -26209,7 +26217,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -26219,7 +26227,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
 #>
 function Global:Update-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26236,7 +26244,7 @@ function Global:Update-OciByTypeAndId {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26255,12 +26263,12 @@ function Global:Update-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26276,19 +26284,19 @@ function Global:Update-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -26312,7 +26320,7 @@ function Global:Update-OciByTypeAndId {
 #>
 function Global:Remove-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26332,7 +26340,7 @@ function Global:Remove-OciByTypeAndId {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26351,12 +26359,12 @@ function Global:Remove-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications/$appId"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/applications/$appId"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26372,17 +26380,17 @@ function Global:Remove-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -26420,7 +26428,7 @@ function Global:Remove-OciByTypeAndId {
 #>
 function Global:Get-OciDataStoreByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26461,7 +26469,7 @@ function Global:Get-OciDataStoreByVirtualMachine {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26480,12 +26488,12 @@ function Global:Get-OciDataStoreByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/dataStore"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/dataStore"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26501,20 +26509,20 @@ function Global:Get-OciDataStoreByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Datastore = ParseDatastores $Result $Timezone
+
+            $Datastore = ParseDatastores -Datastores $Result -Timezone $Timezone
             Write-Output $Datastore
         }
     }
@@ -26552,7 +26560,7 @@ function Global:Get-OciDataStoreByVirtualMachine {
 #>
 function Global:Get-OciDatasourcesByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26596,7 +26604,7 @@ function Global:Get-OciDatasourcesByVirtualMachine {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26615,12 +26623,12 @@ function Global:Get-OciDatasourcesByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26636,20 +26644,20 @@ function Global:Get-OciDatasourcesByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources($Result)
+            $Datasources = ParseDatasources -Datasources $Result
             Write-Output $Datasources
         }
     }
@@ -26677,7 +26685,7 @@ function Global:Get-OciDatasourcesByVirtualMachine {
 #>
 function Global:Get-OciFileSystemsByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26706,7 +26714,7 @@ function Global:Get-OciFileSystemsByVirtualMachine {
                    Position=7,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26725,12 +26733,12 @@ function Global:Get-OciFileSystemsByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/fileSystems"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/fileSystems"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26746,17 +26754,17 @@ function Global:Get-OciFileSystemsByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -26802,7 +26810,7 @@ function Global:Get-OciFileSystemsByVirtualMachine {
 #>
 function Global:Get-OciHostByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26855,7 +26863,7 @@ function Global:Get-OciHostByVirtualMachine {
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26874,12 +26882,12 @@ function Global:Get-OciHostByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/host"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/host"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26895,20 +26903,20 @@ function Global:Get-OciHostByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Hosts = ParseHosts($Result,$Server.Timezone)
+            $Hosts = ParseHosts -Hosts $Result -Timezone $Server.Timezone
             Write-Output $Hosts
         }
     }
@@ -26932,7 +26940,7 @@ function Global:Get-OciHostByVirtualMachine {
 #>
 function Global:Get-OciVirtualMachinePerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -26955,7 +26963,7 @@ function Global:Get-OciVirtualMachinePerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -26974,12 +26982,12 @@ function Global:Get-OciVirtualMachinePerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -26995,20 +27003,20 @@ function Global:Get-OciVirtualMachinePerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -27046,7 +27054,7 @@ function Global:Get-OciVirtualMachinePerformance {
 #>
 function Global:Get-OciPortsByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27090,7 +27098,7 @@ function Global:Get-OciPortsByVirtualMachine {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27109,12 +27117,12 @@ function Global:Get-OciPortsByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/ports"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/ports"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27130,20 +27138,20 @@ function Global:Get-OciPortsByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Ports = ParsePorts($Result,$Server.Timezone)
+            $Ports = ParsePorts -Ports $Result -Timezone $Server.Timezone
             Write-Output $Ports
         }
     }
@@ -27179,7 +27187,7 @@ function Global:Get-OciPortsByVirtualMachine {
 #>
 function Global:Get-OciStorageResourcesByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27220,7 +27228,7 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27239,12 +27247,12 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/storageResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/storageResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27260,20 +27268,20 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageResources = ParseStorageResources($Result)
+            $StorageResources = ParseStorageResources -StorageResources $Result
             Write-Output $StorageResources
         }
     }
@@ -27309,7 +27317,7 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
 #>
 function Global:Get-OciVmdksByVirtualMachine {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27350,7 +27358,7 @@ function Global:Get-OciVmdksByVirtualMachine {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27369,12 +27377,12 @@ function Global:Get-OciVmdksByVirtualMachine {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/vmdks"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/virtualMachines/$id/vmdks"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27390,20 +27398,20 @@ function Global:Get-OciVmdksByVirtualMachine {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Vmdks = ParseVmdks($Result,$Server.Timezone)
+
+            $Vmdks = ParseVmdks -Vmdks $Result -Timezone $Server.Timezone
             Write-Output $Vmdks
         }
     }
@@ -27441,7 +27449,7 @@ function Global:Get-OciVmdksByVirtualMachine {
 #>
 function Global:Get-OciVmdk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27482,7 +27490,7 @@ function Global:Get-OciVmdk {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27501,12 +27509,12 @@ function Global:Get-OciVmdk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27522,20 +27530,20 @@ function Global:Get-OciVmdk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Vmdk = ParseVmdks($Result,$Server.Timezone)
+
+            $Vmdk = ParseVmdks -Vmdks $Result -Timezone $Server.Timezone
             Write-Output $Vmdk
         }
     }
@@ -27558,7 +27566,7 @@ function Global:Get-OciVmdk {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -27566,7 +27574,7 @@ function Global:Get-OciVmdk {
 #>
 function Global:Remove-OciAnnotationsByVmdk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27580,7 +27588,7 @@ function Global:Remove-OciAnnotationsByVmdk {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27599,12 +27607,12 @@ function Global:Remove-OciAnnotationsByVmdk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27620,19 +27628,19 @@ function Global:Remove-OciAnnotationsByVmdk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -27654,7 +27662,7 @@ function Global:Remove-OciAnnotationsByVmdk {
 #>
 function Global:Get-OciAnnotationsByVmdk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27671,7 +27679,7 @@ function Global:Get-OciAnnotationsByVmdk {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27690,12 +27698,12 @@ function Global:Get-OciAnnotationsByVmdk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27711,19 +27719,19 @@ function Global:Get-OciAnnotationsByVmdk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -27746,7 +27754,7 @@ function Global:Get-OciAnnotationsByVmdk {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -27754,7 +27762,7 @@ function Global:Get-OciAnnotationsByVmdk {
 #>
 function Global:Update-OciAnnotationsByVmdk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27768,7 +27776,7 @@ function Global:Update-OciAnnotationsByVmdk {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27787,12 +27795,12 @@ function Global:Update-OciAnnotationsByVmdk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27808,19 +27816,19 @@ function Global:Update-OciAnnotationsByVmdk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: "
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -27860,7 +27868,7 @@ function Global:Update-OciAnnotationsByVmdk {
 #>
 function Global:Get-OciDatasourcesByVmdk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -27904,7 +27912,7 @@ function Global:Get-OciDatasourcesByVmdk {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -27923,12 +27931,12 @@ function Global:Get-OciDatasourcesByVmdk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -27944,20 +27952,20 @@ function Global:Get-OciDatasourcesByVmdk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
-            $Datasources = ParseDatasources($Result)
+
+            $Datasources = ParseDatasources -Datasources $Result
             Write-Output $Datasources
         }
     }
@@ -27981,7 +27989,7 @@ function Global:Get-OciDatasourcesByVmdk {
 #>
 function Global:Get-OciVmdkPerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28004,7 +28012,7 @@ function Global:Get-OciVmdkPerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28023,12 +28031,12 @@ function Global:Get-OciVmdkPerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28044,20 +28052,20 @@ function Global:Get-OciVmdkPerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -28093,7 +28101,7 @@ function Global:Get-OciVmdkPerformance {
 #>
 function Global:Get-OciStorageResourcesByVmdk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28134,7 +28142,7 @@ function Global:Get-OciStorageResourcesByVmdk {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28153,12 +28161,12 @@ function Global:Get-OciStorageResourcesByVmdk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/storageResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/storageResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28174,20 +28182,20 @@ function Global:Get-OciStorageResourcesByVmdk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageResources = ParseStorageResources($Result)
+            $StorageResources = ParseStorageResources -StorageResources $Result
             Write-Output $StorageResources
         }
     }
@@ -28231,7 +28239,7 @@ function Global:Get-OciStorageResourcesByVmdk {
 #>
 function Global:Get-OciVirtualMachineByVmdk {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28284,7 +28292,7 @@ function Global:Get-OciVirtualMachineByVmdk {
                    Position=15,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28303,12 +28311,12 @@ function Global:Get-OciVirtualMachineByVmdk {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/virtualMachine"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/vmdks/$id/virtualMachine"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28324,20 +28332,20 @@ function Global:Get-OciVirtualMachineByVmdk {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $VirtualMachine = ParseVirtualMachines($Result,$Server.Timezone)
+            $VirtualMachine = ParseVirtualMachines -VirtualMachines $Result -Timezone $Server.Timezone
             Write-Output $VirtualMachine
         }
     }
@@ -28395,7 +28403,7 @@ function Global:Get-OciVirtualMachineByVmdk {
 #>
 function Global:Get-OciVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28466,7 +28474,7 @@ function Global:Get-OciVolume {
                    Position=9,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28485,12 +28493,12 @@ function Global:Get-OciVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28506,20 +28514,20 @@ function Global:Get-OciVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volume = ParseVolumes($Result)
+            $Volume = ParseVolumes -Volumes $Result
             Write-Output $Volume
         }
     }
@@ -28542,7 +28550,7 @@ function Global:Get-OciVolume {
 }
 ]
 </pre>
-                    
+
     .PARAMETER id
     Id of object to delete
         .PARAMETER definition
@@ -28550,7 +28558,7 @@ function Global:Get-OciVolume {
 #>
 function Global:Remove-OciAnnotationsByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28564,7 +28572,7 @@ function Global:Remove-OciAnnotationsByVolume {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28583,12 +28591,12 @@ function Global:Remove-OciAnnotationsByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28604,19 +28612,19 @@ function Global:Remove-OciAnnotationsByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -28638,7 +28646,7 @@ function Global:Remove-OciAnnotationsByVolume {
 #>
 function Global:Get-OciAnnotationsByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28655,7 +28663,7 @@ function Global:Get-OciAnnotationsByVolume {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28674,12 +28682,12 @@ function Global:Get-OciAnnotationsByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28695,17 +28703,17 @@ function Global:Get-OciAnnotationsByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -28730,7 +28738,7 @@ function Global:Get-OciAnnotationsByVolume {
   }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER definition
@@ -28738,7 +28746,7 @@ function Global:Get-OciAnnotationsByVolume {
 #>
 function Global:Update-OciAnnotationsByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28752,7 +28760,7 @@ function Global:Update-OciAnnotationsByVolume {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28771,12 +28779,12 @@ function Global:Update-OciAnnotationsByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/annotations"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28792,19 +28800,19 @@ function Global:Update-OciAnnotationsByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -28816,7 +28824,7 @@ function Global:Update-OciAnnotationsByVolume {
     .SYNOPSIS
     Bulk un-assign applications from volume
     .DESCRIPTION
-    Bulk un-assign applications from volume   
+    Bulk un-assign applications from volume
     .PARAMETER id
     Id of volume to remove applications from
     .PARAMETER computeResources
@@ -28826,7 +28834,7 @@ function Global:Update-OciAnnotationsByVolume {
 #>
 function Global:Remove-OciApplicationsFromVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28846,7 +28854,7 @@ function Global:Remove-OciApplicationsFromVolume {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28865,26 +28873,26 @@ function Global:Remove-OciApplicationsFromVolume {
             }
         }
     }
-   
+
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
- 
+        $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
+
         if (!$applicationId) {
-            $applicationId = Get-OciApplicationsByVolume -id $id | select -ExpandProperty id
+            $applicationId = Get-OciApplicationsByVolume -id $id | Select-Object -ExpandProperty id
         }
 
         try {
-            $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
+            $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         Write-Output $Result
@@ -28911,7 +28919,7 @@ function Global:Remove-OciApplicationsFromVolume {
 #>
 function Global:Get-OciApplicationsByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -28937,7 +28945,7 @@ function Global:Get-OciApplicationsByVolume {
                    Position=6,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -28956,12 +28964,12 @@ function Global:Get-OciApplicationsByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -28977,19 +28985,19 @@ function Global:Get-OciApplicationsByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -29011,7 +29019,7 @@ function Global:Get-OciApplicationsByVolume {
     }
 ]
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
         .PARAMETER computeResources
@@ -29021,7 +29029,7 @@ function Global:Get-OciApplicationsByVolume {
 #>
 function Global:Add-OciApplicationsToVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29043,7 +29051,7 @@ function Global:Add-OciApplicationsToVolume {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29062,12 +29070,12 @@ function Global:Add-OciApplicationsToVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29083,21 +29091,21 @@ function Global:Add-OciApplicationsToVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
-                $Body = ConvertTo-Json @($applicationId | % { @{id=$_} }) -Compress
+                $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -29114,7 +29122,7 @@ function Global:Add-OciApplicationsToVolume {
     "id":"12345"
 }
 </pre>
-            
+
     .PARAMETER id
     Id of object to update
     .PARAMETER applicationId
@@ -29126,7 +29134,7 @@ function Global:Add-OciApplicationsToVolume {
 #>
 function Global:Update-OciApplicationsByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29146,7 +29154,7 @@ function Global:Update-OciApplicationsByVolume {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29165,12 +29173,12 @@ function Global:Update-OciApplicationsByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"                      
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29186,21 +29194,21 @@ function Global:Update-OciApplicationsByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
-            try {                
-                $Body = ConvertTo-Json ($applicationId | % { @{id=$_} }) -Compress
+
+            try {
+                $Body = ConvertTo-Json ($applicationId | ForEach-Object { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method POST -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -29222,7 +29230,7 @@ function Global:Update-OciApplicationsByVolume {
 #>
 function Global:Remove-OciByTypeAndId {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29242,7 +29250,7 @@ function Global:Remove-OciByTypeAndId {
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29261,12 +29269,12 @@ function Global:Remove-OciByTypeAndId {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications/$appId"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/applications/$appId"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29282,17 +29290,17 @@ function Global:Remove-OciByTypeAndId {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -29310,7 +29318,7 @@ function Global:Remove-OciByTypeAndId {
 #>
 function Global:Get-OciAutoTierPolicyByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29321,7 +29329,7 @@ function Global:Get-OciAutoTierPolicyByVolume {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29340,12 +29348,12 @@ function Global:Get-OciAutoTierPolicyByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/autoTierPolicy"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/autoTierPolicy"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29361,19 +29369,19 @@ function Global:Get-OciAutoTierPolicyByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -29405,7 +29413,7 @@ function Global:Get-OciAutoTierPolicyByVolume {
 #>
 function Global:Get-OciComputeResourcesByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29440,7 +29448,7 @@ function Global:Get-OciComputeResourcesByVolume {
                    Position=9,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29459,12 +29467,12 @@ function Global:Get-OciComputeResourcesByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/computeResources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/computeResources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29480,17 +29488,17 @@ function Global:Get-OciComputeResourcesByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -29528,7 +29536,7 @@ function Global:Get-OciComputeResourcesByVolume {
 #>
 function Global:Get-OciDatastoresByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29569,7 +29577,7 @@ function Global:Get-OciDatastoresByVolume {
                    Position=11,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29588,12 +29596,12 @@ function Global:Get-OciDatastoresByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/dataStores"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/dataStores"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29609,19 +29617,19 @@ function Global:Get-OciDatastoresByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-           
+
             Write-Output $Result
         }
     }
@@ -29659,7 +29667,7 @@ function Global:Get-OciDatastoresByVolume {
 #>
 function Global:Get-OciDatasourcesByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29703,7 +29711,7 @@ function Global:Get-OciDatasourcesByVolume {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29722,12 +29730,12 @@ function Global:Get-OciDatasourcesByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/datasources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/datasources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29743,17 +29751,17 @@ function Global:Get-OciDatasourcesByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -29803,7 +29811,7 @@ function Global:Get-OciDatasourcesByVolume {
 #>
 function Global:Get-OciInternalVolumeByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29862,7 +29870,7 @@ function Global:Get-OciInternalVolumeByVolume {
                    Position=17,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29881,12 +29889,12 @@ function Global:Get-OciInternalVolumeByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/internalVolume"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/internalVolume"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -29902,17 +29910,17 @@ function Global:Get-OciInternalVolumeByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -29924,7 +29932,7 @@ function Global:Get-OciInternalVolumeByVolume {
     .SYNOPSIS
     Retrieve one volume performance
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of volume to retrieve
     .PARAMETER fromTime
@@ -29938,7 +29946,7 @@ function Global:Get-OciInternalVolumeByVolume {
 #>
 function Global:Get-OciVolumePerformance {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -29961,7 +29969,7 @@ function Global:Get-OciVolumePerformance {
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -29980,12 +29988,12 @@ function Global:Get-OciVolumePerformance {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/performance"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/performance"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -30001,20 +30009,20 @@ function Global:Get-OciVolumePerformance {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Performance = ParsePerformance($Result,$Server.Timezone)
+            $Performance = ParsePerformance -Performance $Result -Timezone $Server.Timezone
             Write-Output $Performance
         }
     }
@@ -30024,7 +30032,7 @@ function Global:Get-OciVolumePerformance {
     .SYNOPSIS
     Retrieve all storage ports and their connected ports by volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of volume to retrieve the ports that are connected to storage ports.
     .PARAMETER fromTime
@@ -30052,7 +30060,7 @@ function Global:Get-OciVolumePerformance {
 #>
 function Global:Get-OciPortsByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -30096,7 +30104,7 @@ function Global:Get-OciPortsByVolume {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -30115,12 +30123,12 @@ function Global:Get-OciPortsByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/ports"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/ports"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -30136,17 +30144,17 @@ function Global:Get-OciPortsByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -30158,7 +30166,7 @@ function Global:Get-OciPortsByVolume {
     .SYNOPSIS
     Retrieve qtree for a given volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of volume to retrieve the qtree.
     .PARAMETER fromTime
@@ -30182,7 +30190,7 @@ function Global:Get-OciPortsByVolume {
 #>
 function Global:Get-OciQtree {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -30220,7 +30228,7 @@ function Global:Get-OciQtree {
                    Position=10,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -30239,12 +30247,12 @@ function Global:Get-OciQtree {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/qtree"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/qtree"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -30260,19 +30268,19 @@ function Global:Get-OciQtree {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result
         }
     }
@@ -30282,7 +30290,7 @@ function Global:Get-OciQtree {
     .SYNOPSIS
     Retrieve all source volumes for a given target volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of target volume to retrieve the source volumes.
     .PARAMETER fromTime
@@ -30328,7 +30336,7 @@ function Global:Get-OciQtree {
 #>
 function Global:Get-OciSourceVolumesByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -30399,7 +30407,7 @@ function Global:Get-OciSourceVolumesByVolume {
                    Position=21,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -30418,12 +30426,12 @@ function Global:Get-OciSourceVolumesByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/replicaSources"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/replicaSources"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -30439,17 +30447,17 @@ function Global:Get-OciSourceVolumesByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -30461,7 +30469,7 @@ function Global:Get-OciSourceVolumesByVolume {
     .SYNOPSIS
     Retrieve the storage of a volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of the volume to retrieve the storage.
     .PARAMETER fromTime
@@ -30503,7 +30511,7 @@ function Global:Get-OciSourceVolumesByVolume {
 #>
 function Global:Get-OciStorageByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -30568,7 +30576,7 @@ function Global:Get-OciStorageByVolume {
                    Position=19,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -30587,12 +30595,12 @@ function Global:Get-OciStorageByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storage"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storage"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -30608,17 +30616,17 @@ function Global:Get-OciStorageByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -30630,7 +30638,7 @@ function Global:Get-OciStorageByVolume {
     .SYNOPSIS
     Retrieve storage nodes for a given volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of volume to retrieve the storage nodes.
     .PARAMETER fromTime
@@ -30658,7 +30666,7 @@ function Global:Get-OciStorageByVolume {
 #>
 function Global:Get-OciStorageNodesByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -30702,7 +30710,7 @@ function Global:Get-OciStorageNodesByVolume {
                    Position=12,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -30721,12 +30729,12 @@ function Global:Get-OciStorageNodesByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storageNodes"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storageNodes"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -30742,17 +30750,17 @@ function Global:Get-OciStorageNodesByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -30764,7 +30772,7 @@ function Global:Get-OciStorageNodesByVolume {
     .SYNOPSIS
     Retrieve storage pools for a given volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of volume to retrieve the storage pools.
     .PARAMETER fromTime
@@ -30796,7 +30804,7 @@ function Global:Get-OciStorageNodesByVolume {
 #>
 function Global:Get-OciStoragePoolsByVolume {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -30846,7 +30854,7 @@ function Global:Get-OciStoragePoolsByVolume {
                    Position=14,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -30865,12 +30873,12 @@ function Global:Get-OciStoragePoolsByVolume {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/storagePools"
-            
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -30886,17 +30894,17 @@ function Global:Get-OciStoragePoolsByVolume {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -30908,7 +30916,7 @@ function Global:Get-OciStoragePoolsByVolume {
     .SYNOPSIS
     Retrieve virtual storage pools for a given volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of volume to retrieve the virtual storage pools.
     .PARAMETER fromTime
@@ -30940,7 +30948,7 @@ function Global:Get-OciStoragePoolsByVolume {
 #>
 function Global:Get-OciVirtualStoragePools {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -30990,7 +30998,7 @@ function Global:Get-OciVirtualStoragePools {
                    Position=14,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -31009,12 +31017,12 @@ function Global:Get-OciVirtualStoragePools {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualStoragePools"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualStoragePools"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -31030,17 +31038,17 @@ function Global:Get-OciVirtualStoragePools {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -31052,7 +31060,7 @@ function Global:Get-OciVirtualStoragePools {
     .SYNOPSIS
     Retrieve virtualizer for a given backend volume.
     .DESCRIPTION
-    
+
     .PARAMETER id
     Id of volume to retrieve the virtualizer.
     .PARAMETER fromTime
@@ -31094,7 +31102,7 @@ function Global:Get-OciVirtualStoragePools {
 #>
 function Global:Get-OciVirtualizer {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -31159,7 +31167,7 @@ function Global:Get-OciVirtualizer {
                    Position=19,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -31178,12 +31186,12 @@ function Global:Get-OciVirtualizer {
             }
         }
     }
-   
+
     Process {
         $id = @($id)
         foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualizer"            
- 
+            $Uri = $Server.BaseUri + "/rest/v1/assets/volumes/$id/virtualizer"
+
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -31199,17 +31207,17 @@ function Global:Get-OciVirtualizer {
                     $Uri += "$($Separator)expand=$expand"
                 }
             }
- 
+
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
 
             Write-Output $Result
@@ -31229,7 +31237,7 @@ function Global:Get-OciVirtualizer {
 #>
 function Global:Search-Oci {
     [CmdletBinding()]
- 
+
     PARAM (
             [parameter(Mandatory=$true,
                     Position=0,
@@ -31240,7 +31248,7 @@ function Global:Search-Oci {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         $Result = $null
         if (!$Server) {
@@ -31256,14 +31264,14 @@ function Global:Search-Oci {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
             }
             catch {
-                $ResponseBody = ParseExceptionBody $_.Exception.Response
+                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
             }
- 
+
             if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString($Result.Trim())
+                $Result = ParseJsonString -json $Result.Trim()
             }
-       
+
             Write-Output $Result.resultsByCategory
         }
     }
@@ -31285,7 +31293,7 @@ function Global:Get-OciHealth {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31293,26 +31301,26 @@ function Global:Get-OciHealth {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/health"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         foreach ($Item in $Result) {
             $Item.time = $Item.time | ConvertFrom-UnixTimestamp
         }
-       
+
         Write-Output $Result
     }
 }
@@ -31325,7 +31333,7 @@ function Global:Get-OciHealth {
 #>
 function Global:Restore-OciBackup {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -31336,7 +31344,7 @@ function Global:Restore-OciBackup {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31344,7 +31352,7 @@ function Global:Restore-OciBackup {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $FilePath = @($FilePath)
 
@@ -31357,7 +31365,7 @@ function Global:Restore-OciBackup {
 
             if (Test-Path $FilePath) {
                 Write-Host "Found local OCI Backup in $FilePath which will be restored"
-                
+
                 Write-Host "Starting Restore job. This can take several hours..."
 
                 $Job = Start-Job {
@@ -31367,14 +31375,14 @@ function Global:Restore-OciBackup {
 
                     Invoke-MultipartFormDataUpload -InFile $args[0] -Name "backupFile" -Uri $args[1] -Header $args[2]
                 } -ArgumentList $FilePath,$URI,$Server.Headers
-                
+
             }
             else {
                 Write-Host "No local Backup in $FilePath, trying to restore backup residing on OnCommand Insight Server"
-            
+
                 # create boundary
                 $boundary = [System.Guid]::NewGuid().ToString()
-        
+
                 # Linefeed character
                 $LF = "`r`n"
 
@@ -31402,7 +31410,7 @@ function Global:Restore-OciBackup {
             $activity = "Restore started"
             $status = "Uploading"
             Write-Progress -Activity $activity -status $status -percentComplete $percentComplete
-            sleep 2
+            Start-Sleep -Seconds 2
             $i = 0
             while ($true) {
                 $ProgressUri = $Uri + "?_=" + (get-date | ConvertTo-UnixTimestamp)
@@ -31411,12 +31419,12 @@ function Global:Restore-OciBackup {
                     $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $ProgressUri -Headers $Server.Headers -ErrorAction SilentlyContinue
                 }
                 catch {
-                    $ResponseBody = ParseExceptionBody $_.Exception.Response
+                    $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                     Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
                 }
-                if ($i -eq 1440) { 
+                if ($i -eq 1440) {
                     Write-Host ''
-                    throw 'Restore did not finish within 24 hours' 
+                    throw 'Restore did not finish within 24 hours'
                 }
                 if ($Result.status -eq 'SUCCESSFUL') {
                     Write-Host "finished"
@@ -31427,7 +31435,7 @@ function Global:Restore-OciBackup {
                 }
                 elseif (($Result.currentStep.startTime | get-date) -ge $StartTime) {
                     $activity = $Result.currentStep.operationText
-                    $status = $Result.components.name | select -last 1
+                    $status = $Result.components.name | Select-Object -last 1
                     if (!$status) {
                         $status = $Result.status
                     }
@@ -31435,12 +31443,12 @@ function Global:Restore-OciBackup {
                 switch ($Result.currentStep.phaseText) {
                     "Restoring" { $percentComplete = 20 }
                     "Waiting" { $percentComplete = 30 }
-                } 
+                }
                 Write-Progress -Activity $activity -status $status -percentComplete $percentComplete
-                sleep 5
+                Start-Sleep -Seconds 5
             }
             Write-Progress -Activity $Result.currentStep.phaseText -status $Result.currentStep.operationText -percentComplete 100
-            sleep 1
+            Start-Sleep -Seconds 1
         }
         Write-Output $Result
     }
@@ -31454,7 +31462,7 @@ function Global:Restore-OciBackup {
 #>
 function Global:Get-OciBackup {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
@@ -31466,7 +31474,7 @@ function Global:Get-OciBackup {
                    Position=2,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31474,12 +31482,12 @@ function Global:Get-OciBackup {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $URI = $Server.BaseUri + "/rest/v1/admin/backups/current"
- 
-        Write-Host "Starting Backup"  
-        $Job = Start-Job { 
+
+        Write-Host "Starting Backup"
+        $Job = Start-Job {
             add-type @"
                     using System.Net;
                     using System.Security.Cryptography.X509Certificates;
@@ -31509,38 +31517,38 @@ function Global:Get-OciBackup {
             while ($true) {
                 $i++
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-                if ($i -eq ($Timeout * 12) -or $Job.State -ne 'Running') { 
+                if ($i -eq ($Timeout * 12) -or $Job.State -ne 'Running') {
                     Write-Progress -Activity "Backup did not complete in $Timeout minutes" -status "Backing failed" -percentComplete 100
                 }
-                if ($Result.status -eq 'SUCCESSFUL') { 
+                if ($Result.status -eq 'SUCCESSFUL') {
                     Write-Progress -Activity $Result -status $Result -percentComplete 100
-                    sleep 1
-                    break 
+                    Start-Sleep -Seconds 1
+                    break
                 }
                 Write-Progress -Activity "Backup started" -status $Result.status -percentComplete (100*$i/($Timeout*12))
-                sleep 5
+                Start-Sleep -Seconds 5
             }
             $Uri = $($Server.BaseUri) + $Result.Url
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
-        $FilePath = $Path + '\' + (($Uri -split '/') | select -last 1)
+        $FilePath = $Path + '\' + (($Uri -split '/') | Select-Object -last 1)
         Write-Host $FilePath
         $Date = [datetime]::ParseExact($($FilePath -replace '.+_D(.*)_[0-9]+.zip','$1'),"yyyyMMdd_HHmm",$null)
 
         try {
             Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -OutFile $FilePath
             Write-Host "Backup Saved to $FilePath"
-            
+
             $Result = New-Object -TypeName PSCustomObject -ArgumentList @{FilePath=$FilePath;Date=$Date;URI=$Uri}
 
             Write-Output $Result
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
     }
@@ -31554,13 +31562,13 @@ function Global:Get-OciBackup {
 #>
 function Global:Get-OciBackups {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31568,19 +31576,19 @@ function Global:Get-OciBackups {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/backups"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            
-            $Result = $Result | % { [PSCustomObject]@{FilePath=$_.path;Date=($_.date | get-date)} }
+
+            $Result = $Result | ForEach-Object { [PSCustomObject]@{FilePath=$_.path;Date=($_.date | get-date)} }
 
             Write-Output $Result
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
     }
@@ -31596,13 +31604,13 @@ function Global:Get-OciBackups {
 #>
 function Global:Get-OciQueries {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31610,20 +31618,20 @@ function Global:Get-OciQueries {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/queries"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         # TODO: implement parsing
@@ -31644,7 +31652,7 @@ function Global:Get-OciQueries {
 #>
 function Global:Get-OciQuery {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -31655,7 +31663,7 @@ function Global:Get-OciQuery {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31663,20 +31671,20 @@ function Global:Get-OciQuery {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/queries/$id"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         # TODO: implement parsing
@@ -31697,7 +31705,7 @@ function Global:Get-OciQuery {
 #>
 function Global:Delete-OciQuery {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -31708,7 +31716,7 @@ function Global:Delete-OciQuery {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31716,20 +31724,20 @@ function Global:Delete-OciQuery {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/queries/$id"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         # TODO: implement parsing
@@ -31748,13 +31756,13 @@ function Global:Delete-OciQuery {
 #>
 function Global:Get-OciAnnotationRules {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$False,
                    Position=0,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31762,20 +31770,20 @@ function Global:Get-OciAnnotationRules {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/rules"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         # TODO: implement parsing
@@ -31794,7 +31802,7 @@ function Global:Get-OciAnnotationRules {
 #>
 function Global:Get-OciAnnotationRule {
     [CmdletBinding()]
- 
+
     PARAM (
         [parameter(Mandatory=$True,
                     Position=0,
@@ -31805,7 +31813,7 @@ function Global:Get-OciAnnotationRule {
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
- 
+
     Begin {
         Write-Warning "This Cmdlet uses an undocumented API call which may change in the future. Thus this Cmdlet is marked as experimental!"
         $Result = $null
@@ -31813,20 +31821,20 @@ function Global:Get-OciAnnotationRule {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
     }
-   
+
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/admin/rules/$id"
- 
+
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
         catch {
-            $ResponseBody = ParseExceptionBody $_.Exception.Response
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
             Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
- 
+
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-            $Result = ParseJsonString($Result.Trim())
+            $Result = ParseJsonString -json $Result.Trim()
         }
 
         # TODO: implement parsing
