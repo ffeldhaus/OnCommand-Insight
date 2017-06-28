@@ -298,19 +298,19 @@ function ParseDatasources($Datasources,$Timezone) {
             $Datasource.resumeTime = $Datasource.resumeTime | Get-Date
         }
         if ($Datasource.AcquisitionUnit) {
-            $Datasource.AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Datasource.AcquisitionUnit
+            $Datasource.AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Datasource.AcquisitionUnit -Timezone $Timezone
         }
         if ($Datasource.Changes) {
-            $Datasource.Changes = ParseChanges -Changes $Datasource.Changes
+            $Datasource.Changes = ParseChanges -Changes $Datasource.Changes -Timezone $Timezone
         }
         if ($Datasource.Events) {
-            $Datasource.Events = ParseEvents -Events $Datasource.Events
+            $Datasource.Events = ParseEvents -Events $Datasource.Events -Timezone $Timezone
         }
         if ($Datasource.activePatch) {
-            $Datasource.activePatch = ParseActivePatches -ActivePatches $Datasource.activePatch
+            $Datasource.activePatch = ParseActivePatches -ActivePatches $Datasource.activePatch -Timezone $Timezone
         }
         if ($Datasource.config) {
-            $Datasource.config = ParseDatasourceConfig -DatasourceConfig $Datasource.config
+            $Datasource.config = ParseDatasourceConfig -DatasourceConfig $Datasource.config -Timezone $Timezone
         }
         Write-Output $Datasource
     }
@@ -323,7 +323,7 @@ function ParseDatasourceTypes($DatasourceTypes,$Timezone) {
     }
 }
 
-function ParseDatasourceConfig($DatasourceConfig) {
+function ParseDatasourceConfig($DatasourceConfig,$Timezone) {
     $DatasourceConfig = @($DatasourceConfig)
     foreach ($DatasourceConfig in $DatasourceConfig) {
         if ($DatasourceConfig.packages | Where-Object { $_.id -eq "foundation" }) {
@@ -388,7 +388,7 @@ function ParseCertificates($Certificates,$Timezone) {
 }
 
 function ParseLicenseStatus($LicenseStatus,$Timezone) {
-    $LicenseStatus.LicenseParts = ParseLicenses -Licenses $LicenseStatus.LicenseParts
+    $LicenseStatus.LicenseParts = ParseLicenses -Licenses $LicenseStatus.LicenseParts -Timezone $Timezone
 
     Write-Output $LicenseStatus
 }
@@ -404,7 +404,7 @@ function ParseLicenses($Licenses,$Timezone) {
     }
 }
 
-function ParseUsers($Users) {
+function ParseUsers($Users,$Timezone) {
     $Users = @($Users)
     foreach ($User in $Users) {
         if ($User.lastLogin) {
@@ -436,19 +436,19 @@ function ParseSwitches($Switches,$Timezone) {
             $Switch.performance = ParsePerformance -Performance $Switch.performance -Timezone $Timezone
         }
         if ($Switch.fabric) {
-            $Switch.fabric = ParseFabrics -Fabrics $Switch.fabric
+            $Switch.fabric = ParseFabrics -Fabrics $Switch.fabric -Timezone $Timezone
         }
         if ($Switch.ports) {
             $Switch.ports = ParsePorts -Ports $Switch.ports -Timezone $Timezone
         }
         if ($Switch.annotations) {
-            $Switch.annotations = ParseAnnotations -Annotations $Switch.annotations
+            $Switch.annotations = ParseAnnotations -Annotations $Switch.annotations -Timezone $Timezone
         }
         if ($Switch.datasources) {
-            $Switch.datasources = ParseDatasources -Datasources $Switch.datasources
+            $Switch.datasources = ParseDatasources -Datasources $Switch.datasources -Timezone $Timezone
         }
         if ($Switch.applications) {
-            $Switch.applications = ParseApplications -Applications $Switch.applications
+            $Switch.applications = ParseApplications -Applications $Switch.applications -Timezone $Timezone
         }
 
         Write-Output $Switch
@@ -602,10 +602,10 @@ function ParseVirtualMachines($VirtualMachines,$Timezone) {
             $VirtualMachine.performance = ParsePerformance -Performance $VirtualMachine.performance -Timezone $Timezone
         }
         if ($VirtualMachine.vmdks) {
-            $VirtualMachine.vmdks = ParseVmdks -Vmdks $VirtualMachine.vmdks $Timezone
+            $VirtualMachine.vmdks = ParseVmdks -Vmdks $VirtualMachine.vmdks -Timezone $Timezone
         }
         if ($VirtualMachine.host) {
-            $VirtualMachine.host = ParseHosts -Hosts $VirtualMachine.host $Timezone
+            $VirtualMachine.host = ParseHosts -Hosts $VirtualMachine.host -Timezone $Timezone
         }
         if ($VirtualMachine.ports) {
             $VirtualMachine.ports = ParsePorts -Ports $VirtualMachine.ports -Timezone $Timezone
@@ -614,19 +614,19 @@ function ParseVirtualMachines($VirtualMachines,$Timezone) {
             $VirtualMachine.dataStore = ParseDatastores -Datastores $VirtualMachine.dataStore -Timezone $Timezone
         }
         if ($VirtualMachine.applications) {
-            $VirtualMachine.applications = ParseApplications -Applications $VirtualMachine.applications
+            $VirtualMachine.applications = ParseApplications -Applications $VirtualMachine.applications -Timezone $Timezone
         }
         if ($VirtualMachine.fileSystems) {
-            $VirtualMachine.fileSystems = ParseFileSystems -FileSystems $VirtualMachine.fileSystems
+            $VirtualMachine.fileSystems = ParseFileSystems -FileSystems $VirtualMachine.fileSystems -Timezone $Timezone
         }
         if ($VirtualMachine.storageResources) {
-            $VirtualMachine.storageResources = ParseStorageResources -StorageResources $VirtualMachine.storageResources
+            $VirtualMachine.storageResources = ParseStorageResources -StorageResources $VirtualMachine.storageResources -Timezone $Timezone
         }
         if ($VirtualMachine.annotations) {
-            $VirtualMachine.annotations = ParseAnnotations -Annotations $VirtualMachine.annotations
+            $VirtualMachine.annotations = ParseAnnotations -Annotations $VirtualMachine.annotations -Timezone $Timezone
         }
         if ($VirtualMachine.datasources) {
-            $VirtualMachine.datasources = ParseDatasources -Datasources $VirtualMachine.datasources
+            $VirtualMachine.datasources = ParseDatasources -Datasources $VirtualMachine.datasources -Timezone $Timezone
         }
 
         Write-Output $VirtualMachine
@@ -653,13 +653,13 @@ function ParseVmdks($Vmdks,$Timezone) {
             $vmdk.performance = ParsePerformance -Performance $vmdk.performance -Timezone $Timezone
         }
         if ($vmdk.storageResources) {
-            $vmdk.storageResources = ParseStorageResources -StorageResources $vmdk.storageResources
+            $vmdk.storageResources = ParseStorageResources -StorageResources $vmdk.storageResources -Timezone $Timezone
         }
         if ($vmdk.annotations) {
-            $vmdk.annotations = ParseAnnotations -Annotations $vmdk.annotations
+            $vmdk.annotations = ParseAnnotations -Annotations $vmdk.annotations -Timezone $Timezone
         }
         if ($vmdk.datasources) {
-            $vmdk.datasources = ParseDatasources -Datasources $vmdk.datasources
+            $vmdk.datasources = ParseDatasources -Datasources $vmdk.datasources -Timezone $Timezone
         }
 
         Write-Output $vmdk
@@ -675,16 +675,16 @@ function ParseHosts($Hosts,$Timezone) {
             $HostInstance.performance = ParsePerformance -Performance $HostInstance.performance -Timezone $Timezone
         }
         if ($HostInstance.storageResources) {
-            $HostInstance.storageResources = ParseStorageResources -StorageResources $HostInstance.storageResources
+            $HostInstance.storageResources = ParseStorageResources -StorageResources $HostInstance.storageResources -Timezone $Timezone
         }
         if ($HostInstance.fileSystems) {
-            $HostInstance.fileSystems = ParseFileSystems -FileSystems $HostInstance.fileSystems
+            $HostInstance.fileSystems = ParseFileSystems -FileSystems $HostInstance.fileSystems -Timezone $Timezone
         }
         if ($HostInstance.ports) {
             $HostInstance.ports = ParsePorts -Ports $HostInstance.ports -Timezone $Timezone
         }
         if ($HostInstance.applications) {
-            $HostInstance.applications = ParseApplications -Applications $HostInstance.applications
+            $HostInstance.applications = ParseApplications -Applications $HostInstance.applications -Timezone $Timezone
         }
         if ($HostInstance.virtualMachines) {
             $HostInstance.virtualMachines = ParseVirtualMachines -VirtualMachines $HostInstance.virtualMachines -Timezone $Timezone
@@ -693,10 +693,10 @@ function ParseHosts($Hosts,$Timezone) {
             $HostInstance.clusterHosts = ParseHosts -Hosts $HostInstance.clusterHosts -Timezone $Timezone
         }
         if ($HostInstance.annotations) {
-            $HostInstance.annotations = ParseAnnotations -Annotations $HostInstance.annotations
+            $HostInstance.annotations = ParseAnnotations -Annotations $HostInstance.annotations -Timezone $Timezone
         }
         if ($HostInstance.datasources) {
-            $HostInstance.datasources = ParseDatasources -Datasources $HostInstance.datasources
+            $HostInstance.datasources = ParseDatasources -Datasources $HostInstance.datasources -Timezone $Timezone
         }
 
         Write-Output $HostInstance
@@ -706,10 +706,10 @@ function ParseHosts($Hosts,$Timezone) {
 function ParseTopologies($Topologies,$Timezone) {
     foreach ($Topology in $Topologies) {
         if ($Topology.nodes) {
-            $Topology.nodes = ParseTopologyNodes -Nodes $Topology.nodes
+            $Topology.nodes = ParseTopologyNodes -Nodes $Topology.nodes -Timezone $Timezone
         }
         if ($Topology.links) {
-            $Topology.links = ParseTopologyLinks -Links $Topology.links
+            $Topology.links = ParseTopologyLinks -Links $Topology.links -Timezone $Timezone
         }
 
         Write-Output $Topology
@@ -738,19 +738,19 @@ function ParsePorts($Ports,$Timezone) {
             $Port.performance = ParsePerformance -Performance $Port.performance -Timezone $Timezone
         }
         if ($Port.device) {
-            $Port.device = ParseDevices -Devices $Port.device
+            $Port.device = ParseDevices -Devices $Port.device -Timezone $Timezone
         }
         if ($Port.fabrics) {
-            $Port.fabrics = ParseFabrics -Fabrics $Port.fabrics
+            $Port.fabrics = ParseFabrics -Fabrics $Port.fabrics -Timezone $Timezone
         }
         if ($Port.annotations) {
-            $Port.annotations = ParseAnnotations -Annotations $Port.annotations
+            $Port.annotations = ParseAnnotations -Annotations $Port.annotations -Timezone $Timezone
         }
         if ($Port.datasources) {
-            $Port.datasources = ParseDatasources -Datasources $Port.datasources
+            $Port.datasources = ParseDatasources -Datasources $Port.datasources -Timezone $Timezone
         }
         if ($Port.application) {
-            $Port.application = ParseApplication -Application $Port.application
+            $Port.application = ParseApplication -Application $Port.application -Timezone $Timezone
         }
 
         Write-Output $Port
@@ -764,26 +764,26 @@ function ParseDevices($Device,$Timezone) {
             $Device.performance = ParsePerformance -Performance $Device.performance -Timezone $Timezone
         }
         if ($Device.device) {
-            $Device.device = ParseDevice -Device $Device.device
+            $Device.device = ParseDevice -Device $Device.device -Timezone $Timezone
         }
         if ($Device.fabrics) {
-            $Device.fabrics = ParseFabrics -Fabrics $Device.fabrics
+            $Device.fabrics = ParseFabrics -Fabrics $Device.fabrics -Timezone $Timezone
         }
         if ($Device.annotations) {
-            $Device.annotations = ParseAnnotations -Annotations $Device.annotations
+            $Device.annotations = ParseAnnotations -Annotations $Device.annotations -Timezone $Timezone
         }
         if ($Device.datasources) {
-            $Device.datasources = ParseDatasources -Datasources $Device.datasources
+            $Device.datasources = ParseDatasources -Datasources $Device.datasources -Timezone $Timezone
         }
         if ($Device.application) {
-            $Device.application = ParseApplication -Application $Device.application
+            $Device.application = ParseApplication -Application $Device.application -Timezone $Timezone
         }
 
         Write-Output $Device
     }
 }
 
-function ParseApplications($Applications) {
+function ParseApplications($Applications,$Timezone) {
     $Applications = @($Applications)
     foreach ($Application in $Applications) {
         if (!$Application.isBusinessEntityDefault) {
@@ -792,14 +792,14 @@ function ParseApplications($Applications) {
     }
 }
 
-function ParseAnnotations($Annotations) {
+function ParseAnnotations($Annotations,$Timezone) {
     $Annotations = @($Annotations)
     foreach ($Annotation in $Annotations) {
         Write-Output $Annotation
     }
 }
 
-function ParseAnnotationValues($AnnotationValues) {
+function ParseAnnotationValues($AnnotationValues,$Timezone) {
     $AnnotationValues = @($AnnotationValues)
     foreach ($AnnotationValue in $AnnotationValues) {
         Write-Output $AnnotationValue
@@ -816,28 +816,28 @@ function ParseComputeResources($ComputeResources,$Timezone) {
             $ComputeResource.performance = ParsePerformance -Performance $ComputeResource.performance -Timezone $Timezone
         }
         if ($ComputeResource.storageResources) {
-            $ComputeResource.storageResources = ParseStorageResources -StorageResources $ComputeResource.storageResources
+            $ComputeResource.storageResources = ParseStorageResources -StorageResources $ComputeResource.storageResources -Timezone $Timezone
         }
         if ($ComputeResource.fileSystems) {
-            $ComputeResource.fileSystems = ParseFileSystems -FileSystems $ComputeResource.fileSystems
+            $ComputeResource.fileSystems = ParseFileSystems -FileSystems $ComputeResource.fileSystems -Timezone $Timezone
         }
         if ($ComputeResource.ports) {
             $ComputeResource.ports = ParsePorts -Ports $ComputeResource.ports -Timezone $Timezone
         }
         if ($ComputeResource.applications) {
-            $ComputeResource.applications = ParseApplications -Applications $ComputeResource.applications
+            $ComputeResource.applications = ParseApplications -Applications $ComputeResource.applications -Timezone $Timezone
         }
         if ($ComputeResource.virtualMachines) {
             $ComputeResource.virtualMachines = ParseVirtualMachines -VirtualMachines $ComputeResource.virtualMachines -Timezone $Timezone
         }
         if ($ComputeResource.clusterHosts) {
-            $ComputeResource.clusterHosts = ParseHosts -Hosts $ComputeResource.clusterHosts
+            $ComputeResource.clusterHosts = ParseHosts -Hosts $ComputeResource.clusterHosts -Timezone $Timezone
         }
         if ($ComputeResource.annotations) {
-            $ComputeResource.annotations = ParseAnnotations -Annotations $ComputeResource.annotations
+            $ComputeResource.annotations = ParseAnnotations -Annotations $ComputeResource.annotations -Timezone $Timezone
         }
         if ($ComputeResource.datasources) {
-            $ComputeResource.datasources = ParseDatasources -Datasources $ComputeResource.datasources
+            $ComputeResource.datasources = ParseDatasources -Datasources $ComputeResource.datasources -Timezone $Timezone
         }
 
         Write-Output $ComputeResource
@@ -857,22 +857,22 @@ function ParseStorageResources($StorageResources,$Timezone) {
             $StorageResource.computeResources = ParseComputeResources -ComputeResources $StorageResource.computeResources -Timezone $Timezone
         }
         if ($StorageResource.fileSystems) {
-            $StorageResource.fileSystems = ParseFileSystems -FileSystems $StorageResource.fileSystems
+            $StorageResource.fileSystems = ParseFileSystems -FileSystems $StorageResource.fileSystems -Timezone $Timezone
         }
         if ($StorageResource.storagePools) {
-            $StorageResource.storagePools = ParseStoragePools -StoragePools $StorageResource.storagePools
+            $StorageResource.storagePools = ParseStoragePools -StoragePools $StorageResource.storagePools -Timezone $Timezone
         }
         if ($StorageResource.applications) {
-            $StorageResource.applications = ParseApplications -Applications $StorageResource.applications
+            $StorageResource.applications = ParseApplications -Applications $StorageResource.applications -Timezone $Timezone
         }
         if ($StorageResource.virtualMachines) {
             $StorageResource.virtualMachines = ParseVirtualMachines -VirtualMachines $StorageResource.virtualMachines -Timezone $Timezone
         }
         if ($StorageResource.annotations) {
-            $StorageResource.annotations = ParseAnnotations -Annotations $StorageResource.annotations
+            $StorageResource.annotations = ParseAnnotations -Annotations $StorageResource.annotations -Timezone $Timezone
         }
         if ($StorageResource.datasources) {
-            $StorageResource.datasources = ParseDatasources -Datasources $StorageResource.datasources
+            $StorageResource.datasources = ParseDatasources -Datasources $StorageResource.datasources -Timezone $Timezone
         }
 
         Write-Output $StorageResource
@@ -886,16 +886,16 @@ function ParseVolumes($Volumes,$Timezone) {
             $Volume.storage = ParseStorages -Storages $Volume.storage -Timezone $Timezone
         }
         if ($Volume.computeResources) {
-            $Volume.computeResources = ParseComputeResources -ComputeResources $Volume.computeResources
+            $Volume.computeResources = ParseComputeResources -ComputeResources $Volume.computeResources -Timezone $Timezone
         }
         if ($Volume.storagePool) {
-            $Volume.storagePool = ParseStoragePools -StoragePools $Volume.storagePool
+            $Volume.storagePool = ParseStoragePools -StoragePools $Volume.storagePool -Timezone $Timezone
         }
         if ($Volume.virtualStoragePool) {
-            $Volume.virtualStoragePool = ParseStoragePools -StoragePools $Volume.virtualStoragePool
+            $Volume.virtualStoragePool = ParseStoragePools -StoragePools $Volume.virtualStoragePool -Timezone $Timezone
         }
         if ($Volume.qtrees) {
-            $Volume.qtrees = ParseAnnotations -Annotations $Volume.qtrees
+            $Volume.qtrees = ParseAnnotations -Annotations $Volume.qtrees -Timezone $Timezone
         }
         if ($Volume.internalVolume) {
             $Volume.internalVolume = ParseInternalVolumes -InternalVolumes $Volume.internalVolume -Timezone $Timezone
@@ -904,25 +904,25 @@ function ParseVolumes($Volumes,$Timezone) {
             $Volume.dataStores = ParseDatastores -Datastores $Volume.dataStores -Timezone $Timezone
         }
         if ($Volume.annotations) {
-            $Volume.annotations = ParseAnnotations -Annotations $Volume.annotations
+            $Volume.annotations = ParseAnnotations -Annotations $Volume.annotations -Timezone $Timezone
         }
         if ($Volume.performance) {
             $Volume.performance = ParsePerformance -Performance $Volume.performance -Timezone $Timezone
         }
         if ($Volume.ports) {
-            $Volume.ports = ParsePorts -Ports $Volume.ports -Timezone $Timezone
+            $Volume.ports = ParsePorts -Ports $Volume.ports -Timezone $Timezone -Timezone $Timezone
         }
         if ($Volume.storageNodes) {
-            $Volume.storageNodes = ParseStorageNodes -StorageNodes $Volume.storageNodes
+            $Volume.storageNodes = ParseStorageNodes -StorageNodes $Volume.storageNodes -Timezone $Timezone
         }
         if ($Volume.replicaSources) {
-            $Volume.replicaSources = ParseVolumes -Volumes $Volume.replicaSources
+            $Volume.replicaSources = ParseVolumes -Volumes $Volume.replicaSources -Timezone $Timezone
         }
         if ($Volume.applications) {
-            $Volume.applications = ParseApplications -Applications $Volume.applications
+            $Volume.applications = ParseApplications -Applications $Volume.applications -Timezone $Timezone
         }
         if ($Volume.datasources) {
-            $Volume.datasources = ParseDatasources -Datasources $Volume.datasources
+            $Volume.datasources = ParseDatasources -Datasources $Volume.datasources -Timezone $Timezone
         }
 
         Write-Output $Volume
@@ -936,34 +936,34 @@ function ParseInternalVolumes($InternalVolumes,$Timezone) {
             $InternalVolume.storage = ParseStorages -Storages $InternalVolume.storage -Timezone $Timezone
         }
         if ($InternalVolume.computeResources) {
-            $InternalVolume.computeResources = ParseComputeResources -ComputeResources $InternalVolume.computeResources
+            $InternalVolume.computeResources = ParseComputeResources -ComputeResources $InternalVolume.computeResources -Timezone $Timezone
         }
         if ($InternalVolume.storagePool) {
-            $InternalVolume.storagePool = ParseStoragePools -StoragePools $InternalVolume.storagePool
+            $InternalVolume.storagePool = ParseStoragePools -StoragePools $InternalVolume.storagePool -Timezone $Timezone
         }
         if ($InternalVolume.performance) {
             $InternalVolume.performance = ParsePerformance -Performance $InternalVolume.performance -Timezone $Timezone
         }
         if ($InternalVolume.volumes) {
-            $InternalVolume.volumes = ParseVolumes -Volumes $InternalVolume.volumes
+            $InternalVolume.volumes = ParseVolumes -Volumes $InternalVolume.volumes -Timezone $Timezone
         }
         if ($InternalVolume.storageNodes) {
-            $InternalVolume.storageNodes = ParseStorageNodes -StorageNodes $InternalVolume.storageNodes
+            $InternalVolume.storageNodes = ParseStorageNodes -StorageNodes $InternalVolume.storageNodes -Timezone $Timezone
         }
         if ($InternalVolume.datasources) {
-            $InternalVolume.datasources = ParseDatasources -Datasources $InternalVolume.datasources
+            $InternalVolume.datasources = ParseDatasources -Datasources $InternalVolume.datasources -Timezone $Timezone
         }
         if ($InternalVolume.datastores) {
             $InternalVolume.datastores = ParseDatastores -Datastores $InternalVolume.datastores -Timezone $Timezone
         }
         if ($InternalVolume.applications) {
-            $InternalVolume.applications = ParseApplications -Applications $InternalVolume.applications
+            $InternalVolume.applications = ParseApplications -Applications $InternalVolume.applications -Timezone $Timezone
         }
         if ($InternalVolume.annotations) {
-            $InternalVolume.annotations = ParseAnnotations -Annotations $InternalVolume.annotations
+            $InternalVolume.annotations = ParseAnnotations -Annotations $InternalVolume.annotations -Timezone $Timezone
         }
         if ($InternalVolume.qtrees) {
-            $InternalVolume.qtrees = ParseAnnotations -Annotations $InternalVolume.qtrees
+            $InternalVolume.qtrees = ParseAnnotations -Annotations $InternalVolume.qtrees -Timezone $Timezone
         }
 
         Write-Output $InternalVolume
@@ -974,7 +974,7 @@ function ParseQtrees($Qtrees,$Timezone) {
     $Qtrees = @($Qtrees)
     foreach ($Qtree in $Qtrees) {
         if ($Qtree.quotaCapacity) {
-            $Qtree.quotaCapacity = ParseQuotaCapacities -QuotaCapacities $Qtree.quotaCapacity
+            $Qtree.quotaCapacity = ParseQuotaCapacities -QuotaCapacities $Qtree.quotaCapacity -Timezone $Timezone
         }
         if ($Qtree.storage) {
             $Qtree.storage = ParseStorages -Storages $Qtree.storage -Timezone $Timezone
@@ -983,16 +983,16 @@ function ParseQtrees($Qtrees,$Timezone) {
             $Qtree.internalVolume = ParseInternalVolumes -InternalVolumes $Qtree.internalVolume -Timezone $Timezone
         }
         if ($Qtree.shares) {
-            $Qtree.shares = ParseShares -Shares $Qtree.shares
+            $Qtree.shares = ParseShares -Shares $Qtree.shares -Timezone $Timezone
         }
         if ($Qtree.annotations) {
-            $Qtree.annotations = ParseAnnotations -Annotations $Qtree.annotations
+            $Qtree.annotations = ParseAnnotations -Annotations $Qtree.annotations -Timezone $Timezone
         }
         if ($Qtree.applications) {
-            $Qtree.applications = ParseApplications -Applications $Qtree.applications
+            $Qtree.applications = ParseApplications -Applications $Qtree.applications -Timezone $Timezone
         }
         if ($Qtree.volumes) {
-            $Qtree.volumes = ParseVolumes -Volumes $Qtree.volumes
+            $Qtree.volumes = ParseVolumes -Volumes $Qtree.volumes -Timezone $Timezone
         }
 
         Write-Output $Qtree
@@ -1023,25 +1023,25 @@ function ParseStoragePools($StoragePools,$Timezone) {
             $StoragePool.storage = ParseStorages -Storages $StoragePool.storage -Timezone $Timezone
         }
         if ($StoragePool.disks) {
-            $StoragePool.disks = ParseDisks -Disks $StoragePool.disks
+            $StoragePool.disks = ParseDisks -Disks $StoragePool.disks -Timezone $Timezone
         }
         if ($StoragePool.storageResources) {
-            $StoragePool.storageResources = ParseStorageResources -StorageResources $StoragePool.storageResources
+            $StoragePool.storageResources = ParseStorageResources -StorageResources $StoragePool.storageResources -Timezone $Timezone
         }
         if ($StoragePool.internalVolumes) {
             $StoragePool.internalVolumes = ParseInternalVolumes -InternalVolumes $StoragePool.internalVolumes -Timezone $Timezone
         }
         if ($StoragePool.volumes) {
-            $StoragePool.volumes = ParseVolumes -Volumes $StoragePool.volumes
+            $StoragePool.volumes = ParseVolumes -Volumes $StoragePool.volumes -Timezone $Timezone
         }
         if ($StoragePool.storageNodes) {
-            $StoragePool.storageNodes = ParseStorageNodes -StorageNodes $StoragePool.storageNodes
+            $StoragePool.storageNodes = ParseStorageNodes -StorageNodes $StoragePool.storageNodes -Timezone $Timezone
         }
         if ($StoragePool.datasources) {
-            $StoragePool.datasources = ParseDatasources -Datasources $StoragePool.datasources
+            $StoragePool.datasources = ParseDatasources -Datasources $StoragePool.datasources -Timezone $Timezone
         }
         if ($StoragePool.annotations) {
-            $StoragePool.annotations = ParseAnnotations -Annotations $StoragePool.annotations
+            $StoragePool.annotations = ParseAnnotations -Annotations $StoragePool.annotations -Timezone $Timezone
         }
 
         Write-Output $StoragePool
@@ -1055,40 +1055,40 @@ function ParseStorages($Storages, $Timezone) {
             $Storage.createTime = $Storage.createTime | Get-Date
         }
         if ($Storage.storageNodes) {
-            $Storage.storageNodes = ParseStorageNodes -StorageNodes $Storage.storageNodes
+            $Storage.storageNodes = ParseStorageNodes -StorageNodes $Storage.storageNodes -Timezone $Timezone
         }
         if ($Storage.storagePools) {
-            $Storage.storagePools = ParseStoragePools -StoragePools $Storage.storagePools
+            $Storage.storagePools = ParseStoragePools -StoragePools $Storage.storagePools -Timezone $Timezone
         }
         if ($Storage.storageResources) {
-            $Storage.storageResources = ParseStorageResources -StorageResources $Storage.storageResources
+            $Storage.storageResources = ParseStorageResources -StorageResources $Storage.storageResources -Timezone $Timezone
         }
         if ($Storage.internalVolumes) {
             $Storage.internalVolumes = ParseInternalVolumes -InternalVolumes $Storage.internalVolumes -Timezone $Timezone
         }
         if ($Storage.volumes) {
-            $Storage.volumes = ParseVolumes -Volumes $Storage.volumes
+            $Storage.volumes = ParseVolumes -Volumes $Storage.volumes -Timezone $Timezone
         }
         if ($Storage.disks) {
-            $Storage.disks = ParseDisks -Disks $Storage.disks
+            $Storage.disks = ParseDisks -Disks $Storage.disks -Timezone $Timezone
         }
         if ($Storage.datasources) {
-            $Storage.datasources = ParseDatasources -Datasources $Storage.datasources
+            $Storage.datasources = ParseDatasources -Datasources $Storage.datasources -Timezone $Timezone
         }
         if ($Storage.ports) {
             $Storage.ports = ParsePorts -Ports $Storage.ports -Timezone $Timezone
         }
         if ($Storage.annotations) {
-            $Storage.annotations = ParseAnnotations -Annotations $Storage.annotations
+            $Storage.annotations = ParseAnnotations -Annotations $Storage.annotations -Timezone $Timezone
         }
         if ($Storage.qtrees) {
-            $Storage.qtrees = ParseQtrees -Qtrees $Storage.qtrees
+            $Storage.qtrees = ParseQtrees -Qtrees $Storage.qtrees -Timezone $Timezone
         }
         if ($Storage.shares) {
-            $Storage.shares = ParseShares -Shares $Storage.shares
+            $Storage.shares = ParseShares -Shares $Storage.shares -Timezone $Timezone
         }
         if ($Storage.applications) {
-            $Storage.applications = ParseApplications -Applications $Storage.applications
+            $Storage.applications = ParseApplications -Applications $Storage.applications -Timezone $Timezone
         }
         if ($Storage.performance) {
             $Storage.performance = ParsePerformance -Performance $Storage.performance -Timezone $Timezone
@@ -1119,16 +1119,16 @@ function ParseDisks($Disks,$Timezone) {
             $Disk.storage = ParseStorages -Storages $Disk.storage -Timezone $Timezone
         }
         if ($Disk.storageResources) {
-            $Disk.storageResources = ParseStorageResources -StorageResources $Disk.storageResources
+            $Disk.storageResources = ParseStorageResources -StorageResources $Disk.storageResources -Timezone $Timezone
         }
         if ($Disk.backendVolumes) {
-            $Disk.backendVolumes = ParseVolumes -Volumes $Disk.backendVolumes
+            $Disk.backendVolumes = ParseVolumes -Volumes $Disk.backendVolumes -Timezone $Timezone
         }
         if ($Disk.datasources) {
-            $Disk.datasources = ParseDatasources -Datasources $Disk.datasources
+            $Disk.datasources = ParseDatasources -Datasources $Disk.datasources -Timezone $Timezone
         }
         if ($Disk.annotations) {
-            $Disk.annotations = ParseAnnotations -Annotations $Disk.annotations
+            $Disk.annotations = ParseAnnotations -Annotations $Disk.annotations -Timezone $Timezone
         }
 
         Write-Output $Disk
@@ -1139,10 +1139,10 @@ function ParseFabrics($Fabrics,$Timezone) {
     $Fabrics = @($Fabrics)
     foreach ($Fabric in $Fabrics) {
         if ($Fabric.datasources) {
-            $Fabric.datasources = ParseDatasources -Datasources $Fabric.datasources
+            $Fabric.datasources = ParseDatasources -Datasources $Fabric.datasources -Timezone $Timezone
         }
         if ($Fabric.switches) {
-            $Fabric.switches = ParseSwitches -Switches $Fabric.switches
+            $Fabric.switches = ParseSwitches -Switches $Fabric.switches -Timezone $Timezone
         }
 
         Write-Output $Fabric
@@ -1159,7 +1159,7 @@ function ParsePatchStatus($PatchStatus,$Timezone) {
             $PatchStatus.lastUpdateTime = [DateTime]$PatchStatus.lastUpdateTime
         }
         if ($PatchStatus.datasourceTypes) {
-            $PatchStatus.datasourceTypes = $PatchStatus.datasourceTypes | ParseDatasourceTypes
+            $PatchStatus.datasourceTypes = ParseDatasourceTypes -DatasourceTypes $PatchStatus.datasourceTypes -Timezone $Timezone
         }
 
         Write-Output $PatchStatus
@@ -1594,7 +1594,7 @@ function Global:Get-OciAcquisitionUnits {
             $Result = ParseJsonString -json $Result.Trim
         }
 
-        $AcquisitionUnits = ParseAcquisitionUnits -AcquisitionUnits $Result
+        $AcquisitionUnits = ParseAcquisitionUnits -AcquisitionUnits $Result -Timezone $Server.Timezone
         Write-Output $AcquisitionUnits
     }
 }
@@ -1673,7 +1673,7 @@ function Global:Get-OciAcquisitionUnit {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result
+            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result -Timezone $Server.Timezone
             Write-Output $AcquisitionUnit
         }
     }
@@ -1788,7 +1788,7 @@ function Global:Get-OciDatasourcesByAcquisitionUnit {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasources
         }
     }
@@ -1842,7 +1842,7 @@ function Global:Restart-OciAcquisitionUnit {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result
+            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result -Timezone $Server.Timezone
             Write-Output $AcquisitionUnit
         }
     }
@@ -1891,7 +1891,7 @@ function Global:Get-OciCertificates {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Certificates = ParseCertificates -Certificates $Result
+            $Certificates = ParseCertificates -Certificates $Result -Timezone $Server.Timezone
             Write-Output $Certificates
         }
     }
@@ -1971,7 +1971,7 @@ function Global:Add-OciCertificate {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Certificate = ParseCertificate -Certificate $Result
+            $Certificate = ParseCertificate -Certificate $Result -Timezone $Server.Timezone
             Write-Output $Certificate
         }
     }
@@ -2018,7 +2018,7 @@ function Global:Get-OciDatasourceTypes {
             $Result = ParseJsonString -json $Result.Trim
         }
 
-        $DatasourceTypes = ParseDatasourceTypes -DatasourceTypes $Result
+        $DatasourceTypes = ParseDatasourceTypes -DatasourceTypes $Result -Timezone $Server.Timezone
         Write-Output $DatasourceTypes
     }
 }
@@ -2071,7 +2071,7 @@ function Global:Get-OciDatasourceType {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $DatasourceType = ParseDatasourceTypes -DatasourceTypes $Result
+            $DatasourceType = ParseDatasourceTypes -DatasourceTypes $Result -Timezone $Server.Timezone
             Write-Output $DatasourceType
         }
     }
@@ -2179,7 +2179,7 @@ function Global:Get-OciDatasources {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasources
         }
     }
@@ -2250,7 +2250,7 @@ function Global:New-OciDatasource {
         }
 
         # parse datasource to make sure that script properties are created
-        $Datasource = ParseDatasources -Datasources $Datasource
+        $Datasource = ParseDatasources -Datasources $Datasource -Timezone $Server.Timezone
         Write-Output $Datasource
     }
 }
@@ -2330,7 +2330,7 @@ function Global:Add-OciDatasource {
             Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
-        $Datasource = ParseDatasources -Datasources $Result
+        $Datasource = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
         Write-Output $Datasource
     }
 }
@@ -2399,7 +2399,7 @@ function Global:Remove-OciDatasource {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Datasource = ParseDatasources -Datasources $Result
+            $Datasource = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasource
         }
     }
@@ -2514,7 +2514,7 @@ function Global:Get-OciDatasource {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Datasource = ParseDatasources -Datasources $Result
+            $Datasource = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasource
         }
     }
@@ -2602,7 +2602,7 @@ function Global:Update-OciDataSource {
             Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
-        $Datasource = ParseDatasources -Datasources $Result
+        $Datasource = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
         if ($Datasource.config.packages) {
             $config.packages = $Datasource.config.packages
         }
@@ -2684,8 +2684,7 @@ function Global:Get-OciAcquisitionUnitByDatasource {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result
-
+            $AcquisitionUnit = ParseAcquisitionUnits -AcquisitionUnits $Result -Timezone $Server.Timezone
             Write-Output $AcquisitionUnit
         }
     }
@@ -2765,7 +2764,7 @@ function Global:Get-OciActivePatchByDatasource {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $ActivePatch = ParseActivePatches -ActivePatches $Result
+            $ActivePatch = ParseActivePatches -ActivePatches $Result -Timezone $Server.Timezone
             Write-Output $ActivePatch
         }
     }
@@ -2845,7 +2844,7 @@ function Global:Get-OciDatasourceChanges {
                 $Result = ParseJsonString -json $Result.Trim
             }
 
-            $Change = ParseChanges -Changes $Result
+            $Change = ParseChanges -Changes $Result -Timezone $Server.Timezone
             Write-Output $Change
         }
     }
@@ -2899,7 +2898,7 @@ function Global:Get-OciDatasourceConfiguration {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $DatasourceConfiguration = ParseDatasourceConfig -DatasourceConfig $Result
+            $DatasourceConfiguration = ParseDatasourceConfig -DatasourceConfig $Result -Timezone $Server.Timezone
             Write-Output $DatasourceConfiguration
         }
     }
@@ -3080,7 +3079,7 @@ function Global:Get-OciDatasourceEventDetails {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Events = ParseEvents -Events $Result
+            $Events = ParseEvents -Events $Result -Timezone $Server.Timezone
             Write-Output $Events
         }
     }
@@ -3688,8 +3687,7 @@ function Global:Get-OciLicenses {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $LicenseStatus = ParseLicenseStatus -LicenseStatus $Result
-
+        $LicenseStatus = ParseLicenseStatus -LicenseStatus $Result -Timezone $Server.Timezone
         Write-Output $LicenseStatus
     }
 }
@@ -3861,7 +3859,7 @@ function Global:Get-OciPatches {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $PatchStatus = ParsePatchStatus -PatchStatus $Result
+        $PatchStatus = ParsePatchStatus -PatchStatus $Result -Timezone $Server.Timezone
         Write-Output $PatchStatus
     }
 }
@@ -3923,7 +3921,7 @@ function Global:Add-OciPatch {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $PatchStatus = ParsePatchStatus -PatchStatus $Result
+        $PatchStatus = ParsePatchStatus -PatchStatus $Result -Timezone $Server.Timezone
         Write-Output $PatchStatus
     }
 }
@@ -4086,7 +4084,7 @@ function Global:Update-OciPatch {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $PatchStatus = ParsePatchStatus -PatchStatus $Result
+        $PatchStatus = ParsePatchStatus -PatchStatus $Result -Timezone $Server.Timezone
         Write-Output $PatchStatus
     }
 }
@@ -4387,7 +4385,7 @@ function Global:Get-OciUsers {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Users = ParseUsers -Users $Result
+        $Users = ParseUsers -Users $Result -Timezone $Server.Timezone
         Write-Output $Users
     }
 }
@@ -4522,7 +4520,7 @@ function Global:Get-OciCurrentUser {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $User = ParseUsers -Users $Result
+        $User = ParseUsers -Users $Result -Timezone $Server.Timezone
         Write-Output $User
     }
 }
@@ -4663,7 +4661,7 @@ function Global:Get-OciUser {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $User = ParseUsers -Users $Result
+            $User = ParseUsers -Users $Result -Timezone $Server.Timezone
             Write-Output $User
         }
     }
@@ -4987,7 +4985,7 @@ function Global:Get-OciAnnotation {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Annotation = ParseAnnotations -Annotations $Result
+            $Annotation = ParseAnnotations -Annotations $Result -Timezone $Server.Timezone
             Write-Output $Annotation
         }
     }
@@ -5529,7 +5527,7 @@ function Global:Get-OciApplications {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Applications = ParseApplications -Applications $Result
+            $Applications = ParseApplications -Applications $Result -Timezone $Server.Timezone
             Write-Output $Applications
         }
     }
@@ -5637,7 +5635,7 @@ function Global:Add-OciApplication {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Application = ParseApplications -Applications $Result
+        $Application = ParseApplications -Applications $Result -Timezone $Server.Timezone
         Write-Output $Application
     }
 }
@@ -5979,7 +5977,7 @@ function Global:Remove-OciApplication {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Application = ParseApplications -Applications $Result
+            $Application = ParseApplications -Applications $Result -Timezone $Server.Timezone
             Write-Output $Application
         }
     }
@@ -6086,7 +6084,7 @@ function Global:Get-OciApplication {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Application = ParseApplications -Applications $Result
+            $Application = ParseApplications -Applications $Result -Timezone $Server.Timezone
             Write-Output $Application
         }
     }
@@ -6198,7 +6196,7 @@ function Global:Update-OciApplication {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Application = ParseApplications -Applications $Result
+            $Application = ParseApplications -Applications $Result -Timezone $Server.Timezone
             Write-Output $Application
         }
     }
@@ -6612,7 +6610,7 @@ function Global:Get-OciComputeResourcesByApplication {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $ComputeResources = ParseComputeResources -ComputeResources $Result
+            $ComputeResources = ParseComputeResources -ComputeResources $Result -Timezone $Server.Timezone
             Write-Output $ComputeResources
         }
     }
@@ -6744,7 +6742,7 @@ function Global:Get-OciStorageResourcesByApplication {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageResources = ParseStorageResources -StorageResources $Result
+            $StorageResources = ParseStorageResources -StorageResources $Result -Timezone $Server.Timezone
             Write-Output $StorageResources
         }
     }
@@ -7314,7 +7312,7 @@ function Global:Remove-OciAnnotationsByDatastore {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result -Timezone $Server.Timezone
         Write-Output $AnnotationValues
     }
 }
@@ -7379,7 +7377,7 @@ function Global:Get-OciAnnotationsByDatastore {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Annotations = ParseAnnotations -Annotations $Result
+        $Annotations = ParseAnnotations -Annotations $Result -Timezone $Server.Timezone
 
         Write-Output $Annotations
     }
@@ -7447,7 +7445,7 @@ function Global:Update-OciAnnotationsByDatastore {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result -Timezone $Server.Timezone
         Write-Output $AnnotationValues
     }
 }
@@ -7583,7 +7581,7 @@ function Global:Get-OciDatasourcesByDataStore {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
 
             Write-Output $Datasources
         }
@@ -7955,7 +7953,7 @@ function Global:Get-OciStorageResourcesByDatastore {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageResources = ParseStorageResources -StorageResources $Result
+            $StorageResources = ParseStorageResources -StorageResources $Result -Timezone $Server.Timezone
             Write-Output $StorageResources
         }
     }
@@ -8227,7 +8225,7 @@ function Global:Get-OciDisk {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Disks = ParseDisks -Disks $Result
+            $Disks = ParseDisks -Disks $Result -Timezone $Server.Timezone
             Write-Output $Disks
         }
     }
@@ -8299,7 +8297,7 @@ function Global:Remove-OciAnnotationsByDisk {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result -Timezone $Server.Timezone
         Write-Output $AnnotationValues
     }
 }
@@ -8359,7 +8357,7 @@ function Global:Get-OciAnnotationsByDisk {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Annotations = ParseAnnotations -Annotations $Result
+        $Annotations = ParseAnnotations -Annotations $Result -Timezone $Server.Timezone
         Write-Output $Annotations
     }
 }
@@ -8422,7 +8420,7 @@ function Global:Update-OciAnnotationsByDisk {
             Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
-        $Annotations = ParseAnnotations -Annotations $Result
+        $Annotations = ParseAnnotations -Annotations $Result -Timezone $Server.Timezone
         Write-Output $Annotations
     }
 }
@@ -8603,7 +8601,7 @@ function Global:Get-OciBackendVolumesByDisk {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volumes = ParseVolumes -Volumes $Result
+            $Volumes = ParseVolumes -Volumes $Result -Timezone $Server.Timezone
             Write-Output $Volumes
         }
     }
@@ -8740,7 +8738,7 @@ function Global:Get-OciDatasourcesByDisk {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
 
             Write-Output $Datasources
         }
@@ -8990,7 +8988,7 @@ function Global:Get-OciStoragePoolsByDisk {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StoragePools = ParseStoragePools -StoragePools $Result
+            $StoragePools = ParseStoragePools -StoragePools $Result -Timezone $Server.Timezone
             Write-Output $StoragePools
         }
     }
@@ -9122,7 +9120,7 @@ function Global:Get-OciStorageResourcesByDisk {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageResources = ParseStorageResources -StorageResources $Result
+            $StorageResources = ParseStorageResources -StorageResources $Result -Timezone $Server.Timezone
             Write-Output $StorageResources
         }
     }
@@ -9246,7 +9244,7 @@ function Global:Get-OciFabrics {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Fabrics = ParseFabrics -Fabrics $Result
+            $Fabrics = ParseFabrics -Fabrics $Result -Timezone $Server.Timezone
             if ($Fabrics)  { Write-Output $Fabrics }
 
             if ($FetchAll -and @($Fabrics).Count -eq $Limit) {
@@ -9401,7 +9399,7 @@ function Global:Get-OciFabric {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Fabric = ParseFabrics -Fabrics $Result
+            $Fabric = ParseFabrics -Fabrics $Result -Timezone $Server.Timezone
             Write-Output $Fabric
         }
     }
@@ -9538,7 +9536,7 @@ function Global:Get-OciDatasourcesByFabric {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasources
         }
     }
@@ -10478,7 +10476,7 @@ function Global:Get-OciTopologyByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Topology = ParseTopologies -Topologies $Result
+        $Topology = ParseTopologies -Topologies $Result -Timezone $Server.Timezone
 
         Write-Output $Topology
     }
@@ -10526,7 +10524,7 @@ function Global:Get-OciTopologyByStorage {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Topology = ParseTopologies -Topologies $Result
+        $Topology = ParseTopologies -Topologies $Result -Timezone $Server.Timezone
 
         Write-Output $Topology
     }
@@ -10975,7 +10973,7 @@ function Global:Remove-OciAnnotationsByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result -Timezone $Server.Timezone
         Write-Output $AnnotationValues
     }
 }
@@ -11064,7 +11062,7 @@ function Global:Get-OciAnnotationsByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result -Timezone $Server.Timezone
         Write-Output $AnnotationValues
     }
 }
@@ -11129,7 +11127,7 @@ function Global:Update-OciAnnotationsByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result
+        $AnnotationValues = ParseAnnotationValues -AnnotationValues $Result -Timezone $Server.Timezone
         Write-Output $AnnotationValues
     }
 }
@@ -11213,7 +11211,7 @@ function Global:Remove-OciApplicationsByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Applications = ParseApplications -Applications $Result
+        $Applications = ParseApplications -Applications $Result -Timezone $Server.Timezone
         Write-Output $Applications
     }
 }
@@ -11288,7 +11286,7 @@ function Global:Get-OciApplicationsByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Applications = ParseApplications -Applications $Result
+        $Applications = ParseApplications -Applications $Result -Timezone $Server.Timezone
         if ($Applications) {
             Write-Output $Applications
         }
@@ -11372,7 +11370,7 @@ function Global:Update-OciApplicationsByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Applications = ParseApplications -Applications $Result
+        $Applications = ParseApplications -Applications $Result -Timezone $Server.Timezone
         Write-Output $Applications
     }
 }
@@ -11454,7 +11452,7 @@ function Global:Add-OciApplicationByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Application = ParseApplications -Applications $Result
+        $Application = ParseApplications -Applications $Result -Timezone $Server.Timezone
         Write-Output $Application
     }
 }
@@ -11534,7 +11532,7 @@ function Global:Remove-OciApplicationByHost {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Applications = ParseApplications -Applications $Result
+        $Applications = ParseApplications -Applications $Result -Timezone $Server.Timezone
         Write-Output $Applications
     }
 }
@@ -12694,7 +12692,7 @@ function Global:Get-OciInternalVolume {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $InternalVolume = ParseInternalVolumes -InternalVolumes $Result $Server.Timezone
+            $InternalVolume = ParseInternalVolumes -InternalVolumes $Result -Timezone $Server.Timezone
             Write-Output $InternalVolume
         }
     }
@@ -13824,7 +13822,7 @@ function Global:Get-OciDatasourcesByInternalVolume {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasources
         }
     }
@@ -14049,7 +14047,7 @@ function Global:Get-OciQtreesByInternalVolume {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Qtrees = ParseQtrees -Qtrees $Result
+            $Qtrees = ParseQtrees -Qtrees $Result -Timezone $Server.Timezone
             Write-Output $Qtrees
         }
     }
@@ -14343,7 +14341,7 @@ function Global:Get-OciStorageNodesByInternalVolume {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageNodes = ParseStorageNodes -StorageNodes $Result
+            $StorageNodes = ParseStorageNodes -StorageNodes $Result -Timezone $Server.Timezone
             Write-Output $StorageNodes
         }
     }
@@ -14523,7 +14521,7 @@ function Global:Get-OciVolumesByInternalVolume {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volues = ParseVolumes -Volumes $Result
+            $Volues = ParseVolumes -Volumes $Result -Timezone $Server.Timezone
             Write-Output $Volumes
         }
     }
@@ -17277,7 +17275,7 @@ function Global:Get-OciStorageByQtree {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Storage = ParseStorages -Storages $Result $Server.Timezone
+            $Storage = ParseStorages -Storages $Result -Timezone $Server.Timezone
             Write-Output $Storage
         }
     }
@@ -17457,7 +17455,7 @@ function Global:Get-OciVolumesByQtree {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volumes = ParseVolumes -Volumes $Result
+            $Volumes = ParseVolumes -Volumes $Result -Timezone $Timezone
             Write-Output $Volumes
         }
     }
@@ -18792,7 +18790,7 @@ function Global:Get-OciStorageNode {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageNodes = ParseStorageNodes -StorageNodes $Result
+            $StorageNodes = ParseStorageNodes -StorageNodes $Result -Timezone $Server.Timezone
             Write-Output $StorageNodes
         }
     }
@@ -21163,7 +21161,7 @@ function Global:Get-OciVolumesByStoragePool {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volumes = ParseVolumes -Volumes $Result
+            $Volumes = ParseVolumes -Volumes $Result -Timezone $Server.Timezone
             Write-Output $Volumes
         }
     }
@@ -21357,7 +21355,7 @@ function Global:Get-OciStorages {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Storages = ParseStorages -Storages $Result
+        $Storages = ParseStorages -Storages $Result -Timezone $Server.Timezone
         if ($Storages) { Write-Output $Storages }
 
         if ($FetchAll -and @($Storages).Count -eq $Limit) {
@@ -21574,7 +21572,7 @@ function Global:Get-OciStorage {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        $Storage = ParseStorages -Storages $Result $Server.Timezone
+        $Storage = ParseStorages -Storages $Result -Timezone $Server.Timezone
         Write-Output $Storage
     }
 }
@@ -24990,7 +24988,7 @@ function Global:Get-OciDatasourcesBySwitch {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasources
         }
     }
@@ -26657,7 +26655,7 @@ function Global:Get-OciDatasourcesByVirtualMachine {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasources
         }
     }
@@ -27281,7 +27279,7 @@ function Global:Get-OciStorageResourcesByVirtualMachine {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageResources = ParseStorageResources -StorageResources $Result
+            $StorageResources = ParseStorageResources -StorageResources $Result -Timezone $Server.Timezone
             Write-Output $StorageResources
         }
     }
@@ -27965,7 +27963,7 @@ function Global:Get-OciDatasourcesByVmdk {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Datasources = ParseDatasources -Datasources $Result
+            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
             Write-Output $Datasources
         }
     }
@@ -28195,7 +28193,7 @@ function Global:Get-OciStorageResourcesByVmdk {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $StorageResources = ParseStorageResources -StorageResources $Result
+            $StorageResources = ParseStorageResources -StorageResources $Result -Timezone $Server.Timezone
             Write-Output $StorageResources
         }
     }
@@ -28527,7 +28525,7 @@ function Global:Get-OciVolume {
                 $Result = ParseJsonString -json $Result.Trim()
             }
 
-            $Volume = ParseVolumes -Volumes $Result
+            $Volume = ParseVolumes -Volumes $Result -Timezone $Server.Timezone
             Write-Output $Volume
         }
     }
