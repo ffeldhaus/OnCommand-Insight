@@ -598,6 +598,9 @@ function ParseVirtualMachines($VirtualMachines,$Timezone) {
         if ($VirtualMachine.createTime) {
             $VirtualMachine.createTime = $VirtualMachine.createTime | Get-Date
         }
+        if ($VirtualMachine.powerStateChangeTime) {
+            $VirtualMachine.powerStateChangeTime = $VirtualMachine.powerStateChangeTime | Get-Date
+        }
         if ($VirtualMachine.performance) {
             $VirtualMachine.performance = ParsePerformance -Performance $VirtualMachine.performance -Timezone $Timezone
         }
@@ -849,6 +852,9 @@ function ParseStorageResources($StorageResources,$Timezone) {
     foreach ($StorageResource in $StorageResources) {
         if ($StorageResource.createTime) {
             $StorageResource.createTime = $StorageResource.createTime | Get-Date
+        }
+        if ($StorageResource.powerStateChangeTime) {
+            $StorageResource.powerStateChangeTime = $StorageResource.powerStateChangeTime | Get-Date
         }
         if ($StorageResource.performance) {
             $StorageResource.performance = ParsePerformance -Performance $StorageResource.performance -Timezone $Timezone
@@ -6446,19 +6452,14 @@ function Global:Bulk-OciAssignApplicationToAssets {
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
-<<<<<<< HEAD
-	
-     Begin {
-=======
 
     Begin {
->>>>>>> 04540609fec2a940e5b36aa2da97f87bc7725d7d
         $Result = $null
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
 
-		if (!$assets) {
+        if (!$assets) {
             throw "No Assets specified!"
         }
 		
@@ -6479,13 +6480,8 @@ function Global:Bulk-OciAssignApplicationToAssets {
         $id = @($id)
 		$Targets = @($Assets)
         foreach ($id in $id) {
-<<<<<<< HEAD
-		    $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
- 
-=======
             $Uri = $Server.BaseUri + "/rest/v1/assets/applications/$id/assets"
 
->>>>>>> 04540609fec2a940e5b36aa2da97f87bc7725d7d
             if ($fromTime -or $toTime -or $expand) {
                 $Uri += '?'
                 $Separator = ''
@@ -6508,7 +6504,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
 				$Body = $Body.Insert($Body.Length,']')
                 Write-Verbose "Body: $Body"
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri  -Body $Body -Headers $Server.Headers -ContentType 'application/json'
-                }
+            }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
                 Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
@@ -7578,40 +7574,38 @@ function Global:Get-OciDatasourcesByDataStore {
     }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/datasources"
 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
-
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
-            catch {
-                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
             }
+        }
 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString -json $Result.Trim()
-            }
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
 
-            $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
 
+        $Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
+        if ($Datasources) {
             Write-Output $Datasources
         }
     }
@@ -7728,43 +7722,40 @@ function Global:Get-OciHostsByDatastore {
     }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/dataStores/$id/hosts"
 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
             }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
+            }
+        }
 
-            try {
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
 
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString -json $Result.Trim()
-            }
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
 
-            $Hosts = ParseHosts -Hosts $Result -Timezone $Server.Timezone
+        $Hosts = ParseHosts -Hosts $Result -Timezone $Server.Timezone
 
-            if ($Hosts) {
-                Write-Output $Hosts
-            }
+        if ($Hosts) {
+            Write-Output $Hosts
         }
     }
 }
@@ -31461,7 +31452,9 @@ function Global:Restore-OciBackup {
                     return
                 }
                 elseif (($Result.currentStep.startTime | get-date) -ge $StartTime) {
-                    $activity = $Result.currentStep.operationText
+                    if ($Result.currentStep.operationText) {
+                        $activity = $Result.currentStep.operationText
+                    }
                     $status = $Result.components.name | Select-Object -last 1
                     if (!$status) {
                         $status = $Result.status
