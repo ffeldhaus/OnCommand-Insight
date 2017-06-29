@@ -192,10 +192,14 @@ function ValidateDatasourceChange {
     )
 
         Process {
-            $DatasourceChange.time | Should BeOfType DateTime
-            $DatasourceChange.time | Should BeLessThan (Get-Date)
-            $DatasourceChange.type | Should Match ".+"
-            $DatasourceChange.summary | Should Match ".+"
+            if ($DatasourceChange.time) {
+                $DatasourceChange.time | Should BeOfType DateTime
+                $DatasourceChange.time | Should BeLessThan (Get-Date)
+                $DatasourceChange.type | Should Match ".+"
+            }
+            if ($DatasourceChange.summary) {
+                $DatasourceChange.summary | Should Match ".+"
+            }
     }
 }
 
@@ -756,6 +760,41 @@ function ValidatePerformanceIndicator {
 
 ### Begin of tests ###
 
+Describe "OCI server connection management" {
+    BeforeEach {
+        $OciServer = $null
+        $Global:CurrentOciServer = $null
+    }
+
+    Context "initiating a connection to an OnCommand Insight Server" {
+        it "succeeds with parameters Name, Credential, Insecure" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            $OciServer.Name | Should Be $OciServerName
+            $Global:CurrentOciServer | Should Be $OciServer
+        }
+
+        it "succeeds when forcing HTTPS" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS
+            $OciServer.Name | Should Be $OciServerName
+            $Global:CurrentOciServer | Should Be $OciServer
+        }
+
+        it "succeeds when timezone is set to UTC" {
+            $Timezone = [TimeZoneInfo]::UTC
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Timezone $Timezone
+            $OciServer.Name | Should Be $OciServerName
+            $OciServer.Timezone | Should Be $Timezone
+            $Global:CurrentOciServer | Should Be $OciServer
+        }
+
+        it "succeeds when transient OCI Server object is requested" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Transient -Insecure
+            $OciServer.Name | Should Be $OciServerName
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+        }
+    }
+}
+
 Describe "Acquisition unit management" {
 
     BeforeEach {
@@ -986,7 +1025,7 @@ Describe "Datasource management" {
             
             foreach ($Datasource in $Datasources) {
                 $CurrentName = $Datasource.name
-                $NewName = $Datasource.name + "test"
+                $NewName = ($Datasource.name -replace "-","") + "test"
                 $Datasource = $Datasource | Update-OciDataSource -name $NewName
 
                 $Datasource | ValidateDatasource
@@ -1012,18 +1051,35 @@ Describe "Datasource management" {
             $Datasources | Should Not BeNullOrEmpty
 
             foreach ($Datasource in $Datasources) {
-                $CurrentPollInterval = 0 + $Datasource.config.foundation.attributes.poll
-                $NewPollInterval = $CurrentPollInterval + 120
+                if ($Datasource.config.foundation.attributes.poll) {
+                    $CurrentPollInterval = 0 + $Datasource.config.foundation.attributes.poll
+                    $NewPollInterval = $CurrentPollInterval + 120
 
-                $Datasource.config.foundation.attributes.poll = $NewPollInterval
-                $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
-                $Datasource | ValidateDatasource
-                $Datasource.config.foundation.attributes.poll | Should Be $NewPollInterval
+                    $Datasource.config.foundation.attributes.poll = $NewPollInterval
+                    $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
+                    $Datasource | ValidateDatasource
+                    $Datasource.config.foundation.attributes.poll | Should Be $NewPollInterval
 
-                $Datasource.config.foundation.attributes.poll = $CurrentPollInterval
-                $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
-                $Datasource | ValidateDatasource
-                $Datasource.config.foundation.attributes.poll | Should Be $CurrentPollInterval
+                    $Datasource.config.foundation.attributes.poll = $CurrentPollInterval
+                    $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
+                    $Datasource | ValidateDatasource
+                    $Datasource.config.foundation.attributes.poll | Should Be $CurrentPollInterval
+                }
+                elseif ($Datasource.config.cloud.attributes.poll) {
+                    $CurrentPollInterval = 0 + $Datasource.config.cloud.attributes.poll
+                    $NewPollInterval = $CurrentPollInterval + 120
+
+                    $Datasource.config.cloud.attributes.poll = $NewPollInterval
+                    $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
+                    $Datasource | ValidateDatasource
+                    $Datasource.config.cloud.attributes.poll | Should Be $NewPollInterval
+
+                    $Datasource.config.cloud.attributes.poll = $CurrentPollInterval
+                    $Datasource = $Datasource | Update-OciDataSource -config $Datasource.config
+                    $Datasource | ValidateDatasource
+                    $Datasource.config.cloud.attributes.poll | Should Be $CurrentPollInterval
+                }
+
             }
         }
 
@@ -1065,6 +1121,10 @@ Describe "Datasource management" {
              $AcquisitionUnit = Get-OciAcquisitionUnits | select -first 1
 
              foreach ($DatasourceType in $DatasourceTypes) {
+                # TODO: Implement testing of SNMP Integration, until then, skip it
+                if ($DatasourceType.name -eq "integration_snmp") {
+                    Continue
+                }
                 if ($DatasourceType.vendorModels.count -gt 1) {
                     $DatasourceType.vendorModels = $DatasourceType.vendorModels | select -Last 1
                 }
@@ -1415,6 +1475,46 @@ Describe "Datastore management" {
         }
     }
 
+    Context "retrieving datastore count" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datastores = Get-OciDatastores
+            $Count = Get-OciDatastoreCount
+            @($Datastores).Count | Should Be $Count
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Datastores = Get-OciDatastores -Server $OciServer
+            $Count = Get-OciDatastoreCount
+            @($Datastores).Count | Should Be $Count
+        }
+    }
+
+    Context "retrieving single datastore" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Datastores = Get-OciDatastores
+            $Count = @($Datastores).Count
+            $Datastores = $Datastores | Get-OciDatastore
+            @($Datastores).Count | Should Be $Count
+            $Datastores | ValidateDatastore
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Datastores = Get-OciDatastores -Server $OciServer
+            $Count = @($Datastores).Count
+            $Datastores = $Datastores | Get-OciDatastore -Server $OciServer
+            @($Datastores).Count | Should Be $Count
+            $Datastores | ValidateDatastore
+        }
+    }
+
     Context "managing annotations of datastores" {
         it "succeeds with no parameters" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
@@ -1514,41 +1614,6 @@ Describe "Datastore management" {
 
             $Performance = Get-OciDatastores -Server $OciServer  | Get-OciDatastorePerformance -Server $OciServer 
             $Performance | ValidatePerformance
-        }
-    }
-}
-
-Describe "OCI server connection management" {
-    BeforeEach {
-        $OciServer = $null
-        $Global:CurrentOciServer = $null
-    }
-
-    Context "initiating a connection to an OnCommand Insight Server" {
-        it "succeeds with parameters Name, Credential, Insecure" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-            $OciServer.Name | Should Be $OciServerName
-            $Global:CurrentOciServer | Should Be $OciServer
-        }
-
-        it "succeeds when forcing HTTPS" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS
-            $OciServer.Name | Should Be $OciServerName
-            $Global:CurrentOciServer | Should Be $OciServer
-        }
-
-        it "succeeds when timezone is set to UTC" {
-            $Timezone = [TimeZoneInfo]::UTC
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Timezone $Timezone
-            $OciServer.Name | Should Be $OciServerName
-            $OciServer.Timezone | Should Be $Timezone
-            $Global:CurrentOciServer | Should Be $OciServer
-        }
-
-        it "succeeds when transient OCI Server object is requested" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Transient -Insecure
-            $OciServer.Name | Should Be $OciServerName
-            $Global:CurrentOciServer | Should BeNullOrEmpty
         }
     }
 }
