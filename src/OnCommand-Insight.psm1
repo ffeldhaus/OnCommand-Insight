@@ -2581,11 +2581,13 @@ function Global:Update-OciDataSource {
             }
             if ($config) {
                 $ConfigScriptProperties = $config.PSObject.Members | Where-Object { $_.MemberType -eq "ScriptProperty" } | ForEach-Object { $_.Name }
-                if (!$config.foundation.attributes.password) {
-                    $config.foundation.attributes.PSObject.Properties.Remove('password')
-                }
-                if (!$config.foundation.attributes.'partner.password') {
-                    $config.foundation.attributes.PSObject.Properties.Remove('partner.password')
+                if ($config.foundation) {
+                    if (!$config.foundation.attributes.password) {
+                        $config.foundation.attributes.PSObject.Properties.Remove('password')
+                    }
+                    if (!$config.foundation.attributes.'partner.password') {
+                        $config.foundation.attributes.PSObject.Properties.Remove('partner.password')
+                    }
                 }
                 $Body.config = $config | Select-Object -Property * -ExcludeProperty $ConfigScriptProperties
                 $Uri += "?expand=config"
