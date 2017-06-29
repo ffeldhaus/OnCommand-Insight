@@ -75,6 +75,25 @@ function ValidateAnnotation {
     }
 }
 
+function ValidateAnnotationValue {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$True,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Annotation value to be verified")][PSObject]$AnnotationValue
+    )
+
+        Process {
+            $AnnotationValue.rawValue | Should Match ".+"
+            $AnnotationValue.displayValue | Should Match ".+"
+            $AnnotationValue.label | Should Match ".+"
+            $AnnotationValue.isDerived | Should BeOfType Boolean
+            $AnnotationValue.annotationAssignment | Should Match "MANUAL"
+    }
+}
+
 function ValidateApplication {
     [CmdletBinding()]
         
@@ -570,16 +589,79 @@ function ValidateStorageResource {
     [parameter(Mandatory=$False,
                 Position=0,
                 ValueFromPipeline=$True,
-                HelpMessage="Datastore to be verified")][PSObject]$Datastore
+                HelpMessage="Storage Resource to be verified")][PSObject]$StorageResource
     )
 
         Process {
-            $Datastore.id | Should BeGreaterThan 0
-            $Datastore.name | Should Match '.+'
-            $Datastore.simpleName | Should Match '.+'
-            $Datastore.virtualCenterIp | Should Match '.+'
-            $Datastore.capacity | ValidateCapacity
-            $Datastore.self | Should Match "/rest/v1/assets/datastores/$($Datastore.id)"
+            $StorageResource.id | Should BeGreaterThan 0
+            $StorageResource.self | Should Match "/rest/v1/assets/$($StorageResource.resourceType.substring(0,1).toLower()+$StorageResource.resourceType.substring(1))s*/$($StorageResource.id)"
+            $StorageResource.name | Should Match '.+'
+            $StorageResource.simpleName | Should Match '.+'
+            $StorageResource.capacity | ValidateCapacity
+            $StorageResource.isThinProvisioned | Should BeOfType Boolean
+            if ($StorageResource.dataStores) {
+                $StorageResource.dataStores | ValidateDatastore
+            }
+            if ($StorageResource.computeResources) {
+                $StorageResource.computeResources | ValidateComputeResource
+            }
+            if ($StorageResource.storagePools) {
+                $StorageResource.storagePools | ValidateStoragePool
+            }
+    }
+}
+
+function ValidateFileSystem {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="FileSystem to be verified")][PSObject]$FileSystem
+    )
+
+        Process {
+            $FileSystem.id | Should BeGreaterThan 0
+            $FileSystem.self | Should Match "/rest/v1/assets/fileSystems/$($FileSystem.id)"
+            $FileSystem.type | Should Match '.*'
+            $FileSystem.name | Should Match '.+'
+            $FileSystem.simpleName | Should Match '.+'
+            $StorageResource.capacity | ValidateCapacity
+    }
+}
+
+function ValidateVirtualMachine {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Virtual machine to be verified")][PSObject]$VirtualMachine
+    )
+
+        Process {
+            $VirtualMachine.id | Should BeGreaterThan 0
+            $VirtualMachine.self | Should Match "/rest/v1/assets/virtualMachines/$($VirtualMachine.id)"
+            $VirtualMachine.resourceType | Should Be "VirtualMachine"
+            $VirtualMachine.name | Should Match ".+"
+            $VirtualMachine.simpleName | Should Match ".+"
+            $VirtualMachine.guestState | Should Match ".+"
+            $VirtualMachine.os | Should Match ".+"
+            $VirtualMachine.powerState | Should Match ".+"
+            if ($VirtualMachine.powerStateChangeTime) {
+                $VirtualMachine.powerStateChangeTime | Should BeOfType DateTime
+            }
+            $VirtualMachine.createTime | Should BeOfType DateTime
+            $VirtualMachine.ip | Should Match $REGEX_HOSTNAME_IP
+            # TODO: Remove fix for error in OCI Demo DB
+            $VirtualMachine.dnsName = $VirtualMachine.dnsName -replace "_","-"
+            $VirtualMachine.dnsName | Should Match $REGEX_HOSTNAME_IP
+            $VirtualMachine.processors | Should BeGreaterThan 0
+            # TODO validate memory
+            # $StorageResource.memory
+            $VirtualMachine.capacity | ValidateCapacity
     }
 }
 
@@ -777,6 +859,39 @@ Describe "OCI server connection management" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS
             $OciServer.Name | Should Be $OciServerName
             $Global:CurrentOciServer | Should Be $OciServer
+        }
+
+        it "succeeds when timezone is set to UTC" {
+            $Timezone = [TimeZoneInfo]::UTC
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Timezone $Timezone
+            $OciServer.Name | Should Be $OciServerName
+            $OciServer.Timezone | Should Be $Timezone
+            $Global:CurrentOciServer | Should Be $OciServer
+        }
+
+        it "succeeds when transient OCI Server object is requested" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Transient -Insecure
+            $OciServer.Name | Should Be $OciServerName
+            $Global:CurrentOciServer | Should BeNullOrEmpty
+        }
+    }
+}
+
+Describe "OCI server backup / restore" {
+    BeforeEach {
+        $OciServer = $null
+        $Global:CurrentOciServer = $null
+    }
+
+    Context "restoring" {
+        it "succeeds when restoring Demo DB" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip
+        }
+
+        it "succeeds when restoring Demo DB with transient OCI server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS -Transient
+            Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip -Server $OciServer
         }
 
         it "succeeds when timezone is set to UTC" {
@@ -1098,7 +1213,7 @@ Describe "Datasource management" {
                 $Datasource | ValidateDatasource
                 $Datasource.Name | Should Be $NewName
 
-                sleep 1
+                sleep 2
 
                 $Datasource = $Datasource | Update-OciDataSource -name $CurrentName -Server $OciServer
 
@@ -1488,7 +1603,7 @@ Describe "Datastore management" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
 
             $Datastores = Get-OciDatastores -Server $OciServer
-            $Count = Get-OciDatastoreCount
+            $Count = Get-OciDatastoreCount -Server $OciServer
             @($Datastores).Count | Should Be $Count
         }
     }
@@ -1550,8 +1665,8 @@ Describe "Datastore management" {
         it "succeeds when retrieving related datasources" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
-            $Datasources = Get-OciDatastores | Get-OciDatasourcesByDataStore
-            @($Datasources).Count | Should BeGreaterThan 0
+            $Datastores = Get-OciDatastores
+            $Datasources = $Datastores | Get-OciDatasourcesByDataStore
             $Datasources | ValidateDatasource
         }
 
@@ -1559,7 +1674,6 @@ Describe "Datastore management" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
 
             $Datasources = Get-OciDatastores -Server $OciServer | Get-OciDatasourcesByDataStore -Server $OciServer 
-            @($Datasources).Count | Should BeGreaterThan 0
             $Datasources | ValidateDatasource
         }
 
@@ -1573,18 +1687,16 @@ Describe "Datastore management" {
         it "succeeds when retrieving related hosts with parameters performance, fromTime, toTime, ports, storageResources, fileSystems, applications, virtualMachines, dataCenter, annotations, clusterHosts and datasources" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
 
-            # TODO: Implement Validations!
             $Hosts = Get-OciDatastores | Get-OciHostsByDataStore -performance -fromTime (Get-Date).AddDays(-1) -toTime (Get-Date) -ports -storageResources -fileSystems -applications -virtualMachines -dataCenter -annotations -clusterHosts -datasources
             $Hosts | ValidateHost
             $Hosts.performance | ValidatePerformance
+            $Hosts.storageResources | ValidateStorageResource
+            $Hosts.fileSystems | ValidateFileSystem
             $Hosts.ports | ValidatePort
-            #$Hosts.storageResources | ValidateStorageResource
-            #$Hosts.fileSystems | ValidateFileSystem
-            #$Hosts.applications | ValidateApplication
-            #$Hosts.virtualMachines | ValidateVirtualMachine
-            #$Hosts.dataCenter | ValidateDataCenter
-            $Hosts.annotations | ValidateAnnotation
-            #$Hosts.clusterHosts | ValidateClusterHost
+            $Hosts.applications | ValidateApplication
+            $Hosts.virtualMachines | ValidateVirtualMachine
+            $Hosts.clusterHosts | ValidateHost
+            $Hosts.annotations | ValidateAnnotationValue
             $Hosts.datasources | ValidateDatasource
         }
 
