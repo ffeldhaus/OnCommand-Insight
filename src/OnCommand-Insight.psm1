@@ -3733,7 +3733,7 @@ function Global:Update-OciLicenses {
         $Uri = $Server.BaseUri + "/rest/v1/admin/license"
 
         try {
-            $Body = $Licenses | ConvertTo-Json -Compress
+            $Body = ConvertTo-Json -InputObject @($Licenses) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
@@ -3789,7 +3789,7 @@ function Global:Replace-OciLicenses {
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            throw "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {

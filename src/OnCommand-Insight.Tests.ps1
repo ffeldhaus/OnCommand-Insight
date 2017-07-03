@@ -840,6 +840,64 @@ function ValidatePerformanceIndicator {
     }
 }
 
+function ValidateLicense {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="License to be verified")][PSObject]$License
+    )
+
+    Process {
+        $License.isValid | Should BeOfType Boolean
+        $License.isPerformLicense | Should BeOfType Boolean
+        $License.errorMessages | Should Match ".*"
+        $License.warningMessages | Should Match ".*"
+        $License.serialNumber | Should Match ".+"
+        $license.licenseParts | ValidateLicensePart
+    }
+}
+
+function ValidateLicensePart {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="License part to be verified")][PSObject]$LicensePart
+    )
+
+    Process {
+        $LicensePart.id | Should Match "IASR|IPER|IPLN|IDIS|IHUP"
+        $LicensePart.status | Should Match "OK"
+        $LicensePart.displayName | Should Match ".+"
+        $LicensePart.expirationDate | Should BeOfType DateTime
+        $LicensePart.compliance | ValidateLicensePartCompliance
+        $LicensePart.serialNumber | Should Match ".+"
+    }
+}
+
+function ValidateLicensePartCompliance {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="License part compliance to be verified")][PSObject]$LicensePartCompliance
+    )
+
+    Process {
+        $LicensePartCompliance.maxQuantity | Should BeOfType Int
+        $LicensePartCompliance.actualQuantity | Should BeOfType Int
+        $LicensePartCompliance.quantityUnit | Should Match ".+"
+        $LicensePartCompliance.quantityUnitDisplay | Should Match ".+"
+    }
+}
+
 ### Begin of tests ###
 
 Describe "OCI server connection management" {
@@ -877,13 +935,86 @@ Describe "OCI server connection management" {
     }
 }
 
+Describe "License management" {
+    BeforeEach {
+        $OciServer = $null
+        $Global:CurrentOciServer = $null
+    }
+
+    AfterEach {
+        $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+        $Licenses = Get-Content -Path .\demodb\ValidLicenses.txt
+        Replace-OciLicenses -Licenses $Licenses -Server $OciServer
+    }
+
+    Context "replacing licenses" {
+        it "succeeds with valid license" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            $ValidLicenses = Get-Content -Path .\demodb\ValidLicenses.txt
+            Replace-OciLicenses -Licenses $ValidLicenses
+            $Licenses = Get-OciLicenses
+            $Licenses.serialNumber | Should Be $ValidLicenses[0].Substring(29,32)
+        }
+
+        it "fails with invalid license" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            $InvalidLicenses = Get-Content -Path .\demodb\InvalidLicenses.txt
+            { Replace-OciLicenses -Licenses $InvalidLicenses } | Should Throw
+        }
+
+        it "succeeds with valid license and transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $ValidLicenses = Get-Content -Path .\demodb\ValidLicenses.txt
+            Replace-OciLicenses -Licenses $ValidLicenses -Server $OciServer
+            $Licenses = Get-OciLicenses -Server $OciServer
+            $Licenses.serialNumber | Should Be $ValidLicenses[0].Substring(29,32)
+        }
+    }
+
+    Context "updating licenses" {
+        it "succeeds with valid license" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            $Licenses = Get-OciLicenses
+            $Licenses.serialNumber | Should Be $ValidLicenses[0].Substring(29,32)
+        }
+
+        it "fails with invalid license" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            $InvalidLicenses = Get-Content -Path .\demodb\InvalidLicenses.txt
+            { Replace-OciLicenses -Licenses $InvalidLicenses } | Should Throw
+        }
+
+        it "succeeds with valid license and transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            $ValidLicenses = Get-Content -Path .\demodb\ValidLicenses.txt
+            Replace-OciLicenses -Licenses $ValidLicenses -Server $OciServer
+            $Licenses = Get-OciLicenses -Server $OciServer
+            $Licenses.serialNumber | Should Be $ValidLicenses[0].Substring(29,32)
+        }
+    }
+
+    Context "retrieving licenses" {
+        it "succeeds with no parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            $Licenses = Get-OciLicenses
+            $Licenses | ValidateLicense
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS
+            $OciServer.Name | Should Be $OciServerName
+            $Global:CurrentOciServer | Should Be $OciServer
+        }
+    }
+}
+
 Describe "OCI server backup / restore" {
     BeforeEach {
         $OciServer = $null
         $Global:CurrentOciServer = $null
     }
 
-    Context "restoring" {
+    Context "restore" {
         it "succeeds when restoring Demo DB" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip
@@ -893,19 +1024,12 @@ Describe "OCI server backup / restore" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS -Transient
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip -Server $OciServer
         }
+    }
 
-        it "succeeds when timezone is set to UTC" {
-            $Timezone = [TimeZoneInfo]::UTC
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Timezone $Timezone
-            $OciServer.Name | Should Be $OciServerName
-            $OciServer.Timezone | Should Be $Timezone
-            $Global:CurrentOciServer | Should Be $OciServer
-        }
-
-        it "succeeds when transient OCI Server object is requested" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Transient -Insecure
-            $OciServer.Name | Should Be $OciServerName
-            $Global:CurrentOciServer | Should BeNullOrEmpty
+    Context "backup" {
+        it "succeeds without parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+            Get-OciBackup -Path $env:TEMP
         }
     }
 }
