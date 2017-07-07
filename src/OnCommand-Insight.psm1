@@ -31358,7 +31358,7 @@ function Global:Restore-OciBackup {
                    Position=0,
                    HelpMessage="Full path of OnCommand Insight Backup, either locally or on OnCommand Insight Server.",
                    ValueFromPipeline=$True,
-                   ValueFromPipelineByPropertyName=$True)][Alias("Path")][PSObject[]]$FilePath,
+                   ValueFromPipelineByPropertyName=$True)][Alias("Path")][String[]]$FilePath,
         [parameter(Mandatory=$False,
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -31565,7 +31565,7 @@ function Global:Get-OciBackup {
             Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -OutFile $FilePath
             Write-Host "Backup Saved to $FilePath"
 
-            $Result = New-Object -TypeName PSCustomObject -ArgumentList @{FilePath=$FilePath;Date=$Date;URI=$Uri}
+            $Result = [PSCustomObject]@{FilePath=$FilePath;Date=$Date;URI=$Uri}
 
             Write-Output $Result
         }
