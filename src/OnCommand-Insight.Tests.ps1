@@ -1065,7 +1065,7 @@ Describe "OCI server backup / restore" {
             # ensure that datasources do not try to discover anything as this is a demo DB
             $null = $Datasources | Suspend-OciDatasource -Days 999
 
-            $Datasources = Get-OciDatasources
+            $Datasources = Get-OciDatasources -Server $OciServer
             $Datasources.Count | should BeGreaterThan 0
             $Datasources | ValidateDatasource
         }
@@ -1077,7 +1077,7 @@ Describe "OCI server backup / restore" {
 
             $StartTime = Get-Date
 
-            sleep 5
+            sleep 60
 
             $Backup = Get-OciBackup -Path $env:TEMP
             $Backup | ValidateBackup
@@ -1093,7 +1093,7 @@ Describe "OCI server backup / restore" {
 
             $StartTime = Get-Date
 
-            sleep 5
+            sleep 60
 
             $Backup = Get-OciBackup -Path $env:TEMP -Server $OciServer
             $Backup | ValidateBackup
@@ -1114,7 +1114,7 @@ Describe "OCI server backup / restore" {
             # retrieve datasources to compare them after restore
             $Datasources = Get-OciDatasources -devices -config -acquisitionUnit
 
-            sleep 5
+            sleep 60
 
             $Backup = Get-OciBackup -Path $env:TEMP
             $Backup | ValidateBackup
