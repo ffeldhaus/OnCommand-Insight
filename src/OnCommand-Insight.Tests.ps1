@@ -898,6 +898,23 @@ function ValidateLicensePartCompliance {
     }
 }
 
+function ValidateBackup {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$False,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Backup to be verified")][PSObject]$Backup
+    )
+
+    Process {
+        $Backup.Date | Should BeOfType DateTime
+        Test-Path $Backup.FilePath | Should Be $True
+        [URI]::IsWellFormedUriString($Backup.URI,[URIKind]::Absolute) | Should Be $True
+    }
+}
+
 ### Begin of tests ###
 
 Describe "OCI server connection management" {
@@ -956,7 +973,7 @@ Describe "License management" {
             $Licenses.serialNumber | Should Be $ValidLicenses[0].Substring(29,32)
         }
 
-        it "fails with invalid license" {
+        it "fails with expired license" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
             $InvalidLicenses = Get-Content -Path .\demodb\InvalidLicenses.txt
             { Replace-OciLicenses -Licenses $InvalidLicenses } | Should Throw
@@ -974,22 +991,24 @@ Describe "License management" {
     Context "updating licenses" {
         it "succeeds with valid license" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-            $Licenses = Get-OciLicenses
-            $Licenses.serialNumber | Should Be $ValidLicenses[0].Substring(29,32)
+            $PreviousLicenses = Get-OciLicenses
+            $ValidLicense = Get-Content -Path .\demodb\ValidLicenses.txt | Select-Object -first 1
+            $Licenses = Update-OciLicenses -Licenses $ValidLicense
+            $PreviousLicenses.licenseParts.Count | Should Be $Licenses.licenseParts.Count
         }
 
-        it "fails with invalid license" {
+        it "fails with expired license" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-            $InvalidLicenses = Get-Content -Path .\demodb\InvalidLicenses.txt
-            { Replace-OciLicenses -Licenses $InvalidLicenses } | Should Throw
+            $ExpiredLicense = Get-Content -Path .\demodb\InvalidLicenses.txt | Where-Object { $_.substring(6,4) -match "IDIS" }
+            { Update-OciLicenses -Licenses $ExpiredLicense } | Should Throw
         }
 
         it "succeeds with valid license and transient OCI Server" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
-            $ValidLicenses = Get-Content -Path .\demodb\ValidLicenses.txt
-            Replace-OciLicenses -Licenses $ValidLicenses -Server $OciServer
-            $Licenses = Get-OciLicenses -Server $OciServer
-            $Licenses.serialNumber | Should Be $ValidLicenses[0].Substring(29,32)
+            $PreviousLicenses = Get-OciLicenses -Server $OciServer
+            $ValidLicense = Get-Content -Path .\demodb\ValidLicenses.txt | Select-Object -first 1
+            $Licenses = Update-OciLicenses -Licenses $ValidLicense -Server $OciServer
+            $PreviousLicenses.licenseParts.Count | Should Be $Licenses.licenseParts.Count
         }
     }
 
@@ -1029,7 +1048,33 @@ Describe "OCI server backup / restore" {
     Context "backup" {
         it "succeeds without parameters" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-            Get-OciBackup -Path $env:TEMP
+
+            $StartTime = Get-Date
+
+            sleep 5
+
+            $Backup = Get-OciBackup -Path $env:TEMP
+            $Backup | VerifyBackup
+            $Backup.Date | Should BeGreaterThan $StartTime
+            $Backup.FilePath | Should Match $env:TEMP
+            $Backup.URI | Should Match $OciServer.Name
+
+            sleep 5
+
+            Restore-OciBackup
+
+            sleep 60
+
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+        }
+
+        it "succeeds with transient OCI server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+            Get-OciBackup -Path $env:TEMP -Server $OciServer
+            $Backup | VerifyBackup
+            $Backup.Date | Should BeGreaterThan $StartTime
+            $Backup.FilePath | Should Match $env:TEMP
+            $Backup.URI | Should Match $OciServer.Name
         }
     }
 }
