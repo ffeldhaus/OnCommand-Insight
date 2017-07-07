@@ -1067,6 +1067,13 @@ Describe "OCI server backup / restore" {
             # ensure that datasources do not try to discover anything as this is a demo DB
             $null = $Datasources | Suspend-OciDatasource -Days 999 -Server $OciServer
 
+            # TODO: remove once DemoDB has been fixed
+            # fix for invalid datasource foundation IP in Demo DB
+            $Datasources = Get-OciDatasources -config
+            $DatasourcesToFix = $Datasources | ? { $_.foundationIp -match "," }
+            $DatasourcesToFix | % { $_.config.foundation.attributes.ip = $_.config.foundation.attributes.ip -replace ",","." }
+            $null = $DatasourcesToFix | Update-OciDataSource
+
             $Datasources = Get-OciDatasources -Server $OciServer
             $Datasources.Count | should BeGreaterThan 0
             $Datasources | ValidateDatasource
@@ -1084,7 +1091,7 @@ Describe "OCI server backup / restore" {
             $Backup = Get-OciBackup -Path $env:TEMP
             $Backup | ValidateBackup
             $Backup.Date | Should BeGreaterThan $StartTime
-            $Backup.FilePath | Should Match [regex]::Escape($env:TEMP)
+            $Backup.FilePath | Should Match ([regex]::Escape($env:TEMP))
             $Backup.URI | Should Match $OciServer.Name
 
             Remove-Item -Path $Backup.FilePath
@@ -1100,7 +1107,7 @@ Describe "OCI server backup / restore" {
             $Backup = Get-OciBackup -Path $env:TEMP -Server $OciServer
             $Backup | ValidateBackup
             $Backup.Date | Should BeGreaterThan $StartTime
-            $Backup.FilePath | Should Match [regex]::Escape($env:TEMP)
+            $Backup.FilePath | Should Match ([regex]::Escape($env:TEMP))
             $Backup.URI | Should Match $OciServer.Name
 
             Remove-Item -Path $Backup.FilePath
@@ -1121,7 +1128,7 @@ Describe "OCI server backup / restore" {
             $Backup = Get-OciBackup -Path $env:TEMP
             $Backup | ValidateBackup
             $Backup.Date | Should BeGreaterThan $StartTime
-            $Backup.FilePath | Should Match [regex]::Escape($env:TEMP)
+            $Backup.FilePath | Should Match ([regex]::Escape($env:TEMP))
             $Backup.URI | Should Match $OciServer.Name
 
             sleep 5
