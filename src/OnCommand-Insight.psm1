@@ -3739,14 +3739,15 @@ function Global:Update-OciLicenses {
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-            Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+            throw "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
         }
 
         if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        Write-Output $Result
+        $NewLicenses = ParseLicenses -Licenses $Result -Timezone $Server.Timezone
+        Write-Output $NewLicenses
     }
 }
 
@@ -31357,7 +31358,7 @@ function Global:Restore-OciBackup {
                    Position=0,
                    HelpMessage="Full path of OnCommand Insight Backup, either locally or on OnCommand Insight Server.",
                    ValueFromPipeline=$True,
-                   ValueFromPipelineByPropertyName=$True)][PSObject[]]$FilePath,
+                   ValueFromPipelineByPropertyName=$True)][Alias("Path")][PSObject[]]$FilePath,
         [parameter(Mandatory=$False,
                    Position=1,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -31486,7 +31487,7 @@ function Global:Get-OciBackup {
     PARAM (
         [parameter(Mandatory=$True,
                    Position=0,
-                   HelpMessage="Path where to store OnCommand Insight Backup.")][PSObject]$Path,
+                   HelpMessage="Path where to store OnCommand Insight Backup.")][Alias("FilePath")][PSObject]$Path,
         [parameter(Mandatory=$False,
                    Position=1,
                    HelpMessage="Time in minutes to wait for backup to complete (Default = 60 minutes).")][PSObject]$Timeout=60,
@@ -31531,6 +31532,8 @@ function Global:Get-OciBackup {
             Invoke-RestMethod -WebSession $Server.Session -TimeoutSec ([int32]::MaxValue) -Method POST -Uri $args[0] -Headers $args[1] -Verbose
         } -ArgumentList $URI,$Server.Headers
 
+        Start-Sleep -Seconds 5
+
         try {
             Write-Progress -Activity "Backup started" -status "Backing up" -percentComplete 0
             $i = 0
@@ -31556,7 +31559,6 @@ function Global:Get-OciBackup {
         }
 
         $FilePath = $Path + '\' + (($Uri -split '/') | Select-Object -last 1)
-        Write-Host $FilePath
         $Date = [datetime]::ParseExact($($FilePath -replace '.+_D(.*)_[0-9]+.zip','$1'),"yyyyMMdd_HHmm",$null)
 
         try {
