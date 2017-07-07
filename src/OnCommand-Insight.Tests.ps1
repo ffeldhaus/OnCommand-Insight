@@ -1069,10 +1069,10 @@ Describe "OCI server backup / restore" {
 
             # TODO: remove once DemoDB has been fixed
             # fix for invalid datasource foundation IP in Demo DB
-            $Datasources = Get-OciDatasources -config
+            $Datasources = Get-OciDatasources -config -Server $OciServer
             $DatasourcesToFix = $Datasources | ? { $_.foundationIp -match "," }
             $DatasourcesToFix | % { $_.config.foundation.attributes.ip = $_.config.foundation.attributes.ip -replace ",","." }
-            $null = $DatasourcesToFix | Update-OciDataSource
+            $null = $DatasourcesToFix | Update-OciDataSource -Server $OciServer
 
             $Datasources = Get-OciDatasources -Server $OciServer
             $Datasources.Count | should BeGreaterThan 0
