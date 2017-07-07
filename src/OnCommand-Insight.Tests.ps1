@@ -1038,7 +1038,7 @@ Describe "OCI server backup / restore" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip
 
-            sleep 60
+            sleep 300
 
             # ensure that datasources do not try to discover anything as this is a demo DB
             $null = $Datasources | Suspend-OciDatasource -Days 999
@@ -1052,7 +1052,7 @@ Describe "OCI server backup / restore" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS -Transient
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip -Server $OciServer
 
-            sleep 60
+            sleep 300
 
             # ensure that datasources do not try to discover anything as this is a demo DB
             $null = $Datasources | Suspend-OciDatasource -Days 999
@@ -1120,7 +1120,7 @@ Describe "OCI server backup / restore" {
 
             Remove-Item -Path $Backup.FilePath
 
-            sleep 60
+            sleep 300
 
             # ensure that datasources do not try to discover anything as this is a demo DB
             $null = $Datasources | Suspend-OciDatasource -Days 999
