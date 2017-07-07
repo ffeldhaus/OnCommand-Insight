@@ -1037,11 +1037,29 @@ Describe "OCI server backup / restore" {
         it "succeeds when restoring Demo DB" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip
+
+            sleep 60
+
+            # ensure that datasources do not try to discover anything as this is a demo DB
+            $null = $Datasources | Suspend-OciDatasource -Days 999
+
+            $Datasources = Get-OciDatasources
+            $Datasources.Count | should BeGreaterThan 0
+            $Datasources | ValidateDatasource
         }
 
         it "succeeds when restoring Demo DB with transient OCI server" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS -Transient
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip -Server $OciServer
+
+            sleep 60
+
+            # ensure that datasources do not try to discover anything as this is a demo DB
+            $null = $Datasources | Suspend-OciDatasource -Days 999
+
+            $Datasources = Get-OciDatasources
+            $Datasources.Count | should BeGreaterThan 0
+            $Datasources | ValidateDatasource
         }
     }
 
@@ -1054,27 +1072,62 @@ Describe "OCI server backup / restore" {
             sleep 5
 
             $Backup = Get-OciBackup -Path $env:TEMP
-            $Backup | VerifyBackup
+            $Backup | ValidateBackup
+            $Backup.Date | Should BeGreaterThan $StartTime
+            $Backup.FilePath | Should Match $env:TEMP
+            $Backup.URI | Should Match $OciServer.Name
+
+            Remove-Item -Path $Backup.FilePath
+        }
+
+        it "succeeds with transient OCI server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $StartTime = Get-Date
+
+            sleep 5
+
+            $Backup = Get-OciBackup -Path $env:TEMP -Server $OciServer
+            $Backup | ValidateBackup
+            $Backup.Date | Should BeGreaterThan $StartTime
+            $Backup.FilePath | Should Match $env:TEMP
+            $Backup.URI | Should Match $OciServer.Name
+
+            Remove-Item -Path $Backup.FilePath
+        }
+    }
+
+    Context "backup followed by restore" {
+        it "succeeds without parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $StartTime = Get-Date
+
+            # retrieve datasources to compare them after restore
+            $Datasources = Get-OciDatasources -devices -config -acquisitionUnit
+
+            sleep 5
+
+            $Backup = Get-OciBackup -Path $env:TEMP
+            $Backup | ValidateBackup
             $Backup.Date | Should BeGreaterThan $StartTime
             $Backup.FilePath | Should Match $env:TEMP
             $Backup.URI | Should Match $OciServer.Name
 
             sleep 5
 
-            Restore-OciBackup
+            $Backup | Restore-OciBackup
+
+            Remove-Item -Path $Backup.FilePath
 
             sleep 60
 
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
-        }
+            # ensure that datasources do not try to discover anything as this is a demo DB
+            $null = $Datasources | Suspend-OciDatasource -Days 999
 
-        it "succeeds with transient OCI server" {
-            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
-            Get-OciBackup -Path $env:TEMP -Server $OciServer
-            $Backup | VerifyBackup
-            $Backup.Date | Should BeGreaterThan $StartTime
-            $Backup.FilePath | Should Match $env:TEMP
-            $Backup.URI | Should Match $OciServer.Name
+            $DatasourcesAfterRestore = Get-OciDatasources -devices -config -acquisitionUnit
+
+            $DatasourcesAfterRestore.Count | Should Be $Datasources.Count
         }
     }
 }
