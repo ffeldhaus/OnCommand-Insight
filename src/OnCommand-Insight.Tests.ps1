@@ -1036,6 +1036,7 @@ Describe "OCI server backup / restore" {
     Context "restore" {
         it "succeeds when restoring Demo DB" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip
 
             sleep 300
@@ -1058,12 +1059,13 @@ Describe "OCI server backup / restore" {
 
         it "succeeds when restoring Demo DB with transient OCI server" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -HTTPS -Transient
+
             Restore-OciBackup -FilePath .\demodb\Backup_Demo_V7-3-0_B994_D20170405_1604_7562582910350986847.zip -Server $OciServer
 
             sleep 300
 
             # ensure that datasources do not try to discover anything as this is a demo DB
-            $null = $Datasources | Suspend-OciDatasource -Days 999
+            $null = $Datasources | Suspend-OciDatasource -Days 999 -Server $OciServer
 
             $Datasources = Get-OciDatasources -Server $OciServer
             $Datasources.Count | should BeGreaterThan 0
@@ -1082,7 +1084,7 @@ Describe "OCI server backup / restore" {
             $Backup = Get-OciBackup -Path $env:TEMP
             $Backup | ValidateBackup
             $Backup.Date | Should BeGreaterThan $StartTime
-            $Backup.FilePath | Should Match $env:TEMP
+            $Backup.FilePath | Should Match [regex]::Escape($env:TEMP)
             $Backup.URI | Should Match $OciServer.Name
 
             Remove-Item -Path $Backup.FilePath
@@ -1098,7 +1100,7 @@ Describe "OCI server backup / restore" {
             $Backup = Get-OciBackup -Path $env:TEMP -Server $OciServer
             $Backup | ValidateBackup
             $Backup.Date | Should BeGreaterThan $StartTime
-            $Backup.FilePath | Should Match $env:TEMP
+            $Backup.FilePath | Should Match [regex]::Escape($env:TEMP)
             $Backup.URI | Should Match $OciServer.Name
 
             Remove-Item -Path $Backup.FilePath
@@ -1119,7 +1121,7 @@ Describe "OCI server backup / restore" {
             $Backup = Get-OciBackup -Path $env:TEMP
             $Backup | ValidateBackup
             $Backup.Date | Should BeGreaterThan $StartTime
-            $Backup.FilePath | Should Match $env:TEMP
+            $Backup.FilePath | Should Match [regex]::Escape($env:TEMP)
             $Backup.URI | Should Match $OciServer.Name
 
             sleep 5
