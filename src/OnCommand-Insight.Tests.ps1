@@ -1043,7 +1043,15 @@ Describe "OCI server backup / restore" {
             # ensure that datasources do not try to discover anything as this is a demo DB
             $null = $Datasources | Suspend-OciDatasource -Days 999
 
+            # TODO: remove once DemoDB has been fixed
+            # fix for invalid datasource foundation IP in Demo DB
+            $Datasources = Get-OciDatasources -config
+            $DatasourcesToFix = $Datasources | ? { $_.foundationIp -match "," }
+            $DatasourcesToFix | % { $_.config.foundation.attributes.ip = $_.config.foundation.attributes.ip -replace ",","." }
+            $null = $DatasourcesToFix | Update-OciDataSource
+
             $Datasources = Get-OciDatasources
+
             $Datasources.Count | should BeGreaterThan 0
             $Datasources | ValidateDatasource
         }
