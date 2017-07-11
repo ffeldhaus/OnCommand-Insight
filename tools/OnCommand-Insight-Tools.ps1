@@ -182,12 +182,12 @@ function New-OciRelease {
 
     Write-Host "Release zip file $zipFileName successfully created!" -ForegroundColor Green
 
-    Write-Host "Creating MSI installers..."
-    Start-WixBuild -Path $dst -OutputFolder $out -ProductShortName "OnCommand-Insight" -ProductName "OnCommand-Insight PowerShell Cmdlets" -ProductVersion $ModuleVersion -Manufacturer $Author -IconFile $PSScriptRoot\icon.ico -BannerFile $PSScriptRoot\banner.bmp -DialogFile $PSScriptRoot\dialog.bmp -UpgradeCodeX86 "8291AEAC-1A4D-CCFD-5870-70741560D087" -UpgradeCodeX64 "DF22600B-7719-B72A-9BA9-5E13FCA37628"
+    #Write-Host "Creating MSI installers..."
+    #Start-WixBuild -Path $dst -OutputFolder $out -ProductShortName "OnCommand-Insight" -ProductName "OnCommand-Insight PowerShell Cmdlets" -ProductVersion $ModuleVersion -Manufacturer $Author -IconFile $PSScriptRoot\icon.ico -BannerFile $PSScriptRoot\banner.bmp -DialogFile $PSScriptRoot\dialog.bmp -UpgradeCodeX86 "8291AEAC-1A4D-CCFD-5870-70741560D087" -UpgradeCodeX64 "DF22600B-7719-B72A-9BA9-5E13FCA37628"
 
-    Write-Host "Release MSI Installer OnCommand_Insight_$($ModuleVersion)_x64.msi and OnCommand_Insight_$($ModuleVersion)_x86.msi successfully created!" -ForegroundColor Green
+    #Write-Host "Release MSI Installer OnCommand_Insight_$($ModuleVersion)_x64.msi and OnCommand_Insight_$($ModuleVersion)_x86.msi successfully created!" -ForegroundColor Green
 
-    Remove-Item $dst\.wix.json
+    #Remove-Item $dst\.wix.json
 
     if ($Release) { 
         Write-Host "Publishing Module to PowerShell Gallery"
