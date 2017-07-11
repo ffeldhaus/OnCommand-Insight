@@ -74,7 +74,7 @@ function New-OciRelease {
         [Parameter(Mandatory = $false)][switch]$Minor,
         [Parameter(Mandatory = $false)][switch]$Build,
         [Parameter(Mandatory = $false)][switch]$Release,
-        [Parameter(Mandatory = $true)][X509Certificate]$Certificate
+        [Parameter(Mandatory = $true)][System.Security.Cryptography.X509Certificates.X509Certificate]$Certificate
     )
 
     $ErrorActionPreference = "Stop"
