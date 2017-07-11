@@ -5110,7 +5110,7 @@ function Global:Remove-OciAnnotationValues {
                     HelpMessage="Object type of objects where annotations should be deleted (e.g. StoragePool or InternalVolume)")][ValidateSet("StoragePool","Qtree","Port","Host","StorageNode","Storage","InternalVolume","Switch","Volume","Vmdk","DataStore","Disk","Share","VirtualMachine")][String]$objectType,
         [parameter(Mandatory=$False,
                     Position=2,
-                    HelpMessage="IDs of object where annotation should be deleted")][PSObject[]]$targets,
+                    HelpMessage="IDs of object where annotation should be deleted")][String[]]$targets,
         [parameter(Mandatory=$False,
                    Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -5121,6 +5121,8 @@ function Global:Remove-OciAnnotationValues {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+        # if targets are specified as URLs, remove everything except the target ID
+        $Targets = $Targets -replace ".*/",""
     }
 
     Process {
@@ -5247,7 +5249,7 @@ function Global:Update-OciAnnotationValues {
                     HelpMessage="Value of Annotation")][String]$rawValue,
         [parameter(Mandatory=$True,
                     Position=3,
-                    HelpMessage="IDs of object where annotation should be added")][long[]]$targets,
+                    HelpMessage="IDs of object where annotation should be added")][String[]]$targets,
         [parameter(Mandatory=$False,
                    Position=4,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -5258,29 +5260,28 @@ function Global:Update-OciAnnotationValues {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
+        # if targets are specified as URLs, remove everything except the target ID
+        $Targets = $Targets -replace ".*/",""
     }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values"
 
-            try {
-                $Body = ConvertTo-Json @(@{objectType=$objectType;values=@(@{rawValue=$rawValue;targets=$targets})}) -Compress -Depth 4
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
-
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString -json $Result.Trim()
-            }
-
-            Write-Output $Result
+        try {
+            $Body = ConvertTo-Json @(@{objectType=$objectType;values=@(@{rawValue=$rawValue;targets=$targets})}) -Compress -Depth 4
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
         }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        Write-Output $Result
     }
 }
 
@@ -5357,7 +5358,7 @@ function Global:Get-OciAnnotationValuesByObjectType {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
+function Global:Get-OciAnnotationValuesByObjectTypeAndValue {
     [CmdletBinding()]
 
     PARAM (
@@ -5382,61 +5383,27 @@ function Global:Update-OciAnnotationValuesByObjectTypeAndValue {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@()
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
+        if ($Value -notmatch "^[a-zA-Z0-9]+$") {
+            throw "This commandlet only supports values with alphanumeric characters"
         }
     }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/{objectType}/{value}"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/$objectType/$UrlEncodedValue"
 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
-
-            try {
-                if ('GET' -match 'PUT|POST') {
-                    Write-Verbose "Body: "
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers -Body "" -ContentType 'application/json'
-                }
-                else {
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
-                }
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-                Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
-
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString -json $Result.Trim()
-            }
-
-            Write-Output $Result
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
         }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        Write-Output $Result
     }
 }
 
