@@ -68,10 +68,42 @@ function ValidateAnnotation {
                 $Annotation.enumValues.id | Should BeGreaterThan 0
                 $Annotation.enumValues.name | Should Match ".+"
                 $Annotation.enumValues.label | Should Match ".+"
-                $Annotation.enumValues.description | Should Match ".+"
+                $Annotation.enumValues.description | Should Match ".*"
                 $Annotation.enumValues.isUserDefined | Should Match ".+"
             }
             $Annotation.supportedObjectTypes | Should Match "StoragePool|Qtree|Port|Host|StorageNode|Storage|InternalVolume|Switch|Volume|Vmdk|DataStore|Disk|Share|VirtualMachine"
+    }
+}
+
+function ValidateAnnotationObject {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$True,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Annotation object to be verified")][PSObject]$AnnotationObject
+    )
+
+        Process {
+            $AnnotationObject.objectType | Should Match "StoragePool|Qtree|Port|Host|StorageNode|Storage|InternalVolume|Switch|Volume|Vmdk|DataStore|Disk|Share|VirtualMachine"
+            $AnnotationObject.values | ValidateAnnotationObjectValue
+    }
+}
+
+function ValidateAnnotationObjectValue {
+    [CmdletBinding()]
+        
+    PARAM (
+    [parameter(Mandatory=$True,
+                Position=0,
+                ValueFromPipeline=$True,
+                HelpMessage="Annotation object value to be verified")][PSObject]$AnnotationObjectValue
+    )
+
+        Process {
+            $AnnotationObjectValue.rawValue | Should Match ".+"
+            $AnnotationObjectValue.targets | Should Match "/rest/v1/assets/.+"
     }
 }
 
@@ -1535,6 +1567,25 @@ Describe "Annotation management" {
         $Annotation = $null
     }
 
+
+    Context "retrieve annotation definitions" {
+        it "succeeds without parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotations = Get-OciAnnotations
+            $Annotations.count | Should BeGreaterThan 0
+            $Annotations | ValidateAnnotation
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Annotations = Get-OciAnnotations -Server $OciServer
+            $Annotations.count | Should BeGreaterThan 0
+            $Annotations | ValidateAnnotation
+        }
+    }
+
     Context "adding and removing annotations" {
         it "succeeds for type BOOLEAN" {
             $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
@@ -1592,6 +1643,130 @@ Describe "Annotation management" {
             $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type BOOLEAN -Server $OciServer
             $Annotation | ValidateAnnotation
             $Annotation | Remove-OciAnnotation -Server $OciServer
+        }
+    }
+
+    Context "retrieve annotation values" {
+        it "succeeds without parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotations = Get-OciAnnotations
+            $AnnotationObjects = $Annotations | Get-OciAnnotationValues
+            $AnnotationObjects.count | Should BeGreaterThan 0
+            $AnnotationObjects | ValidateAnnotationObject
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Annotations = Get-OciAnnotations -Server $OciServer
+            $AnnotationObjects = $Annotations | Get-OciAnnotationValues -Server $OciServer
+            $AnnotationObjects.count | Should BeGreaterThan 0
+            $AnnotationObjects | ValidateAnnotationObject
+        }
+    }
+
+    Context "adding and removing annotation values" {
+        it "succeeds without parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type TEXT
+            $Storages = Get-OciStorages
+            $Result = $Annotation | Update-OciAnnotationValues -objectType Storage -rawValue "Test" -targets $Storages.id
+            $Result.statusCode | Should Be "SUCCESS"
+            $AnnotationObject = $Annotation | Get-OciAnnotationValuesByObjectType -objectType Storage
+            $AnnotationObject | ValidateAnnotationObjectValue
+            $AnnotationObject.targets | Should Match ($Storages.id -join "|")
+            
+            $Result = $Annotation | Remove-OciAnnotationValues -objectType Storage -targets $AnnotationObject.targets
+            $Result.statusCode | Should Be "SUCCESS"
+            $AnnotationObject = $Annotation | Get-OciAnnotationValuesByObjectType -objectType Storage
+            $AnnotationObject | Should Be $null
+
+            $Annotation | Remove-OciAnnotation
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Annotation = Add-OciAnnotation -Name "OciCmdletTest" -Type TEXT -Server $OciServer
+            $Storages = Get-OciStorages -Server $OciServer
+            $Result = $Annotation | Update-OciAnnotationValues -objectType Storage -rawValue "Test" -targets $Storages.id -Server $OciServer
+            $Result.statusCode | Should Be "SUCCESS"
+            $AnnotationObject = $Annotation | Get-OciAnnotationValuesByObjectType -objectType Storage -Server $OciServer
+            $AnnotationObject | ValidateAnnotationObjectValue
+            $AnnotationObject.targets | Should Match ($Storages.id -join "|")
+
+            $Result = $Annotation | Remove-OciAnnotationValues -objectType Storage -targets $AnnotationObject.targets -Server $OciServer
+            $Result.statusCode | Should Be "SUCCESS"
+            $AnnotationObject = $Annotation | Get-OciAnnotationValuesByObjectType -objectType Storage -Server $OciServer
+            $AnnotationObject | Should Be $null
+
+            $Annotation | Remove-OciAnnotation -Server $OciServer
+        }
+    }
+
+    Context "retrieve annotation values by object type" {
+        it "succeeds without parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotations = Get-OciAnnotations
+            foreach ($Annotation in $Annotations) { 
+                $AnnotationObjects = $Annotation | Get-OciAnnotationValues
+                foreach ($ObjectType in $Annotation.supportedObjectTypes) {
+                    $AnnotationObjectToCompare = $AnnotationObjects | ? { $_.objectType -eq $ObjectType }
+                    $AnnotationObjectValue = $Annotation | Get-OciAnnotationValuesByObjectType -objectType $ObjectType
+                    $AnnotationObjectValue.rawValue | Should Match ($AnnotationObjectToCompare.values.rawValue -join "|")
+                }
+            }
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Annotations = Get-OciAnnotations -Server $OciServer
+            foreach ($Annotation in $Annotations) { 
+                $AnnotationObjects = $Annotation | Get-OciAnnotationValues -Server $OciServer
+                foreach ($ObjectType in $Annotation.supportedObjectTypes) {
+                    $AnnotationObjectToCompare = $AnnotationObjects | ? { $_.objectType -eq $ObjectType }
+                    $AnnotationObjectValue = $Annotation | Get-OciAnnotationValuesByObjectType -objectType $ObjectType -Server $OciServer                    
+                    $AnnotationObjectValue.rawValue | Should Match ($AnnotationObjectToCompare.values.rawValue -join "|")
+                }
+            }
+        }
+    }
+
+    Context "retrieve annotation values by object type and value" {
+        it "succeeds without parameters" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure
+
+            $Annotations = Get-OciAnnotations
+            foreach ($Annotation in $Annotations) { 
+                $AnnotationObjects = $Annotation | Get-OciAnnotationValues
+                foreach ($ObjectType in $Annotation.supportedObjectTypes) {
+                    $AnnotationObjectToCompare = $AnnotationObjects | ? { $_.objectType -eq $ObjectType }
+                    foreach ($Value in $AnnotationObjectToCompare.values.rawValue) {
+                        $AnnotationObjectValue = $Annotation | Get-OciAnnotationValuesByObjectTypeAndValue -objectType $ObjectType -value $Value
+                        $AnnotationObjectValue | Should Match ($AnnotationObjectToCompare.values.targets -join "|")
+                    }
+                }
+            }
+        }
+
+        it "succeeds with transient OCI Server" {
+            $OciServer = Connect-OciServer -Name $OciServerName -Credential $OciCredential -Insecure -Transient
+
+            $Annotations = Get-OciAnnotations -Server $OciServer
+            foreach ($Annotation in $Annotations) { 
+                $AnnotationObjects = $Annotation | Get-OciAnnotationValues -Server $OciServer
+                foreach ($ObjectType in $Annotation.supportedObjectTypes) {
+                    $AnnotationObjectToCompare = $AnnotationObjects | ? { $_.objectType -eq $ObjectType }
+                    foreach ($Value in $AnnotationObjectToCompare.values.rawValue) {
+                        $AnnotationObjectValue = $Annotation | Get-OciAnnotationValuesByObjectTypeAndValue -objectType $ObjectType -value $Value -Server $OciServer
+                        $AnnotationObjectValue | Should Match ($AnnotationObjectToCompare.values.targets -join "|")
+                    }
+                }
+            }
         }
     }
 }
