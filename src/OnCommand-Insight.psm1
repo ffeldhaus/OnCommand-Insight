@@ -5383,13 +5383,11 @@ function Global:Get-OciAnnotationValuesByObjectTypeAndValue {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-        if ($Value -notmatch "^[a-zA-Z0-9]+$") {
-            throw "This commandlet only supports values with alphanumeric characters"
-        }
+        $Value = [Uri]::EscapeDataString($Value)
     }
 
     Process {
-        $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/$objectType/$UrlEncodedValue"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id/values/$objectType/$Value"
 
         try {
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
