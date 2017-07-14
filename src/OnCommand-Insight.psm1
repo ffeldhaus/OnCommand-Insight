@@ -1270,11 +1270,11 @@ function global:Connect-OciServer {
             [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         }
         else {
-            if (!"Invoke-RestMethod -WebSession $Server.Session:SkipCertificateCheck") {
-                $PSDefaultParameterValues.Add("Invoke-RestMethod -WebSession $Server.Session:SkipCertificateCheck",$true)
+            if (!$PSDefaultParameterValues."Invoke-RestMethod:SkipCertificateCheck") {
+                $PSDefaultParameterValues.Add("Invoke-RestMethod:SkipCertificateCheck",$true)
             }
             else {
-                $PSDefaultParameterValues.'Invoke-RestMethod -WebSession $Server.Session:SkipCertificateCheck'=$true
+                $PSDefaultParameterValues."Invoke-RestMethod:SkipCertificateCheck"=$true
             }
         }
     }
@@ -4891,7 +4891,6 @@ function Global:Add-OciAnnotation {
     }
 }
 
-# TODO: Implement / Test deletion of annotation definitions
 <#
     .SYNOPSIS
     Delete annotation definition by id or name
@@ -5000,7 +4999,6 @@ function Global:Get-OciAnnotation {
     }
 }
 
-# TODO: Implement / Test updating of annotations
 <#
     .SYNOPSIS
     Update annotation definition by id or name
@@ -5343,7 +5341,6 @@ function Global:Get-OciAnnotationValuesByObjectType {
     }
 }
 
-# TODO: Implement / Test updating of annotation definitions
 <#
     .SYNOPSIS
     Retrieve annotation definition targets for one supported object type, one specific value
@@ -5743,10 +5740,9 @@ function Global:Remove-OciApplicationsFromAssets {
 # TODO: Implement / Test
 <#
     .SYNOPSIS
-    Bulk assign applications to assets
+    Assign applications to assets
     .DESCRIPTION
-    Request body should contain a list application ids mapped to a list of asset ids, grouped by type, example: <br/>
-
+    Assign applications to assets
 <pre>
 [
     {
@@ -6207,7 +6203,7 @@ function Global:Update-OciApplication {
     .PARAMETER server
     OCI Server to connect to
 #>
-function Global:Bulk-OciUnAssignApplicationFromAssets {
+function Global:Remove-OciApplicationFromAssets {
     [CmdletBinding()]
 
     PARAM (
