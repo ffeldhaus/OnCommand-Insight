@@ -212,7 +212,7 @@ function ConvertFrom-UnixTimestamp {
     PROCESS {
         $Timestamp = @($Timestamp)
         foreach ($Timestamp in $Timestamp) {
-            $Date = [System.TimeZoneInfo]::ConvertTime(([datetime]'1/1/1970').AddMilliseconds($Timestamp),$Timezone)
+            $Date = [System.TimeZoneInfo]::ConvertTimeFromUtc(([datetime]'1/1/1970').AddMilliseconds($Timestamp),$Timezone)
             Write-Output $Date
         }
     }
