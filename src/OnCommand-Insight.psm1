@@ -4984,48 +4984,55 @@ function Global:Get-OciAnnotation {
 
 <#
     .SYNOPSIS
-    Update annotation definition by id or name
+    Update annotation definition by id
     .DESCRIPTION
-    Request body could include optional name, description, enum values. Enums should contain name and label. Example: <br/>
-
-<pre>
-{
-    "name": "MyStorageLocation",
-    "description": "My Storage Location",
-    "enumValues": [
-        {
-          "name": "PT_LISBON",
-          "label": "Lisbon (Portugal)"
-        },
-        {
-          "name": "US_WALTHAM",
-          "label": "Waltham (USA)"
-        },
-        {
-          "name": "US_SUNNYVALE",
-          "label": "Sunnyvale (USA)"
-        }
-    ]
-}
-</pre>
-
-    .PARAMETER id
-    Id or name of annotation definition to update
+    Update annotation definition by id
     .PARAMETER server
     OCI Server to connect to
+    .PARAMETER Id
+    Annotation ID to be updated
+    .PARAMETER name
+    Annotation name
+    .PARAMETER type
+    Annotation type. Must be either DATE, TEXT, FIXED_ENUM, FLEXIBLE_ENUM, BOOLEAN or NUMBER
+    .PARAMETER description
+    Annotation description
+    .PARAMETER enumValues
+    List of name, label pairs for enum types (e.g. @(@{name='name',label='label'}) )
+
 #>
 function Global:Update-OciAnnotation {
     [CmdletBinding()]
 
     PARAM (
-        [parameter(Mandatory=$True,
-                    Position=0,
-                    HelpMessage="Id or name of annotation definition to update",
-                    ValueFromPipeline=$True,
-                    ValueFromPipelineByPropertyName=$True)][String[]]$id,
         [parameter(Mandatory=$False,
+                   Position=0,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer,
+        [parameter(Mandatory=$True,
                    Position=1,
-                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True,
+                   HelpMessage="Annotation name")][String]$Id,
+        [parameter(Mandatory=$False,
+                   Position=2,
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True,
+                   HelpMessage="Annotation name")][String]$Name,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True,
+                   HelpMessage="Annotation type. Must be either DATE, TEXT, FIXED_ENUM, FLEXIBLE_ENUM, BOOLEAN or NUMBER")][ValidateSet("DATE","TEXT","FIXED_ENUM","FLEXIBLE_ENUM","BOOLEAN","NUMBER")][String]$Type,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True,
+                   HelpMessage="Annotation description.")][String]$Description,
+        [parameter(Mandatory=$False,
+                   Position=5,
+                   ValueFromPipeline=$True,
+                   ValueFromPipelineByPropertyName=$True,
+                   HelpMessage="List of name, label pairs for enum types (e.g. @(@{name='name',label='label'}) )")][PSCustomObject[]]$enumValues
     )
 
     Begin {
@@ -5036,27 +5043,28 @@ function Global:Update-OciAnnotation {
     }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$id"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/annotations/$Id"
+        $Method = "PATCH"
 
-            $Body = ""
-
-            try {
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-                Write-Error "PATCH to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
-
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString -json $Result.Trim()
-            }
-
-            Write-Output $Result
+        if ($type -match "ENUM" -and -not $enumValues) {
+            throw "$type specified, but no enumValues provided"
         }
+
+        try {
+            $Body = ConvertTo-Json @{name=$name;type=$type;description=$description;enumValues=$enumValues} -Compress -Depth 4
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method $Method -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "POST to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        Write-Output $Result     
     }
 }
 
