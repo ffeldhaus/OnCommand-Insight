@@ -170,6 +170,23 @@ Get the previously added annotation
 $Annotation = Get-OciAnnotations | ? { $_.Name -eq "Enum test" }
 ```
 
+#### Update Annotation
+
+The `Update-OciAnnotation` Cmdlet always overwrites all parameters of the annotation, thus it is recommended to get the existing Annotation, modify it and then pass the modified Annotation via the Pipeline to `Update-OciAnnotation`.
+
+Here is an example to update the enum values of a FIXED_ENUM Annotation:
+```powershell
+$newEnumValues = @(@{name="two";label="two"},@{name="three";label="three"})
+
+foreach ($newEnumValue in $newEnumValues) {
+    # remove enum with same name as newEnumValue to prevent duplicates
+    $Annotation.enumValues = $Annotation.enumValues | Where-Object { $_.Name -ne $newEnumValue.Name }
+    $Annotation.enumValues = @($Annotation.enumValues) + [PSCustomObject]$newEnumValue
+}
+
+$Annotation = $Annotation | Update-OciAnnotation -Verbose
+```
+
 #### Add an annotation value to an OCI object
 
 Retrieve a volume
