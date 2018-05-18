@@ -2600,7 +2600,7 @@ function Global:Update-OciDataSource {
             }
             $Body = $Body | ConvertTo-Json -Depth 10
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+--            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             if ($Result.toString().startsWith('{')) {
                 $Result = ParseJsonString -json $Result
             }
@@ -3188,7 +3188,7 @@ function Global:Update-OciDatasourceNote {
         try {
             $Body = @{value=$value} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -3579,7 +3579,7 @@ function Global:Update-OciLdapConfiguration {
                         "attributes"=$Attributes}
             $Body = ConvertTo-Json -InputObject $Input -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -3730,7 +3730,7 @@ function Global:Update-OciLicenses {
         try {
             $Body = ConvertTo-Json -InputObject @($Licenses) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -4246,7 +4246,7 @@ function Global:Update-OciPatchNote {
         try {
             $Body = @{value=$value} | ConvertTo-Json -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -4833,7 +4833,7 @@ function Global:Add-OciAnnotation {
                    HelpMessage="Annotation description.")][String]$Description,
         [parameter(Mandatory=$False,
                    Position=4,
-                   HelpMessage="List of name, label pairs for enum types (e.g. @(@{name='name',label='label'}) )")][PSCustomObject[]]$enumValues,
+                   HelpMessage="List of name, label pairs for enum types (e.g. @(@{name='name';label='label'}) )")][Hashtable[]]$enumValues,
         [parameter(Mandatory=$False,
                    Position=5,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
@@ -5126,7 +5126,7 @@ function Global:Remove-OciAnnotationValues {
                     if ($targets) {
                         $Body = ConvertTo-Json @(@{objectType=$objectType;targets=$targets}) -Compress -Depth 4
                         Write-Verbose "Body: $Body"
-                        $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                        $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
                     }
                 }
             }
@@ -5251,7 +5251,7 @@ function Global:Update-OciAnnotationValues {
         try {
             $Body = ConvertTo-Json @(@{objectType=$objectType;values=@(@{rawValue=$rawValue;targets=$targets})}) -Compress -Depth 4
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -6132,7 +6132,7 @@ function Global:Update-OciApplication {
                     $Body = ConvertTo-Json @{name=$name;priority=$priority;ignoreShareViolations=$($ignoreShareViolations.IsPresent)} -Compress
                 }
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -6246,7 +6246,7 @@ function Global:Remove-OciApplicationFromAssets {
 				$Body = $Body.Insert(0,'[')
 				$Body = $Body.Insert($Body.Length,']')
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -6442,7 +6442,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
 				$Body = $Body.Insert(0,'[')
 				$Body = $Body.Insert($Body.Length,']')
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri  -Body $Body -Headers $Server.Headers -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri  -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -Headers $Server.Headers -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -7265,7 +7265,7 @@ function Global:Remove-OciAnnotationsByDatastore {
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -7398,7 +7398,7 @@ function Global:Update-OciAnnotationsByDatastore {
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -8245,7 +8245,7 @@ function Global:Remove-OciAnnotationsByDisk {
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Body $Body -Headers $Server.Headers
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -Headers $Server.Headers
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -8372,7 +8372,7 @@ function Global:Update-OciAnnotationsByDisk {
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -10921,7 +10921,7 @@ function Global:Remove-OciAnnotationsByHost {
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -11075,7 +11075,7 @@ function Global:Update-OciAnnotationsByHost {
         try {
             $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -11159,7 +11159,7 @@ function Global:Remove-OciApplicationsByHost {
         try {
             $Body = ConvertTo-Json -InputObject @($Applications) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -11318,7 +11318,7 @@ function Global:Update-OciApplicationsByHost {
         try {
             $Body = ConvertTo-Json -InputObject @($Applications) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -12740,7 +12740,7 @@ function Global:Remove-OciAnnotationsByInternalVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -12928,7 +12928,7 @@ function Global:Update-OciAnnotationsByInternalVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -13012,7 +13012,7 @@ function Global:Remove-OciApplicationsFromInternalVolume {
             try {
                 $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -13203,7 +13203,7 @@ function Global:Add-OciApplicationsToInternalVolume {
             try {
                 $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -14705,7 +14705,7 @@ function Global:Remove-OciAnnotationsByPort {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -14893,7 +14893,7 @@ function Global:Update-get-Port {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -14995,7 +14995,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
 
             try {
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -15202,7 +15202,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -16091,7 +16091,7 @@ function Global:Remove-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -16279,7 +16279,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -16382,7 +16382,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -16589,7 +16589,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -17619,7 +17619,7 @@ function Global:Remove-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -17807,7 +17807,7 @@ function Global:Update-OciByTypeAndId {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -17910,7 +17910,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -18117,7 +18117,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -18838,7 +18838,7 @@ function Global:Remove-OciAnnotationsByStorageNode {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -19026,7 +19026,7 @@ function Global:Update-OciAnnotationsByStorageNode {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -19783,7 +19783,7 @@ function Global:Remove-OciAnnotationsByStoragePool {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -19971,7 +19971,7 @@ function Global:Update-OciAnnotationsByStoragePool {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -21619,7 +21619,7 @@ function Global:Remove-OciAnnotationsByStorage {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -21807,7 +21807,7 @@ function Global:Update-OciAnnotationsByStorage {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -21910,7 +21910,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -22117,7 +22117,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -24206,7 +24206,7 @@ function Global:Remove-OciAnnotationsBySwitch {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -24394,7 +24394,7 @@ function Global:Update-OciAnnotationsBySwitch {
             try {
                 $Body = ""
                     Write-Verbose "Body: $Body"
-                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                    $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -24497,7 +24497,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -24704,7 +24704,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -25716,7 +25716,7 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
         try {
             $Body = ConvertTo-Json @($Annotations | Where-Object { $_.definition } | ForEach-Object { @{definition=@{id=$_.definition.id}} } ) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -25838,7 +25838,7 @@ function Global:Update-OciAnnotationsByVirtualMachine {
         try {
             $Body = ConvertTo-Json $($Annotations | ForEach-Object { @{rawValue=$_.rawValue;definition=@{id=$_.definition.id}} } ) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -25940,7 +25940,7 @@ function Global:Bulk-OciUnAssignApplicationsFromAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -26147,7 +26147,7 @@ function Global:Bulk-OciAssignApplicationsToAsset {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -27589,7 +27589,7 @@ function Global:Remove-OciAnnotationsByVmdk {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -27777,7 +27777,7 @@ function Global:Update-OciAnnotationsByVmdk {
             try {
                 $Body = ""
                 Write-Verbose "Body: "
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -28573,7 +28573,7 @@ function Global:Remove-OciAnnotationsByVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -28761,7 +28761,7 @@ function Global:Update-OciAnnotationsByVolume {
             try {
                 $Body = ""
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -28841,7 +28841,7 @@ function Global:Remove-OciApplicationsFromVolume {
         try {
             $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
             Write-Verbose "Body: $Body"
-            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
         catch {
             $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
@@ -29052,7 +29052,7 @@ function Global:Add-OciApplicationsToVolume {
             try {
                 $Body = ConvertTo-Json @($applicationId | ForEach-Object { @{id=$_} }) -Compress
                 Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             }
             catch {
                 $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
