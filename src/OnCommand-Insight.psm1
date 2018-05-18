@@ -2600,7 +2600,7 @@ function Global:Update-OciDataSource {
             }
             $Body = $Body | ConvertTo-Json -Depth 10
             Write-Verbose "Body: $Body"
---            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PATCH -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
             if ($Result.toString().startsWith('{')) {
                 $Result = ParseJsonString -json $Result
             }
