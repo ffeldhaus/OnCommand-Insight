@@ -16010,28 +16010,17 @@ function Global:Get-OciQtree {
 
 <#
     .SYNOPSIS
-    Delete annotations from object
+Remove annotations by qtree
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-{
-  "definition":{"id":"5001"}
-},
-{
-  "definition":{"id":"5002"}
-}
-]
-</pre>
-
+Remove annotations by qtree
     .PARAMETER id
     Id of object to delete
+.PARAMETER Annotations
+List of annotations to remove
         .PARAMETER definition
         Return related Definition
 #>
-function Global:Remove-OciByTypeAndId {
+function Global:Remove-OciAnnotationsByQtree {
     [CmdletBinding()]
 
     PARAM (
@@ -16042,9 +16031,12 @@ function Global:Remove-OciByTypeAndId {
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
         [parameter(Mandatory=$False,
                     Position=1,
+                HelpMessage="List of annotations to remove")][PSObject[]]$Annotations,
+    [parameter(Mandatory=$False,
+                Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=2,
+               Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
 
@@ -16053,65 +16045,38 @@ function Global:Remove-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
                 }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
-    }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
-
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-                Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
-
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString -json $Result.Trim()
-            }
-
-            Write-Output $Result
+        if ($Definition) {
+            $Uri += "?expand=definition"
         }
+
+        if (!$Annotations) {
+            $Annotations = Get-OciAnnotationsByQtree -id $id -definition -Server $Server
+        }
+
+        try {
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        Write-Output $Result
     }
 }
 
 <#
     .SYNOPSIS
-    Retrieve annotations for object
+    Retrieve annotations of qtree
     .DESCRIPTION
-
+    Retrieve annotations of qtree
     .PARAMETER id
     Id of object to retrieve
     .PARAMETER expand
@@ -16119,7 +16084,7 @@ function Global:Remove-OciByTypeAndId {
     .PARAMETER definition
     Return related Definition
 #>
-function Global:Get-OciByTypeAndId {
+function Global:Get-OciAnnotationsByQtree {
     [CmdletBinding()]
 
     PARAM (
@@ -16144,40 +16109,14 @@ function Global:Get-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
                 }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
-    }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
             $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
+            if ($Definition) {
+                $Uri += "?expand=definition"
+            }    
 
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
@@ -16194,32 +16133,20 @@ function Global:Get-OciByTypeAndId {
             Write-Output $Result
         }
     }
-}
 
 <#
     .SYNOPSIS
-    Update annotations for object
+    Update Annotations of Qtree
     .DESCRIPTION
-    Request body should be like JSON below: <br/>
-
-<pre>
-
-[
-  {
-    "rawValue": "Bronze",
-    "definition": {
-      "id": "4992",
-    }
-  }
-]
-</pre>
-
+    Update Annotations of Qtree
     .PARAMETER id
     Id of object to update
-        .PARAMETER definition
-        Return related Definition
+    .PARAMETER Annotations
+    Annotations to be updated
+    .PARAMETER definition
+    Return related Definition
 #>
-function Global:Update-OciByTypeAndId {
+function Global:Update-OciAnnotationsByQtree {
     [CmdletBinding()]
 
     PARAM (
@@ -16228,11 +16155,14 @@ function Global:Update-OciByTypeAndId {
                     HelpMessage="Id of object to update",
                     ValueFromPipeline=$True,
                     ValueFromPipelineByPropertyName=$True)][Long[]]$id,
-        [parameter(Mandatory=$False,
+        [parameter(Mandatory=$True,
                     Position=1,
+                    HelpMessage="Annotations to be updated")][PSObject[]]$Annotations,
+        [parameter(Mandatory=$False,
+                    Position=2,
                     HelpMessage="Return related Definition")][Switch]$definition,
         [parameter(Mandatory=$False,
-                   Position=2,
+                   Position=3,
                    HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
     )
 
@@ -16241,57 +16171,30 @@ function Global:Update-OciByTypeAndId {
         if (!$Server) {
             throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
         }
-
-        $switchparameters=@("definition")
-        foreach ($parameter in $switchparameters) {
-            if ((Get-Variable $parameter).Value) {
-                if ($expand) {
-                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
-                }
-                else {
-                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
-                }
-            }
-        }
     }
 
     Process {
-        $id = @($id)
-        foreach ($id in $id) {
-            $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
+        $Uri = $Server.BaseUri + "/rest/v1/assets/qtrees/$id/annotations"
 
-            if ($fromTime -or $toTime -or $expand) {
-                $Uri += '?'
-                $Separator = ''
-                if ($fromTime) {
-                    $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($toTime) {
-                    $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
-                    $Separator = '&'
-                }
-                if ($expand) {
-                    $Uri += "$($Separator)expand=$expand"
-                }
-            }
-
-            try {
-                $Body = ""
-                Write-Verbose "Body: $Body"
-                $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
-            }
-            catch {
-                $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
-                Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
-            }
-
-            if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
-                $Result = ParseJsonString -json $Result.Trim()
-            }
-
-            Write-Output $Result
+        if ($Definition) {
+            $Uri += "?expand=definition"
         }
+
+        try {
+        $Body = ConvertTo-Json -InputObject @($Annotations | ForEach-Object { @{rawValue=$_.rawValue;definition=@{id=$_.definition.id}} } ) -Compress
+            Write-Verbose "Body: $Body"
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method PUT -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "PUT to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        Write-Output $Result
     }
 }
 
@@ -25714,7 +25617,7 @@ function Global:Remove-OciAnnotationsByVirtualMachine {
         }
 
         try {
-            $Body = ConvertTo-Json @($Annotations | Where-Object { $_.definition } | ForEach-Object { @{definition=@{id=$_.definition.id}} } ) -Compress
+            $Body = ConvertTo-Json @($Annotations | ConvertTo-AnnotationValues) -Compress
             Write-Verbose "Body: $Body"
             $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body ([System.Text.Encoding]::UTF8.GetBytes($Body)) -ContentType 'application/json'
         }
