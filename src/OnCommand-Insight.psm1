@@ -7001,11 +7001,11 @@ function Global:Get-OciDatastores {
             $Uri += '?'
             $Separator = ''
             if ($limit) {
-                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Uri += "$($Separator)limit=$limit"
                 $Separator = '&'
             }
             if ($limit -and $offset) {
-                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Uri += "$($Separator)offset=$offset"
                 $Separator = '&'
             }
             if ($expand) {
@@ -9180,11 +9180,11 @@ function Global:Get-OciFabrics {
                 $Separator = '&'
             }
             if ($limit) {
-                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Uri += "$($Separator)limit=$limit"
                 $Separator = '&'
             }
             if ($limit -and $offset) {
-                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Uri += "$($Separator)offset=$offset"
                 $Separator = '&'
             }
             if ($expand) {
@@ -9636,15 +9636,15 @@ function Global:Get-OciPortsByFabric {
                 $Separator = '&'
             }
             if ($sort) {
-                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Uri += "$($Separator)sort=$sort"
                 $Separator = '&'
             }
             if ($limit) {
-                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Uri += "$($Separator)limit=$limit"
                 $Separator = '&'
             }
             if ($limit -and $offset) {
-                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Uri += "$($Separator)offset=$offset"
                 $Separator = '&'
             }
             if ($expand) {
@@ -10634,15 +10634,15 @@ function Global:Get-OciHosts {
                 $Separator = '&'
             }
             if ($sort) {
-                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Uri += "$($Separator)sort=$sort"
                 $Separator = '&'
             }
             if ($limit) {
-                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Uri += "$($Separator)limit=$limit"
                 $Separator = '&'
             }
             if ($limit -and $offset) {
-                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Uri += "$($Separator)offset=$offset"
                 $Separator = '&'
             }
             if ($expand) {
@@ -21190,15 +21190,15 @@ function Global:Get-OciStorages {
             $Separator = '&'
         }
         if ($sort) {
-            $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+            $Uri += "$($Separator)sort=$sort"
             $Separator = '&'
         }
         if ($limit) {
-            $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+            $Uri += "$($Separator)limit=$limit"
             $Separator = '&'
         }
         if ($limit -and $offset) {
-            $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+            $Uri += "$($Separator)offset=$offset"
             $Separator = '&'
         }
         if ($expand) {
@@ -23816,15 +23816,15 @@ function Global:Get-OciSwitches {
                 $Separator = '&'
             }
             if ($sort) {
-                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Uri += "$($Separator)sort=$sort"
                 $Separator = '&'
             }
             if ($limit) {
-                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Uri += "$($Separator)limit=$limit"
                 $Separator = '&'
             }
             if ($limit -and $offset) {
-                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Uri += "$($Separator)offset=$offset"
                 $Separator = '&'
             }
             if ($expand) {
@@ -25337,15 +25337,15 @@ function Global:Get-OciVirtualMachines {
                 $Separator = '&'
             }
             if ($sort) {
-                $Uri += "$($Separator)sort=$((Get-Variable 'sort').Value)"
+                $Uri += "$($Separator)sort=$sort"
                 $Separator = '&'
             }
             if ($limit) {
-                $Uri += "$($Separator)limit=$((Get-Variable 'limit').Value)"
+                $Uri += "$($Separator)limit=$limit"
                 $Separator = '&'
             }
             if ($limit -and $offset) {
-                $Uri += "$($Separator)offset=$((Get-Variable 'offset').Value)"
+                $Uri += "$($Separator)offset=$offset"
                 $Separator = '&'
             }
             if ($expand) {
