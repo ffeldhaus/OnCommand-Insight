@@ -5059,7 +5059,7 @@ function Global:Update-OciAnnotation {
             $Result = ParseJsonString -json $Result.Trim()
         }
 
-        Write-Output $Result     
+        Write-Output $Result
     }
 }
 
@@ -6401,7 +6401,7 @@ function Global:Bulk-OciAssignApplicationToAssets {
         if (!$assets) {
             throw "No Assets specified!"
         }
-		
+
         $switchparameters=@()
         foreach ($parameter in $switchparameters) {
             if ((Get-Variable $parameter).Value) {
@@ -16116,7 +16116,7 @@ function Global:Get-OciAnnotationsByQtree {
 
             if ($Definition) {
                 $Uri += "?expand=definition"
-            }    
+            }
 
             try {
                 $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
@@ -31134,6 +31134,61 @@ function Global:Search-Oci {
 
             Write-Output $Result.resultsByCategory
         }
+    }
+}
+
+## identifications ##
+
+<#
+    .SYNOPSIS
+    Retrieve FC Identify
+    .DESCRIPTION
+    Retrieve FC Identify
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)
+    .PARAMETER server
+    OCI Server to connect to
+#>
+function Global:Get-OciFcIdentify {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=$False,
+                    Position=0,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=acquisitionUnit)")][String]$expand,
+        [parameter(Mandatory=$False,
+                   Position=1,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/identifications/fc"
+
+        if ($expand) {
+            $Uri += "?$($Separator)expand=$expand"
+        }
+
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim
+        }
+
+        #$Datasources = ParseDatasources -Datasources $Result -Timezone $Server.Timezone
+        Write-Output $Result
     }
 }
 
