@@ -21276,7 +21276,7 @@ function Global:Get-OciStorageCount {
     .SYNOPSIS
     Retrieve one storage
     .DESCRIPTION
-
+    Retrieve one storage
     .PARAMETER id
     Id of storage to retrieve
     .PARAMETER fromTime
@@ -21405,6 +21405,173 @@ function Global:Get-OciStorage {
 
     Process {
         $Uri = $Server.BaseUri + "/rest/v1/assets/storages/$id"
+
+        if ($fromTime -or $toTime -or $expand) {
+            $Uri += '?'
+            $Separator = ''
+            if ($fromTime) {
+                $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($toTime) {
+                $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+                $Separator = '&'
+            }
+            if ($expand) {
+                $Uri += "$($Separator)expand=$expand"
+            }
+        }
+
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        $Storage = ParseStorages -Storages $Result -Timezone $Server.Timezone
+        Write-Output $Storage
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve one object storage
+    .DESCRIPTION
+    Retrieve one object storage
+    .PARAMETER id
+    Id of storage to retrieve
+    .PARAMETER fromTime
+    Filter for time range, either in milliseconds or as DateTime
+    .PARAMETER toTime
+    Filter for time range, either in milliseconds or as DateTime
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=read,items)
+    .PARAMETER storageNodes
+    Return list of related Storage nodes
+    .PARAMETER storageResources
+    Return list of related Storage resources
+    .PARAMETER storagePools
+    Return list of related Storage pools
+    .PARAMETER internalVolumes
+    Return list of related Internal volumes
+    .PARAMETER volumes
+    Return list of related Volumes
+    .PARAMETER qtrees
+    Return list of related Qtrees
+    .PARAMETER shares
+    Return list of related Shares
+    .PARAMETER ports
+    Return list of related Ports
+    .PARAMETER datasources
+    Return list of related Datasources
+    .PARAMETER annotations
+    Return list of related Annotations
+    .PARAMETER disks
+    Return list of related Disks
+    .PARAMETER performance
+    Return related Performance
+    .PARAMETER protocols
+    Return list of related Protocols
+    .PARAMETER applications
+    Return list of related Applications
+    .PARAMETER performancehistory
+    Return related Performance History
+#>
+function Global:Get-OciObjectStorage {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="Id of storage to retrieve",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                    Position=1,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
+        [parameter(Mandatory=$False,
+                    Position=4,
+                    HelpMessage="Return list of related Storage nodes")][Switch]$storageNodes,
+        [parameter(Mandatory=$False,
+                    Position=5,
+                    HelpMessage="Return list of related Storage resources")][Switch]$storageResources,
+        [parameter(Mandatory=$False,
+                    Position=6,
+                    HelpMessage="Return list of related Storage pools")][Switch]$storagePools,
+        [parameter(Mandatory=$False,
+                    Position=7,
+                    HelpMessage="Return list of related Internal volumes")][Switch]$internalVolumes,
+        [parameter(Mandatory=$False,
+                    Position=8,
+                    HelpMessage="Return list of related Volumes")][Switch]$volumes,
+        [parameter(Mandatory=$False,
+                    Position=9,
+                    HelpMessage="Return list of related Qtrees")][Switch]$qtrees,
+        [parameter(Mandatory=$False,
+                    Position=10,
+                    HelpMessage="Return list of related Shares")][Switch]$shares,
+        [parameter(Mandatory=$False,
+                    Position=11,
+                    HelpMessage="Return list of related Ports")][Switch]$ports,
+        [parameter(Mandatory=$False,
+                    Position=12,
+                    HelpMessage="Return list of related Datasources")][Switch]$datasources,
+        [parameter(Mandatory=$False,
+                    Position=13,
+                    HelpMessage="Return list of related Annotations")][Switch]$annotations,
+        [parameter(Mandatory=$False,
+                    Position=14,
+                    HelpMessage="Return list of related Disks")][Switch]$disks,
+        [parameter(Mandatory=$False,
+                    Position=15,
+                    HelpMessage="Return related Performance")][Switch]$performance,
+        [parameter(Mandatory=$False,
+                    Position=16,
+                    HelpMessage="Return list of related Protocols")][Switch]$protocols,
+        [parameter(Mandatory=$False,
+                    Position=17,
+                    HelpMessage="Return list of related Applications")][Switch]$applications,
+        [parameter(Mandatory=$False,
+                    Position=18,
+                    HelpMessage="Return related Performance History")][Switch]$performancehistory,
+        [parameter(Mandatory=$False,
+                   Position=19,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+
+        $switchparameters=@("storageNodes","storageResources","storagePools","internalVolumes","volumes","qtrees","shares","ports","datasources","annotations","disks","performance","protocols","applications","performancehistory")
+        foreach ($parameter in $switchparameters) {
+            if ((Get-Variable $parameter).Value) {
+                if ($expand) {
+                    $expand += ",$($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')"
+                }
+                else {
+                    $expand = $($parameter -replace 'performancehistory','performance.history' -replace 'hostswitch','host')
+                }
+            }
+        }
+    }
+
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/objectstorages/$id"
 
         if ($fromTime -or $toTime -or $expand) {
             $Uri += '?'
