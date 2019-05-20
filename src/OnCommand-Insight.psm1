@@ -239,18 +239,23 @@ function ConvertTo-AnnotationValues {
 ### Parsing Functions
 
 function ParseExceptionBody($Response) {
-    if ($Response) {
-        $Reader = New-Object System.IO.StreamReader($Response.GetResponseStream())
-        $Reader.BaseStream.Position = 0
-        $Reader.DiscardBufferedData()
-        $ResponseBody = $reader.ReadToEnd()
-        if ($ResponseBody.StartsWith('{')) {
-            $ResponseBody = $ResponseBody | ConvertFrom-Json | ConvertTo-Json
+    if ($PSVersionTable.PSVersion.Major -lt 6) {
+        if ($Response) {
+            $Reader = New-Object System.IO.StreamReader($Response.GetResponseStream())
+            $Reader.BaseStream.Position = 0
+            $Reader.DiscardBufferedData()
+            $ResponseBody = $reader.ReadToEnd()
+            if ($ResponseBody.StartsWith('{')) {
+                $ResponseBody = $ResponseBody | ConvertFrom-Json | ConvertTo-Json
+            }
+            return $ResponseBody
         }
-        return $ResponseBody
+        else {
+            return $Response
+        }
     }
     else {
-        return $Response
+        return $Error.ErrorDetails.Message
     }
 }
 
@@ -666,6 +671,26 @@ function ParseVmdks($Vmdks,$Timezone) {
         }
 
         Write-Output $vmdk
+    }
+}
+
+function ParseGenericDevices($GenericDevices,$Timezone) {
+    foreach ($GenericDeviceInstance in $GenericDevices) {
+        if ($GenericDeviceInstance.zones) {
+            $GenericDeviceInstance.zones = ParseZones -Zones $GenericDeviceInstance.zones -Timezone $Timezone
+        }
+
+        Write-Output $GenericDeviceInstance
+    }
+}
+
+function ParseZones($Zones,$Timezone) {
+    foreach ($ZoneInstance in $Zones) {
+        if ($ZoneInstance.zones) {
+            $ZoneInstance.zones = ParseZones -Zones $ZoneInstance.zones -Timezone $Timezone
+        }
+
+        Write-Output $ZoneInstance
     }
 }
 
@@ -8051,6 +8076,80 @@ function Global:Get-OciVmdksByDatastore {
     }
 }
 
+## assets/devices ##
+
+New-Alias -Name Remove-OciGenericDevice -Value Remove-OciDevices
+<#
+    .SYNOPSIS
+    Remove inactive devices in bulk by IDs
+    .DESCRIPTION
+    Remove inactive devices in bulk by IDs
+    .PARAMETER Id
+    IDs of devices to remove
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=read,items)
+#>
+function Global:Remove-OciDevices {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="ID of generic device to retrieve",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="ID of generic device to retrieve",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Alias("self")][String[]]$Type,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/device"
+
+        $Body = @()
+        foreach ($EntryNumber in 0..($Id.Count-1)) {
+            $Type = $Type -replace "s/[0-9]+","" -replace "/[0-9]+","" -replace ".*/",""
+            $Type = $Type.Substring(0,1).ToUpper() + $Type.Substring(1)
+            $Body += @{id=$Id[$EntryNumber];type=$Type[$EntryNumber]}
+        }
+
+        $Body = ConvertTo-Json -InputObject $Body
+
+        Write-Verbose "Body:`n$Body"
+
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method DELETE -Uri $Uri -Headers $Server.Headers -Body $Body -ContentType 'application/json'
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "DELETE to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        $GenericDevices = ParseGenericDevices -GenericDevices $Result -Timezone $Server.Timezone
+
+        if ($GenericDevices) { Write-Output $GenericDevices }
+    }
+}
+
 ## assets/disks ##
 
 <#
@@ -10486,6 +10585,228 @@ function Global:Get-OciTopologyByStorage {
         $Topology = ParseTopologies -Topologies $Result -Timezone $Server.Timezone
 
         Write-Output $Topology
+    }
+}
+
+## assets/genericDevices ##
+
+<#
+    .SYNOPSIS
+    Retrieve all generic devices
+    .DESCRIPTION
+    Retrieve all generic devices
+    .PARAMETER fromTime
+    Filter for time range, either in milliseconds or as DateTime
+    .PARAMETER toTime
+    Filter for time range, either in milliseconds or as DateTime
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=read,items)
+#>
+function Global:Get-OciGenericDevices {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=$False,
+                    Position=0,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
+        [parameter(Mandatory=$False,
+                    Position=1,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
+        [parameter(Mandatory=$False,
+                   Position=3,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/genericDevices"
+
+        $Uri += '?'
+        $Separator = ''
+        if ($fromTime) {
+            $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($toTime) {
+            $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
+        }
+
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        $GenericDevices = ParseGenericDevices -GenericDevices $Result -Timezone $Server.Timezone
+
+        if ($GenericDevices) { Write-Output $GenericDevices }
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve one generic device
+    .DESCRIPTION
+    Retrieve one generic device
+    .PARAMETER Id
+    ID of generic device to retrieve
+    .PARAMETER fromTime
+    Filter for time range, either in milliseconds or as DateTime
+    .PARAMETER toTime
+    Filter for time range, either in milliseconds or as DateTime
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=read,items)
+#>
+function Global:Get-OciGenericDevice {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="ID of generic device to retrieve",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                    Position=1,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$fromTime,
+        [parameter(Mandatory=$False,
+                    Position=2,
+                    HelpMessage="Filter for time range, either in milliseconds or as DateTime")][PSObject]$toTime,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/genericDevices/$Id"
+
+        $Uri += '?'
+        $Separator = ''
+        if ($fromTime) {
+            $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($toTime) {
+            $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
+        }
+
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        $GenericDevices = ParseGenericDevices -GenericDevices $Result -Timezone $Server.Timezone
+
+        if ($GenericDevices) { Write-Output $GenericDevices }
+    }
+}
+
+<#
+    .SYNOPSIS
+    Retrieve one generic device
+    .DESCRIPTION
+    Retrieve one generic device
+    .PARAMETER Id
+    ID of generic device to retrieve
+    .PARAMETER expand
+    Expand parameter for underlying JSON object (e.g. expand=read,items)
+#>
+function Global:Get-OciGenericDeviceZones {
+    [CmdletBinding()]
+
+    PARAM (
+        [parameter(Mandatory=$True,
+                    Position=0,
+                    HelpMessage="ID of generic device to retrieve",
+                    ValueFromPipeline=$True,
+                    ValueFromPipelineByPropertyName=$True)][Long[]]$id,
+        [parameter(Mandatory=$False,
+                    Position=3,
+                    HelpMessage="Expand parameter for underlying JSON object (e.g. expand=read,items)")][String]$expand,
+        [parameter(Mandatory=$False,
+                   Position=4,
+                   HelpMessage="OnCommand Insight Server.")]$Server=$CurrentOciServer
+    )
+
+    Begin {
+        $Result = $null
+        if (!$Server) {
+            throw "Server parameter not specified and no global OCI Server available. Run Connect-OciServer first!"
+        }
+    }
+
+    Process {
+        $Uri = $Server.BaseUri + "/rest/v1/assets/genericDevices/$Id/zones"
+
+        $Uri += '?'
+        $Separator = ''
+        if ($fromTime) {
+            $Uri += "fromTime=$($fromTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($toTime) {
+            $Uri += "$($Separator)toTime=$($toTime | ConvertTo-UnixTimestamp)"
+            $Separator = '&'
+        }
+        if ($expand) {
+            $Uri += "$($Separator)expand=$expand"
+        }
+
+        try {
+            $Result = Invoke-RestMethod -WebSession $Server.Session -TimeoutSec $Server.Timeout -Method GET -Uri $Uri -Headers $Server.Headers
+        }
+        catch {
+            $ResponseBody = ParseExceptionBody -Response $_.Exception.Response
+            Write-Error "GET to $Uri failed with Exception $($_.Exception.Message) `n $responseBody"
+        }
+
+        if (([String]$Result).Trim().startsWith('{') -or ([String]$Result).toString().Trim().startsWith('[')) {
+            $Result = ParseJsonString -json $Result.Trim()
+        }
+
+        $Zones = ParseZones -Zones $Result -Timezone $Server.Timezone
+
+        if ($Zones) { Write-Output $Zones }
     }
 }
 
