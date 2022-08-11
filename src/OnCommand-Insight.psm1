@@ -1323,7 +1323,7 @@ function global:Connect-OciServer {
     if ($HTTPS -or !$HTTP) {
         Try {
             $BaseURI = "https://$Name"
-            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
+            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers -ContentType 'application/json'
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
@@ -1348,7 +1348,7 @@ function global:Connect-OciServer {
     if ($HTTP) {
         Try {
             $BaseURI = "http://$Name"
-            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
+            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers -ContentType 'application/json'
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
