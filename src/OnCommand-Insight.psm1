@@ -1287,7 +1287,8 @@ function global:Connect-OciServer {
 
     $EncodedAuthorization = [System.Text.Encoding]::UTF8.GetBytes($Credential.UserName + ':' + $Credential.GetNetworkCredential().Password)
     $EncodedPassword = [System.Convert]::ToBase64String($EncodedAuthorization)
-    $Headers = @{"Authorization"="Basic $($EncodedPassword)"}
+    $Headers = @{"Authorization"="Basic $($EncodedPassword)"
+                 "Content-Type" = 'application/json'}
 
     # check if untrusted SSL certificates should be ignored
     if ($Insecure) {
@@ -1323,7 +1324,7 @@ function global:Connect-OciServer {
     if ($HTTPS -or !$HTTP) {
         Try {
             $BaseURI = "https://$Name"
-            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers -ContentType 'application/json'
+            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
@@ -1348,7 +1349,7 @@ function global:Connect-OciServer {
     if ($HTTP) {
         Try {
             $BaseURI = "http://$Name"
-            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers -ContentType 'application/json'
+            $Response = Invoke-RestMethod -Session Session -Method Post -Uri "$BaseURI/rest/v1/login" -TimeoutSec $Timeout -Headers $Headers
             $APIVersion = [System.Version]$Response.apiVersion
         }
         Catch {
